@@ -1,0 +1,18 @@
+{
+  "languages": {
+    "C++": {
+      "format_on_save": "on",
+      "tab_size": 2,
+    },
+  },
+  "lsp": {
+    "clangd": {
+      "binary": {
+        "arguments": [
+          "--compile-commands-dir=build",
+          "--header-insertion=never",
+        ],
+      },
+    },
+  },
+}

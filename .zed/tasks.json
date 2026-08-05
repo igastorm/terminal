@@ -1,0 +1,19 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+
+[
+  {
+    "label": "CMake: Configure",
+    "command": "cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    "reveal": "always",
+  },
+  {
+    "label": "CMake: Build",
+    "command": "cmake --build build --config Debug",
+    "reveal": "always",
+  },
+  {
+    "label": "Run",
+    "command": "./build/terminal",
+    "reveal": "always",
+  },
+]
