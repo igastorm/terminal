@@ -2,8 +2,8 @@
 
 int main(int argc, char **argv) {
   if (PTY::getPTY()) {
-    char cmd_line[] = "/bin/zsh";
-    PTY::getPTY().start_shell(cmd_line);
+    char shell[] = "/bin/zsh";
+    PTY::getPTY().start_shell(shell);
   }
   return 0;
 }

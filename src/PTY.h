@@ -1,6 +1,6 @@
 class PTY {
 public:
-  virtual void start_shell(char *shell) = 0;
+  virtual void start_shell(char *) = 0;
 
   virtual ~PTY(void) = default;
 
