@@ -22,4 +22,5 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 add_executable(terminal
   "${SRC_DIR}/main.cpp"
+  "${SRC_DIR}/PTY.cpp"
 )
