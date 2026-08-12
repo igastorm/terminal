@@ -1,3 +1,5 @@
+#pragma once
+
 class PTY {
 public:
   virtual void start_shell(char *) = 0;
