@@ -1,7 +1,9 @@
 #include "PTY.h"
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
+#include <new>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
@@ -9,32 +11,61 @@
 #include <unistd.h>
 
 namespace {
+// ----------------------------
+// 具象クラス宣言
+// ----------------------------
+
 class ImpPTY : public PTY {
 private:
+  int ref = 0;
+
   // 元のターミナル設定を保存
   termios orig_termios;
 
   int master_fd = -1;
   char slave_path[256] = {0};
-  bool state = false;
 
   void event_loop(void);
   // 親からの標準入力を行単位ではなく文字単位で受け取る設定
   void enable_raw_mode(void);
   void start_shell(char *shell) override;
-  explicit operator bool() const override { return this->state; }
+  void close(void);
+  int release(void) override;
+  int addRef(void) override;
   ImpPTY(void) = default;
+  ~ImpPTY(void);
 
 public:
-  static ImpPTY &createPTY(void);
-  ~ImpPTY(void) noexcept { // 終了前に PTY を閉じる
-    if (master_fd >= 0) {
-      close(master_fd);
-      std::cout << std::endl << "Exit the terminal" << std::endl;
-      tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-    }
-  }
+  static ImpPTY *createPTY(void);
 };
+
+// ----------------------------
+// メンバ関数の実装
+// ----------------------------
+
+int ImpPTY::addRef(void) { return ++this->ref; }
+
+int ImpPTY::release(void) {
+  if (--this->ref == 0) {
+    this->~ImpPTY();
+    free(this);
+    return 0;
+  }
+  return this->ref;
+}
+
+ImpPTY::~ImpPTY(void) { this->close(); }
+
+void ImpPTY::close(void) {
+  if (master_fd >= 0) {
+    ::close(master_fd);
+    std::cout << std::endl << "Exit the terminal" << std::endl;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  } else {
+    std::cout << std::endl
+              << "The file descriptor does not exist." << std::endl;
+  }
+}
 
 void ImpPTY::enable_raw_mode(void) {
   tcgetattr(STDIN_FILENO, &orig_termios);
@@ -127,7 +158,7 @@ void ImpPTY::start_shell(char *shell) {
     // --- 子プロセス側の処理 (zsh になる予定のプロセス)---
 
     // 親プロセスの Master fd は不要なので閉じる (参照カウンタを減らす)
-    close(this->master_fd);
+    ::close(this->master_fd);
 
     // 新しいセッションを作成し、プロセスグループのリーダーになる
     // 標準ターミナルとの縁を切って無理やり自作 pty
@@ -158,7 +189,7 @@ void ImpPTY::start_shell(char *shell) {
     // 上の三つの dup2 で 0, 1, 2 番を新しく作った slave_fd で上書きしたから
     // 3番目は不要
     if (slave_fd > STDERR_FILENO) {
-      close(slave_fd);
+      ::close(slave_fd);
     }
 
     // シェルを実行
@@ -179,62 +210,62 @@ void ImpPTY::start_shell(char *shell) {
   this->event_loop();
 }
 
-ImpPTY &ImpPTY::createPTY(void) {
-  static ImpPTY pty;
-  tcgetattr(STDIN_FILENO, &pty.orig_termios);
+ImpPTY *ImpPTY::createPTY(void) {
+  ImpPTY *pty = static_cast<ImpPTY *>(std::malloc(sizeof(ImpPTY)));
+  if (pty == nullptr) {
+    std::perror("malloc failed");
+    return nullptr;
+  }
+
+  // 例外を使わないので配置 new (-fno-exceptions)
+  pty = new (pty) ImpPTY;
+  pty->addRef();
+  tcgetattr(STDIN_FILENO, &pty->orig_termios);
 
   // すでに作成済みならそのまま返す
-  if (pty) {
-    return pty;
-  }
   // ----------------------------
   // pty master を作成
   // ----------------------------
   // open("/dev/ptmx", O_RDWR | O_NOCTTY) と同じ意味らしい
-  pty.master_fd = posix_openpt(O_RDWR | O_NOCTTY);
-  if (pty.master_fd < 0) {
+  pty->master_fd = posix_openpt(O_RDWR | O_NOCTTY);
+  if (pty->master_fd < 0) {
     std::perror("posix_openpt failed");
-    pty.state = false;
-    return pty;
+    pty->release();
+    return nullptr;
   }
 
   // PTY Slave 側のアクセス権限を設定し、アクセスを許可
-  if (grantpt(pty.master_fd) < 0 || unlockpt(pty.master_fd) < 0) {
+  if (grantpt(pty->master_fd) < 0 || unlockpt(pty->master_fd) < 0) {
     std::perror("grantpt/unlockpt failed");
-    close(pty.master_fd);
-    pty.state = false;
-    return pty;
+    pty->release();
+    return nullptr;
   }
 
   // PTY Slave のデバイスファイルパス名を取得 (/dev/ttys00X のような文字列)
-  char *tmp_slave_path = ptsname(pty.master_fd);
+  char *tmp_slave_path = ptsname(pty->master_fd);
   if (!tmp_slave_path) {
     std::perror("ptsname failed");
-    close(pty.master_fd);
-    pty.state = false;
-    return pty;
+    pty->release();
+    return nullptr;
   }
 
-  ::strncpy(pty.slave_path, tmp_slave_path, sizeof(pty.slave_path) - 1);
-  pty.slave_path[sizeof(pty.slave_path) - 1] = '\0';
+  ::strncpy(pty->slave_path, tmp_slave_path, sizeof(pty->slave_path) - 1);
+  pty->slave_path[sizeof(pty->slave_path) - 1] = '\0';
 
   // コピー後のパスが存在するかチェック
   // 0 で成功らしい
-  if (access(pty.slave_path, F_OK) != 0) {
+  if (access(pty->slave_path, F_OK) != 0) {
     std::perror("slave device file does not exist");
-    close(pty.master_fd);
-    pty.state = false;
-    return pty;
+    pty->release();
+    return nullptr;
   }
-  std::cout << "[INFO] PTY Master opened. Slave path: " << pty.slave_path
+  std::cout << "[INFO] PTY Master opened. Slave path: " << pty->slave_path
             << std::endl;
-
-  pty.state = true;
   return pty;
 }
 } // namespace
 
-PTY &PTY::getPTY(void) {
-  ImpPTY &instance = ImpPTY::createPTY();
-  return instance;
+PTY *PTY::createPTY(void) {
+  ImpPTY *pty = ImpPTY::createPTY();
+  return pty;
 }
