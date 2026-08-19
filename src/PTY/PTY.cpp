@@ -1,5 +1,4 @@
-#include "../Application/ImpApplication.h"
-#include "IApplication.h"
+#include "../Application/ImpApplication.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>

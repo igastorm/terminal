@@ -1,6 +1,6 @@
 #pragma once
-#include "IPTY.h"
-#include "IWindow.h"
+#include "IPTY.hpp"
+#include "IWindow.hpp"
 
 class IApplication : public IObject {
 public:
@@ -10,4 +10,4 @@ public:
   virtual ~IApplication(void) = default;
 };
 
-int appMain(int, char **, IApplication *);
+extern "C" int appMain(int, char **, IApplication *);

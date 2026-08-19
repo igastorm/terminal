@@ -1,5 +1,5 @@
 #pragma once
-#include "IApplication.h"
+#include "IApplication.hpp"
 
 class ImpApplication : public IApplication {
 private:
@@ -9,7 +9,8 @@ private:
   IWindow *createWindow(int, int, const char *) override;
   int addRef(void) override;
   int release(void) override;
+  static bool initPlatform(void);
 
 public:
-  static ImpApplication *Init(void);
+  static ImpApplication *init(void);
 };

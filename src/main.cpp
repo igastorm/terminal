@@ -1,4 +1,4 @@
-#include "IApplication.h"
+#include "IApplication.hpp"
 
 int appMain(int argc, char **argv, IApplication *appInstance) {
   // 将来タブ機能をつけるために複数の PTY を作れるようにする

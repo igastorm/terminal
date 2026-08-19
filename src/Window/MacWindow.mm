@@ -1,8 +1,9 @@
-#include "../Application/ImpApplication.h"
-#include "IApplication.h"
-#include "IWindow.h"
+#include "../Application/ImpApplication.hpp"
+#include "IWindow.hpp"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <new>
@@ -29,13 +30,33 @@ namespace {
 class ImpMacWindow : public IWindow {
 private:
   int ref_count = 0;
+  NSWindow *window = nil;
+  WindowDelegate *delegate = nil;
 
   int addRef(void) override;
   int release(void) override;
 
+  bool setTitle(const char *) override;
+  bool show(void) override;
+
 public:
   static ImpMacWindow *createWindow(int, int, const char *);
+  ~ImpMacWindow(void);
 };
+
+ImpMacWindow::~ImpMacWindow(void) {
+  @autoreleasepool {
+    if (this->window) {
+      [this->window close];
+      [this->window release];
+      this->window = nil;
+    }
+    if (this->delegate) {
+      [this->delegate release];
+      this->delegate = nil;
+    }
+  }
+}
 
 int ImpMacWindow::addRef(void) { return ++this->ref_count; }
 
@@ -48,10 +69,59 @@ int ImpMacWindow::release(void) {
   return this->ref_count;
 }
 
+bool ImpMacWindow::setTitle(const char *title) {
+  @autoreleasepool {
+    NSString *ns_title = [NSString stringWithUTF8String:title];
+    [this->window setTitle:ns_title];
+    return true;
+  }
+}
+
+bool ImpMacWindow::show(void) {
+  @autoreleasepool {
+    [this->window makeKeyAndOrderFront:nil];
+    [NSApp activateIgnoringOtherApps:YES];
+    return true;
+  }
+}
+
 ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
                                          const char *title) {
   @autoreleasepool {
-    return nullptr;
+    ImpMacWindow *window =
+        static_cast<ImpMacWindow *>(std::malloc(sizeof(ImpMacWindow)));
+    if (window == nullptr) {
+      std::perror("malloc failed (createWindow)");
+      return nullptr;
+    }
+
+    window = new (window) ImpMacWindow;
+    window->addRef();
+
+    // ウィンドウを生成
+    NSRect frame = NSMakeRect(0, 0, width, height);
+    NSUInteger styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                           NSWindowStyleMaskMiniaturizable |
+                           NSWindowStyleMaskResizable;
+    window->window =
+        [[NSWindow alloc] initWithContentRect:frame
+                                    styleMask:styleMask
+                                      backing:NSBackingStoreBuffered
+                                        defer:NO];
+
+    // 閉じられた時に自動リリースされないようにする
+    window->window.releasedWhenClosed = NO;
+
+    // 中央に配置
+    [window->window center];
+
+    // WndProc みたいなやつの設定
+    window->delegate = [[WindowDelegate alloc] init];
+    window->delegate.shouldClose = false;
+    [window->window setDelegate:window->delegate];
+    window->setTitle(title);
+
+    return window;
   }
 }
 } // namespace

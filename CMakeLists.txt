@@ -27,6 +27,7 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 add_executable(terminal
   "${SRC_DIR}/Application/Application.cpp"
+  "${SRC_DIR}/Application/MacApplication.mm"
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"
   "${SRC_DIR}/Window/MacWindow.mm"

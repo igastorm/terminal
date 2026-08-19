@@ -1,5 +1,5 @@
 #pragma once
-#include "IObject.h"
+#include "IObject.hpp"
 
 class IPTY : public IObject {
 public:
