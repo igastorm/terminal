@@ -3,7 +3,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
-#include <new>
+#include <new> // IWYU pragma: keep
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>

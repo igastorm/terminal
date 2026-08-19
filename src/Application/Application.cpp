@@ -2,7 +2,7 @@
 #include "ImpApplication.hpp"
 #include <cstdio>
 #include <cstdlib>
-#include <new>
+#include <new> // IWYU pragma: keep
 
 int ImpApplication::addRef(void) { return ++this->ref_count; }
 
