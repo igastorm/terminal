@@ -26,9 +26,13 @@ endif()
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 add_executable(terminal
+  "${SRC_DIR}/Application/Application.cpp"
   "${SRC_DIR}/main.cpp"
-  "${SRC_DIR}/PTY.cpp"
-  "${SRC_DIR}/MacWindow.mm"
+  "${SRC_DIR}/PTY/PTY.cpp"
+  "${SRC_DIR}/Window/MacWindow.mm"
 )
 
+set(INCLUDE_DIR "${SRC_DIR}/Interface")
+
+target_include_directories(terminal PRIVATE "${INCLUDE_DIR}")
 target_link_libraries(terminal "-framework Cocoa")

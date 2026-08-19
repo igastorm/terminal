@@ -1,4 +1,6 @@
-#include "Window.h"
+#include "../Application/ImpApplication.h"
+#include "IApplication.h"
+#include "IWindow.h"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #include <cstdlib>
@@ -24,7 +26,7 @@ namespace {
 // ----------------------------
 // 具象クラス宣言
 // ----------------------------
-class ImpMacWindow : public Window {
+class ImpMacWindow : public IWindow {
 private:
   int ref_count = 0;
 
@@ -53,3 +55,9 @@ ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
   }
 }
 } // namespace
+
+IWindow *ImpApplication::createWindow(int width, int height,
+                                      const char *title) {
+  ImpMacWindow *window = ImpMacWindow::createWindow(width, height, title);
+  return window;
+}

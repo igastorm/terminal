@@ -1,4 +1,5 @@
-#include "PTY.h"
+#include "../Application/ImpApplication.h"
+#include "IApplication.h"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -15,7 +16,7 @@ namespace {
 // 具象クラス宣言
 // ----------------------------
 
-class ImpPTY : public PTY {
+class ImpPTY : public IPTY {
 private:
   int ref_count = 0;
 
@@ -213,7 +214,7 @@ void ImpPTY::start_shell(const char *shell) {
 ImpPTY *ImpPTY::createPTY(void) {
   ImpPTY *pty = static_cast<ImpPTY *>(std::malloc(sizeof(ImpPTY)));
   if (pty == nullptr) {
-    std::perror("malloc failed");
+    std::perror("malloc failed (PTY)");
     return nullptr;
   }
 
@@ -265,7 +266,11 @@ ImpPTY *ImpPTY::createPTY(void) {
 }
 } // namespace
 
-PTY *PTY::createPTY(void) {
+// ----------------------------
+// Application の PTY 部分
+// メンバ関数の実装
+// ----------------------------
+IPTY *ImpApplication::createPTY(void) {
   ImpPTY *pty = ImpPTY::createPTY();
   return pty;
 }
