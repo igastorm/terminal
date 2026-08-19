@@ -17,7 +17,7 @@ namespace {
 
 class ImpPTY : public PTY {
 private:
-  int ref = 0;
+  int ref_count = 0;
 
   // 元のターミナル設定を保存
   termios orig_termios;
@@ -28,7 +28,7 @@ private:
   void event_loop(void);
   // 親からの標準入力を行単位ではなく文字単位で受け取る設定
   void enable_raw_mode(void);
-  void start_shell(char *shell) override;
+  void start_shell(const char *shell) override;
   void close(void);
   int release(void) override;
   int addRef(void) override;
@@ -43,15 +43,15 @@ public:
 // メンバ関数の実装
 // ----------------------------
 
-int ImpPTY::addRef(void) { return ++this->ref; }
+int ImpPTY::addRef(void) { return ++this->ref_count; }
 
 int ImpPTY::release(void) {
-  if (--this->ref == 0) {
+  if (--this->ref_count == 0) {
     this->~ImpPTY();
     free(this);
     return 0;
   }
-  return this->ref;
+  return this->ref_count;
 }
 
 ImpPTY::~ImpPTY(void) { this->close(); }
@@ -141,7 +141,7 @@ void ImpPTY::event_loop(void) {
   }
 }
 
-void ImpPTY::start_shell(char *shell) {
+void ImpPTY::start_shell(const char *shell) {
   // ----------------------------
   // シェルを起動 (fork する)
   // ----------------------------
@@ -193,7 +193,7 @@ void ImpPTY::start_shell(char *shell) {
     }
 
     // シェルを実行
-    char *args[] = {shell, nullptr};
+    char *args[] = {const_cast<char *>(shell), nullptr};
     execvp(args[0], args);
 
     // execvp が失敗した場合のみここに来る

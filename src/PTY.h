@@ -1,12 +1,9 @@
 #pragma once
+#include "Object.h"
 
-class PTY {
+class PTY : public Object {
 public:
-  virtual void start_shell(char *) = 0;
-
-  virtual int release(void) = 0;
-
-  virtual int addRef(void) = 0;
+  virtual void start_shell(const char *) = 0;
 
   virtual ~PTY(void) = default;
 
