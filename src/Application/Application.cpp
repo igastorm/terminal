@@ -33,8 +33,8 @@ ImpApplication *ImpApplication::init(void) {
   return app;
 }
 
-int main(int argc, char **argv) {
-  IApplication *appInstance = ImpApplication::init();
+int ImpApplication::startApp(int argc, char **argv) {
+  ImpApplication *appInstance = ImpApplication::init();
   if (appInstance == nullptr) {
     std::perror("Failed to initialize appInstance");
     return 1;
@@ -43,3 +43,5 @@ int main(int argc, char **argv) {
   appInstance->release();
   return ret;
 }
+
+int main(int argc, char **argv) { return ImpApplication::startApp(argc, argv); }

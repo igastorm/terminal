@@ -1,8 +1,10 @@
 #pragma once
+#include "IObject.hpp"
 #include "IPTY.hpp"
 #include "IWindow.hpp"
 
-class IApplication : public IObject {
+// 利用側で release とかするとまずいので IObject は private
+class IApplication : private IObject {
 public:
   virtual IPTY *createPTY(void) = 0;
   virtual IWindow *createWindow(int, int, const char *) = 0;
@@ -10,4 +12,4 @@ public:
   virtual ~IApplication(void) = default;
 };
 
-extern "C" int appMain(int, char **, IApplication *);
+extern int appMain(int, char **, IApplication *);

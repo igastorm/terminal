@@ -10,7 +10,8 @@ private:
   int addRef(void) override;
   int release(void) override;
   static bool initPlatform(void);
+   static ImpApplication *init(void);
 
 public:
-  static ImpApplication *init(void);
+  static int startApp(int, char**);
 };
