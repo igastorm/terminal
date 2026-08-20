@@ -21,7 +21,9 @@ void ImpApplication::processEvent(void) {
                                            inMode:NSDefaultRunLoopMode
                                           dequeue:YES];
 
-    [NSApp sendEvent:event];
+    if (event != nil) {
+      [NSApp sendEvent:event];
+    }
     [NSApp updateWindows];
   }
 }
