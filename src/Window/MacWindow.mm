@@ -19,7 +19,7 @@
 @implementation WindowDelegate
 - (BOOL)windowShouldClose:(NSWindow *)sender {
   self.shouldClose = true;
-  return YES;
+  return NO;
 }
 @end
 
@@ -38,6 +38,8 @@ private:
 
   bool setTitle(const char *) override;
   bool show(void) override;
+  bool hide(void) override;
+  bool shouldClose(void) override;
 
 public:
   static ImpMacWindow *createWindow(int, int, const char *);
@@ -85,6 +87,19 @@ bool ImpMacWindow::show(void) {
   }
 }
 
+bool ImpMacWindow::hide(void) {
+  @autoreleasepool {
+    [this->window orderOut:nil];
+    return true;
+  }
+}
+
+bool ImpMacWindow::shouldClose(void) {
+  @autoreleasepool {
+    return this->delegate.shouldClose;
+  }
+}
+
 ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
                                          const char *title) {
   @autoreleasepool {
@@ -120,6 +135,7 @@ ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
     window->delegate.shouldClose = false;
     [window->window setDelegate:window->delegate];
     window->setTitle(title);
+    window->show();
 
     return window;
   }

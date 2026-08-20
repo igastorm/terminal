@@ -7,11 +7,12 @@ private:
 
   IPTY *createPTY(void) override;
   IWindow *createWindow(int, int, const char *) override;
+  void processEvent(void) override;
   int addRef(void) override;
   int release(void) override;
   static bool initPlatform(void);
-   static ImpApplication *init(void);
+  static ImpApplication *init(void);
 
 public:
-  static int startApp(int, char**);
+  static int startApp(int, char **);
 };
