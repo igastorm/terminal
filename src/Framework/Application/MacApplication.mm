@@ -4,7 +4,7 @@
 #import <Foundation/Foundation.h>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
-@property(nonatomic, assign) ImpApplication *appInstance;
+@property(nonatomic, assign) IApplication *appInstance;
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
@@ -17,8 +17,13 @@
   }
 }
 
-- (void)applicationWillTerminate:(NSNotification *)notification {
-  self.handler->onQuit(self.appInstance);
+// Cmd+Q や Dock からの終了要求が来たときに呼ばれるらしい
+- (NSApplicationTerminateReply)applicationShouldTerminate:
+    (NSApplication *)sender {
+  // 自動で終了せずに自前の処理を経由させる
+  self.appInstance->terminate();
+  // Cocoa による終了処理をキャンセル
+  return NSTerminateCancel;
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)sender
@@ -62,6 +67,13 @@ bool ImpApplication::run(IAppHandler *handler) {
     ::g_appDelegate.handler = handler;
 
     [NSApp run];
+
+    // Cmd+Q だとここには戻らずに applicationShouldTerminate へ飛ぶ
+    // NSTerminateCancel によってここに戻ってくるっぽい
+    if (this->handler != nullptr) {
+      this->handler->onQuit(this);
+      this->handler = nullptr;
+    }
 
     [::g_appDelegate release];
     ::g_appDelegate = nil;
