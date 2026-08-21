@@ -25,7 +25,7 @@ ImpApplication *ImpApplication::init(void) {
   app = new (app) ImpApplication;
   app->addRef();
   // プラットフォーム依存部分の初期化
-  if (!initPlatform()) {
+  if (!app->initPlatform()) {
     std::perror("initPlatform Failed");
     app->release();
     return nullptr;

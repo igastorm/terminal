@@ -13,12 +13,16 @@
 // 時のイベントを受け取るメソッド
 // ----------------------------
 @interface WindowDelegate : NSObject <NSWindowDelegate>
-@property(nonatomic, assign) bool shouldClose;
+@property(nonatomic, assign) ImpApplication *appInstance;
+@property(nonatomic, assign) IWindow *window;
 @end
 
 @implementation WindowDelegate
 - (BOOL)windowShouldClose:(NSWindow *)sender {
-  self.shouldClose = true;
+  Event event;
+  event.type = EventType::WindowCloseRequest;
+  event.window = self.window;
+  self.appInstance->dispatchEvent(event);
   return NO;
 }
 @end
@@ -39,10 +43,9 @@ private:
   bool setTitle(const char *) override;
   bool show(void) override;
   bool hide(void) override;
-  bool shouldClose(void) override;
 
 public:
-  static ImpMacWindow *createWindow(int, int, const char *);
+  static ImpMacWindow *createWindow(ImpApplication *, int, int, const char *);
   ~ImpMacWindow(void);
 };
 
@@ -94,14 +97,8 @@ bool ImpMacWindow::hide(void) {
   }
 }
 
-bool ImpMacWindow::shouldClose(void) {
-  @autoreleasepool {
-    return this->delegate.shouldClose;
-  }
-}
-
-ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
-                                         const char *title) {
+ImpMacWindow *ImpMacWindow::createWindow(ImpApplication *appInstance, int width,
+                                         int height, const char *title) {
   @autoreleasepool {
     ImpMacWindow *window =
         static_cast<ImpMacWindow *>(std::malloc(sizeof(ImpMacWindow)));
@@ -132,7 +129,8 @@ ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
 
     // WndProc みたいなやつの設定
     window->delegate = [[WindowDelegate alloc] init];
-    window->delegate.shouldClose = false;
+    window->delegate.window = window;
+    window->delegate.appInstance = appInstance;
     [window->window setDelegate:window->delegate];
     window->setTitle(title);
     window->show();
@@ -144,6 +142,6 @@ ImpMacWindow *ImpMacWindow::createWindow(int width, int height,
 
 IWindow *ImpApplication::createWindow(int width, int height,
                                       const char *title) {
-  ImpMacWindow *window = ImpMacWindow::createWindow(width, height, title);
+  ImpMacWindow *window = ImpMacWindow::createWindow(this, width, height, title);
   return window;
 }
