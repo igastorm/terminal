@@ -13,7 +13,6 @@ public:
   }
   AppResult onEvent(IApplication *app, const Event &event) override {
     if (event.type == EventType::WindowCloseRequest) {
-      event.window->release();
       return AppResult::Quit;
     }
     return AppResult::Continue;
