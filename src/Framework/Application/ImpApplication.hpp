@@ -4,7 +4,7 @@
 class ImpApplication : public IApplication {
 private:
   int ref_count = 0;
-  IAppHandler* handler = nullptr;
+  IAppHandler *handler = nullptr;
 
   IPTY *createPTY(void) override;
   IWindow *createWindow(int, int, const char *) override;

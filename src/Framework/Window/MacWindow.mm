@@ -1,5 +1,6 @@
 #include "../Application/ImpApplication.hpp"
 #include "IWindow.hpp"
+#include "ImpWindow.hpp"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -8,16 +9,16 @@
 #include <cstring>
 #include <new>
 
-// ----------------------------
-// ウィンドウの閉じるボタンを押した
-// 時のイベントを受け取るメソッド
-// ----------------------------
 @interface WindowDelegate : NSObject <NSWindowDelegate>
 @property(nonatomic, assign) ImpApplication *appInstance;
 @property(nonatomic, assign) IWindow *window;
 @end
 
 @implementation WindowDelegate
+// ----------------------------
+// ウィンドウの閉じるボタンを押した
+// 時のイベントを受け取るメソッド
+// ----------------------------
 - (BOOL)windowShouldClose:(NSWindow *)sender {
   Event event;
   event.type = EventType::WindowCloseRequest;
@@ -27,76 +28,54 @@
 }
 @end
 
-namespace {
-// ----------------------------
-// 具象クラス宣言
-// ----------------------------
-class ImpMacWindow : public IWindow {
-private:
-  int ref_count = 0;
+//  ----------------------------
+//  具象クラス
+//  ----------------------------
+struct ImpData {
   NSWindow *window = nil;
   WindowDelegate *delegate = nil;
-
-  int addRef(void) override;
-  int release(void) override;
-
-  bool setTitle(const char *) override;
-  bool show(void) override;
-  bool hide(void) override;
-
-public:
-  static ImpMacWindow *createWindow(ImpApplication *, int, int, const char *);
-  ~ImpMacWindow(void);
 };
 
-ImpMacWindow::~ImpMacWindow(void) {
+using ImpMacWindow = ImpWindow<ImpData>;
+
+template <> ImpMacWindow::~ImpWindow<ImpData>(void) {
   @autoreleasepool {
-    if (this->window) {
-      [this->window close];
-      [this->window release];
-      this->window = nil;
+    if (this->data.window) {
+      [this->data.window close];
+      [this->data.window release];
+      this->data.window = nil;
     }
-    if (this->delegate) {
-      [this->delegate release];
-      this->delegate = nil;
+    if (this->data.delegate) {
+      [this->data.delegate release];
+      this->data.delegate = nil;
     }
   }
 }
 
-int ImpMacWindow::addRef(void) { return ++this->ref_count; }
-
-int ImpMacWindow::release(void) {
-  if (--this->ref_count == 0) {
-    this->~ImpMacWindow();
-    free(this);
-    return 0;
-  }
-  return this->ref_count;
-}
-
-bool ImpMacWindow::setTitle(const char *title) {
+template <> bool ImpMacWindow::setTitle(const char *title) {
   @autoreleasepool {
     NSString *ns_title = [NSString stringWithUTF8String:title];
-    [this->window setTitle:ns_title];
+    [this->data.window setTitle:ns_title];
     return true;
   }
 }
 
-bool ImpMacWindow::show(void) {
+template <> bool ImpMacWindow::show(void) {
   @autoreleasepool {
-    [this->window makeKeyAndOrderFront:nil];
+    [this->data.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
     return true;
   }
 }
 
-bool ImpMacWindow::hide(void) {
+template <> bool ImpMacWindow::hide(void) {
   @autoreleasepool {
-    [this->window orderOut:nil];
+    [this->data.window orderOut:nil];
     return true;
   }
 }
 
+template <>
 ImpMacWindow *ImpMacWindow::createWindow(ImpApplication *appInstance, int width,
                                          int height, const char *title) {
   @autoreleasepool {
@@ -115,30 +94,30 @@ ImpMacWindow *ImpMacWindow::createWindow(ImpApplication *appInstance, int width,
     NSUInteger styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                            NSWindowStyleMaskMiniaturizable |
                            NSWindowStyleMaskResizable;
-    window->window =
+    window->data.window =
         [[NSWindow alloc] initWithContentRect:frame
                                     styleMask:styleMask
                                       backing:NSBackingStoreBuffered
                                         defer:NO];
 
     // 閉じられた時に自動リリースされないようにする
-    window->window.releasedWhenClosed = NO;
+    window->data.window.releasedWhenClosed = NO;
 
     // 中央に配置
-    [window->window center];
+    [window->data.window center];
 
     // WndProc みたいなやつの設定
-    window->delegate = [[WindowDelegate alloc] init];
-    window->delegate.window = window;
-    window->delegate.appInstance = appInstance;
-    [window->window setDelegate:window->delegate];
+    window->data.delegate = [[WindowDelegate alloc] init];
+    window->data.delegate.window = window;
+    window->data.delegate.appInstance = appInstance;
+    [window->data.window setDelegate:window->data.delegate];
     window->setTitle(title);
     window->show();
 
     return window;
   }
 }
-} // namespace
+//} // namespace
 
 IWindow *ImpApplication::createWindow(int width, int height,
                                       const char *title) {

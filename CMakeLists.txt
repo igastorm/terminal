@@ -31,6 +31,7 @@ add_executable(terminal
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"
   "${SRC_DIR}/Framework/Window/MacWindow.mm"
+  "${SRC_DIR}/Framework/Window/CommonWindow.cpp"
 )
 
 set(INCLUDE_DIR "${SRC_DIR}/Framework/include")

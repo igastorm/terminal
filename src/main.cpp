@@ -19,8 +19,9 @@ public:
   }
   void onQuit(IApplication *app) override {
     std::cout << "[INFO] onQuit: Cleaning up...\n";
-    if (this->window)
+    if (this->window) {
       this->window->release();
+    }
   }
 };
 
