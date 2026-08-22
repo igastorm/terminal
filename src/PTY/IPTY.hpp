@@ -5,6 +5,6 @@ class IPTY : public IObject {
 public:
   virtual void start_shell(const char *) = 0;
 
-  virtual ~IPTY(void) = default;
-  static IPTY *createPTY(void);
+  virtual ~IPTY() = default;
+  static IPTY *createPTY();
 };

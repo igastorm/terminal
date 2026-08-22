@@ -2,9 +2,9 @@
 
 class IObject {
 public:
-  virtual int release(void) = 0;
+  virtual int release() = 0;
 
-  virtual int addRef(void) = 0;
+  virtual int addRef() = 0;
 
-  virtual ~IObject(void) = default;
+  virtual ~IObject() = default;
 };

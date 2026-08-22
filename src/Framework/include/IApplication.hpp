@@ -8,9 +8,9 @@ class IApplication : private IObject {
 public:
   virtual IWindow *createWindow(int, int, const char *) = 0;
   virtual bool run(IAppHandler *) = 0;
-  virtual void terminate(void) = 0;
+  virtual void terminate() = 0;
 
-  virtual ~IApplication(void) = default;
+  virtual ~IApplication() = default;
 };
 
 extern int appMain(int, char **, IApplication *);

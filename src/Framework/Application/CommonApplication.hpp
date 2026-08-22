@@ -6,12 +6,16 @@ private:
   int ref_count = 0;
 
 protected:
-  int addRef(void) override;
-  int release(void) override;
-  virtual ~CommonApplication(void) = default;
+  IAppHandler *handler = nullptr;
 
-  static CommonApplication *init(void);
+  virtual ~CommonApplication() = default;
+  friend CommonApplication *createPlatformApplication();
 
 public:
+  int addRef() override;
+  int release() override;
+
   static int startApp(int, char **);
 };
+
+extern CommonApplication *createPlatformApplication();

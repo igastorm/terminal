@@ -38,7 +38,7 @@
 
 using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
 
-template <> bool ImpMacApplicaton::initPlatform(void) {
+template <> bool ImpMacApplicaton::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
     [NSApplication sharedApplication];
@@ -54,7 +54,7 @@ template <> bool ImpMacApplicaton::initPlatform(void) {
   }
 }
 
-template <> void ImpMacApplicaton::terminate(void) {
+template <> void ImpMacApplicaton::terminate() {
   @autoreleasepool {
     [NSApp stop:nil];
     NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
@@ -101,7 +101,7 @@ template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
 
 // Common だがここで実装しないと Cocoa の初期化が呼べない気がする
 // あと startApp から呼ぶため
-CommonApplication *CommonApplication::init(void) {
+CommonApplication *createPlatformApplication() {
   ImpMacApplicaton *app =
       static_cast<ImpMacApplicaton *>(std::malloc(sizeof(ImpMacApplicaton)));
   if (app == nullptr) {

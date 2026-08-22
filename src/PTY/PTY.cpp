@@ -25,27 +25,27 @@ private:
   int master_fd = -1;
   char slave_path[256] = {0};
 
-  void event_loop(void);
+  void event_loop();
   // 親からの標準入力を行単位ではなく文字単位で受け取る設定
-  void enable_raw_mode(void);
+  void enable_raw_mode();
   void start_shell(const char *shell) override;
-  void close(void);
-  int release(void) override;
-  int addRef(void) override;
-  ImpPTY(void) = default;
-  ~ImpPTY(void);
+  void close();
+  int release() override;
+  int addRef() override;
+  ImpPTY() = default;
+  ~ImpPTY();
 
 public:
-  static ImpPTY *createPTY(void);
+  static ImpPTY *createPTY();
 };
 
 // ----------------------------
 // メンバ関数の実装
 // ----------------------------
 
-int ImpPTY::addRef(void) { return ++this->ref_count; }
+int ImpPTY::addRef() { return ++this->ref_count; }
 
-int ImpPTY::release(void) {
+int ImpPTY::release() {
   if (--this->ref_count == 0) {
     this->~ImpPTY();
     free(this);
@@ -54,9 +54,9 @@ int ImpPTY::release(void) {
   return this->ref_count;
 }
 
-ImpPTY::~ImpPTY(void) { this->close(); }
+ImpPTY::~ImpPTY() { this->close(); }
 
-void ImpPTY::close(void) {
+void ImpPTY::close() {
   if (master_fd >= 0) {
     ::close(master_fd);
     std::cout << std::endl << "Exit the terminal" << std::endl;
@@ -67,7 +67,7 @@ void ImpPTY::close(void) {
   }
 }
 
-void ImpPTY::enable_raw_mode(void) {
+void ImpPTY::enable_raw_mode() {
   tcgetattr(STDIN_FILENO, &orig_termios);
 
   termios raw = orig_termios;
@@ -77,7 +77,7 @@ void ImpPTY::enable_raw_mode(void) {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-void ImpPTY::event_loop(void) {
+void ImpPTY::event_loop() {
   // ----------------------------
   // メインループ
   // ----------------------------
@@ -210,7 +210,7 @@ void ImpPTY::start_shell(const char *shell) {
   this->event_loop();
 }
 
-ImpPTY *ImpPTY::createPTY(void) {
+ImpPTY *ImpPTY::createPTY() {
   ImpPTY *pty = static_cast<ImpPTY *>(std::malloc(sizeof(ImpPTY)));
   if (pty == nullptr) {
     std::perror("malloc failed (PTY)");
@@ -269,7 +269,7 @@ ImpPTY *ImpPTY::createPTY(void) {
 // Application の PTY 部分
 // メンバ関数の実装
 // ----------------------------
-IPTY *IPTY::createPTY(void) {
+IPTY *IPTY::createPTY() {
   ImpPTY *pty = ImpPTY::createPTY();
   return pty;
 }

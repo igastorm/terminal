@@ -2,9 +2,9 @@
 #include <cstdio>
 #include <cstdlib>
 
-int CommonApplication::addRef(void) { return ++this->ref_count; }
+int CommonApplication::addRef() { return ++this->ref_count; }
 
-int CommonApplication::release(void) {
+int CommonApplication::release() {
   if (--this->ref_count == 0) {
     this->~CommonApplication();
     free(this);
@@ -14,7 +14,7 @@ int CommonApplication::release(void) {
 }
 
 int CommonApplication::startApp(int argc, char **argv) {
-  CommonApplication *appInstance = CommonApplication::init();
+  CommonApplication *appInstance = createPlatformApplication();
   if (appInstance == nullptr) {
     std::perror("Failed to initialize appInstance");
     return 1;

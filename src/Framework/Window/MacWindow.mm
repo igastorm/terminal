@@ -39,7 +39,7 @@ struct ImpWindowData {
 
 using ImpMacWindow = ImpWindow<ImpWindowData>;
 
-template <> ImpMacWindow::~ImpWindow<ImpWindowData>(void) {
+template <> ImpMacWindow::~ImpWindow<ImpWindowData>() {
   @autoreleasepool {
     if (this->data.window) {
       [this->data.window close];
@@ -61,7 +61,7 @@ template <> bool ImpMacWindow::setTitle(const char *title) {
   }
 }
 
-template <> bool ImpMacWindow::show(void) {
+template <> bool ImpMacWindow::show() {
   @autoreleasepool {
     [this->data.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
@@ -69,7 +69,7 @@ template <> bool ImpMacWindow::show(void) {
   }
 }
 
-template <> bool ImpMacWindow::hide(void) {
+template <> bool ImpMacWindow::hide() {
   @autoreleasepool {
     [this->data.window orderOut:nil];
     return true;

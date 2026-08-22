@@ -6,7 +6,7 @@ private:
   int ref_count = 0;
 
 public:
-  int addRef(void) override;
-  int release(void) override;
-  virtual ~CommonWindow(void) = default;
+  int addRef() override;
+  int release() override;
+  virtual ~CommonWindow() = default;
 };
