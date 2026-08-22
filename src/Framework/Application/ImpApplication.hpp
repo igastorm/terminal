@@ -1,21 +1,17 @@
 #pragma once
-#include "IApplication.hpp"
+#include "CommonApplication.hpp"
 
-class ImpApplication : public IApplication {
+template <class platformData> class ImpApplication : public CommonApplication {
 private:
   int ref_count = 0;
   IAppHandler *handler = nullptr;
+  platformData data;
 
-  IPTY *createPTY(void) override;
   IWindow *createWindow(int, int, const char *) override;
   bool run(IAppHandler *) override;
   void terminate(void) override;
-  int addRef(void) override;
-  int release(void) override;
-  bool initPlatform(void);
-  static ImpApplication *init(void);
 
 public:
-  static int startApp(int, char **);
   void dispatchEvent(const Event &);
+  bool initPlatform(void);
 };

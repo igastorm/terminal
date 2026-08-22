@@ -26,7 +26,7 @@ endif()
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
 add_executable(terminal
-  "${SRC_DIR}/Framework/Application/Application.cpp"
+  "${SRC_DIR}/Framework/Application/CommonApplication.cpp"
   "${SRC_DIR}/Framework/Application/MacApplication.mm"
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"

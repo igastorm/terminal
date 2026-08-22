@@ -1,4 +1,4 @@
-#include "../Application/ImpApplication.hpp"
+#include "IPTY.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
@@ -269,7 +269,7 @@ ImpPTY *ImpPTY::createPTY(void) {
 // Application の PTY 部分
 // メンバ関数の実装
 // ----------------------------
-IPTY *ImpApplication::createPTY(void) {
+IPTY *IPTY::createPTY(void) {
   ImpPTY *pty = ImpPTY::createPTY();
   return pty;
 }

@@ -6,4 +6,5 @@ public:
   virtual void start_shell(const char *) = 0;
 
   virtual ~IPTY(void) = default;
+  static IPTY *createPTY(void);
 };

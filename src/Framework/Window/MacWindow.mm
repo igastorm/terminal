@@ -1,4 +1,5 @@
 #include "../Application/ImpApplication.hpp"
+#include "../Application/MacApplication.h"
 #include "IWindow.hpp"
 #include "ImpWindow.hpp"
 #import <AppKit/AppKit.h>
@@ -10,7 +11,7 @@
 #include <new>
 
 @interface WindowDelegate : NSObject <NSWindowDelegate>
-@property(nonatomic, assign) ImpApplication *appInstance;
+@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
 @property(nonatomic, assign) IWindow *window;
 @end
 
@@ -31,14 +32,14 @@
 //  ----------------------------
 //  具象クラス
 //  ----------------------------
-struct ImpData {
+struct ImpWindowData {
   NSWindow *window = nil;
   WindowDelegate *delegate = nil;
 };
 
-using ImpMacWindow = ImpWindow<ImpData>;
+using ImpMacWindow = ImpWindow<ImpWindowData>;
 
-template <> ImpMacWindow::~ImpWindow<ImpData>(void) {
+template <> ImpMacWindow::~ImpWindow<ImpWindowData>(void) {
   @autoreleasepool {
     if (this->data.window) {
       [this->data.window close];
@@ -76,8 +77,10 @@ template <> bool ImpMacWindow::hide(void) {
 }
 
 template <>
-ImpMacWindow *ImpMacWindow::createWindow(ImpApplication *appInstance, int width,
-                                         int height, const char *title) {
+template <>
+ImpMacWindow *ImpMacWindow::createWindow<ImpApplicationData>(
+    ImpApplication<ImpApplicationData> *appInstance, int width, int height,
+    const char *title) {
   @autoreleasepool {
     ImpMacWindow *window =
         static_cast<ImpMacWindow *>(std::malloc(sizeof(ImpMacWindow)));
@@ -119,8 +122,9 @@ ImpMacWindow *ImpMacWindow::createWindow(ImpApplication *appInstance, int width,
 }
 //} // namespace
 
-IWindow *ImpApplication::createWindow(int width, int height,
-                                      const char *title) {
+template <>
+IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
+                                                          const char *title) {
   ImpMacWindow *window = ImpMacWindow::createWindow(this, width, height, title);
   return window;
 }

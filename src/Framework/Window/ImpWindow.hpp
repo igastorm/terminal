@@ -10,7 +10,8 @@ private:
   bool hide(void) override;
 
 public:
-  static ImpWindow *createWindow(ImpApplication *, int, int, const char *);
+  template<class ApplicationData>
+  static ImpWindow *createWindow(ImpApplication<ApplicationData> *, int, int, const char *);
   virtual ~ImpWindow(void) override;
 };
 
