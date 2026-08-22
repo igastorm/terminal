@@ -1,17 +1,17 @@
 #include "../Application/ImpApplication.hpp"
 #include "CommonWindow.hpp"
 
-template <class platformData> class ImpWindow : public CommonWindow {
+template <class PlatformData> class ImpWindow : public CommonWindow {
 private:
-  platformData data;
+  PlatformData data;
 
   bool setTitle(const char *) override;
   bool show(void) override;
   bool hide(void) override;
 
 public:
-  template<class ApplicationData>
-  static ImpWindow *createWindow(ImpApplication<ApplicationData> *, int, int, const char *);
+  template<class PlatformApplicationData>
+  static ImpWindow *createWindow(ImpApplication<PlatformApplicationData> *, int, int, const char *);
   virtual ~ImpWindow(void) override;
 };
 

@@ -36,7 +36,9 @@
 }
 @end
 
-template <> bool ImpApplication<ImpApplicationData>::initPlatform(void) {
+using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
+
+template <> bool ImpMacApplicaton::initPlatform(void) {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
     [NSApplication sharedApplication];
@@ -47,12 +49,12 @@ template <> bool ImpApplication<ImpApplicationData>::initPlatform(void) {
 
     this->data.appDelegate = [[AppDelegate alloc] init];
     this->data.appDelegate.appInstance = this;
-    [NSApp setDelegate: this->data.appDelegate];
+    [NSApp setDelegate:this->data.appDelegate];
     return true;
   }
 }
 
-template <> void ImpApplication<ImpApplicationData>::terminate(void) {
+template <> void ImpMacApplicaton::terminate(void) {
   @autoreleasepool {
     [NSApp stop:nil];
     NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
@@ -68,8 +70,7 @@ template <> void ImpApplication<ImpApplicationData>::terminate(void) {
   }
 }
 
-template <>
-void ImpApplication<ImpApplicationData>::dispatchEvent(const Event &event) {
+template <> void ImpMacApplicaton::dispatchEvent(const Event &event) {
   if (this->handler != nullptr) {
     if (this->handler->onEvent(this, event) == AppResult::Continue) {
       return;
@@ -78,7 +79,7 @@ void ImpApplication<ImpApplicationData>::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-template <> bool ImpApplication<ImpApplicationData>::run(IAppHandler *handler) {
+template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
   @autoreleasepool {
     this->handler = handler;
     this->data.appDelegate.handler = handler;
@@ -98,15 +99,16 @@ template <> bool ImpApplication<ImpApplicationData>::run(IAppHandler *handler) {
   }
 }
 
+// Common だがここで実装しないと Cocoa の初期化が呼べない気がする
+// あと startApp から呼ぶため
 CommonApplication *CommonApplication::init(void) {
-  ImpApplication<ImpApplicationData> *app =
-      static_cast<ImpApplication<ImpApplicationData> *>(
-          std::malloc(sizeof(ImpApplication<ImpApplicationData>)));
+  ImpMacApplicaton *app =
+      static_cast<ImpMacApplicaton *>(std::malloc(sizeof(ImpMacApplicaton)));
   if (app == nullptr) {
     std::perror("malloc failed (Application)");
     return nullptr;
   }
-  app = new (app) ImpApplication<ImpApplicationData>;
+  app = new (app) ImpMacApplicaton;
   app->addRef();
   // プラットフォーム依存部分の初期化
   if (!app->initPlatform()) {
