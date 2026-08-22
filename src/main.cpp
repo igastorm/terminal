@@ -15,6 +15,23 @@ public:
     if (event.type == EventType::WindowCloseRequest) {
       return AppResult::Quit;
     }
+    // キーボード入力のテスト
+    if (event.type == EventType::TextInput) {
+      std::cout << "[Key Input] len=" << event.text.len << ", text: \"";
+      for (size_t i = 0; i < event.text.len; ++i) {
+        unsigned char c = event.text.utf8[i];
+        if (c == '\r') {
+          std::cout << "\\r";
+        } else if (c == '\x1b') {
+          std::cout << "\\e";
+        } else if (c < 32) {
+          std::cout << "\\x" << std::hex << (int)c << std::dec;
+        } else {
+          std::cout << (char)c;
+        }
+      }
+      std::cout << "\"\n";
+    }
     return AppResult::Continue;
   }
   void onQuit(IApplication *app) override {

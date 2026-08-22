@@ -30,7 +30,7 @@ struct Event {
       int height;
     } resize;
     struct {
-      char utf8[32];
+      const char *utf8;
       size_t len;
     } text;
     struct {
