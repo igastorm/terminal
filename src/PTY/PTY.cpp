@@ -64,50 +64,50 @@ int ImpPTY::release() {
 ImpPTY::~ImpPTY() { this->close(); }
 
 void ImpPTY::close() {
-  if (master_fd >= 0) {
+  if (this->read_thread_pipe[1] >= 0) {
+    const char c = 'q';
+    // シェルの終了通知
+    // すでにシェルが終了していればこれは空振りするだけ
+    // (ループを抜けているはず)
+    write(this->read_thread_pipe[1], &c, sizeof(c));
+
+    // 読み込みスレッドが生成される前にエラー等で終了するときに join
+    // するとまずい
+    if (this->is_running) {
+      this->is_running = false;
+      pthread_join(this->read_thread,
+                   nullptr); // 読み取りスレッドの終了を待つ
+      std::cout << "\n[INFO] PTY Closed.\n";
+    }
+
+    if (this->read_thread_pipe[0] >= 0) {
+      ::close(this->read_thread_pipe[0]);
+      this->read_thread_pipe[0] = -1;
+    }
     if (this->read_thread_pipe[1] >= 0) {
-      const char c = 'q';
-      // シェルの終了通知
-      // すでにシェルが終了していればこれは空振りするだけ
-      // (ループを抜けているはず)
-      write(this->read_thread_pipe[1], &c, sizeof(c));
-
-      // 読み込みスレッドが生成される前にエラー等で終了するときに join
-      // するとまずい
-      if (this->is_running) {
-        this->is_running = false;
-        pthread_join(this->read_thread,
-                     nullptr); // 読み取りスレッドの終了を待つ
-        std::cout << "\n[INFO] PTY Closed.\n";
-      }
-
-      if (this->read_thread_pipe[0] >= 0) {
-        ::close(this->read_thread_pipe[0]);
-        this->read_thread_pipe[0] = -1;
-      }
-      if (this->read_thread_pipe[1] >= 0) {
-        ::close(this->read_thread_pipe[1]);
-        this->read_thread_pipe[1] = -1;
-      }
+      ::close(this->read_thread_pipe[1]);
+      this->read_thread_pipe[1] = -1;
     }
-    // シェルの後始末
-    if (this->shell_pid > 0) {
-      int status = 0;
-      if (waitpid(this->shell_pid, &status, WNOHANG) == 0) {
-        kill(this->shell_pid, SIGKILL);
-        // 即座に kill するからブロッキングしもいい
-        waitpid(this->shell_pid, &status, 0);
-      }
-      if (WIFEXITED(status)) {
-        int exit_code = WEXITSTATUS(status);
-        std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
-                  << std::endl;
-      } else if (WIFSIGNALED(status)) {
-        int sig = WTERMSIG(status);
-        std::cout << "\n[INFO] Shell killed by signal: " << sig << std::endl;
-      }
-      this->shell_pid = 0;
+  }
+  // シェルの後始末
+  if (this->shell_pid > 0) {
+    int status = 0;
+    if (waitpid(this->shell_pid, &status, WNOHANG) == 0) {
+      kill(this->shell_pid, SIGKILL);
+      // 即座に kill するからブロッキングしもいい
+      waitpid(this->shell_pid, &status, 0);
     }
+    if (WIFEXITED(status)) {
+      int exit_code = WEXITSTATUS(status);
+      std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
+                << std::endl;
+    } else if (WIFSIGNALED(status)) {
+      int sig = WTERMSIG(status);
+      std::cout << "\n[INFO] Shell killed by signal: " << sig << std::endl;
+    }
+    this->shell_pid = 0;
+  }
+  if (master_fd >= 0) {
     ::close(master_fd);
     this->master_fd = -1;
     std::cout << std::endl << "Exit the terminal" << std::endl;
