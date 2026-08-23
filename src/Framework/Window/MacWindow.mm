@@ -5,6 +5,7 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
+#import <QuartzCore/CAMetalLayer.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -14,7 +15,7 @@
 // の中からしか呼ばれないものは @autoreleasepool がいらないらしい　
 
 // ----------------------------
-// キー入力を処理するための View
+// キー入力と画面描画
 // ----------------------------
 @interface WindowView : NSView <NSTextInputClient>
 @property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
@@ -42,8 +43,17 @@
   return YES;
 }
 
+// WM_PAINT みたいなやつ
+// 初回表示やリサイズ時に OS から描画要求が来たとき
+- (void)drawRect:(NSRect)dirtyRect {
+  Event event;
+  event.type = EventType::WindowExpose;
+  event.window = self.iwindow;
+  self.appInstance->dispatchEvent(event);
+}
+
 // ----------------------------
-// キー入力を処理するための View
+// キー入力
 // ----------------------------
 
 // ----------------------------

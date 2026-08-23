@@ -6,6 +6,7 @@ enum class EventType {
   None,
   WindowCloseRequest, // 閉じるボタンが押された
   WindowResize,       // ウィンドウがリサイズされた
+  WindowExpose,       // 画面の描画要求
   KeyDown,            // キー押下
   KeyUp,              // キー離脱
   TextInput,          // 文字列が確定入力された (UTF-8)

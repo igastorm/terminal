@@ -37,4 +37,5 @@ add_executable(terminal
 set(INCLUDE_DIR "${SRC_DIR}/Framework/include")
 
 target_include_directories(terminal PRIVATE "${INCLUDE_DIR}")
-target_link_libraries(terminal "-lpthread -framework Cocoa")
+target_link_libraries(terminal "-lpthread -framework Cocoa"
+"-framework Metal" "-framework QuartzCore")
