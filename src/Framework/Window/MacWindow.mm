@@ -22,6 +22,15 @@
 @end
 
 @implementation WindowView
+- (void)sendEventHelper:(const char *)utf8 {
+  Event event;
+  event.type = EventType::TextInput;
+  event.window = self.iwindow;
+  event.text.utf8 = utf8;
+  event.text.len = std::strlen(utf8);
+  self.appInstance->dispatchEvent(event);
+}
+
 // この View はキーボードフォーカスを受け取れるかという問い合わせに対して YES
 // を返す
 - (BOOL)acceptsFirstResponder {
@@ -41,26 +50,18 @@
 // キーが押されたとき
 // ----------------------------
 - (void)keyDown:(NSEvent *)event {
-  auto eventSendHelper = [self](const char *utf8) -> void {
-    Event event;
-    event.type = EventType::TextInput;
-    event.window = self.iwindow;
-    event.text.utf8 = utf8;
-    event.text.len = std::strlen(utf8);
-    self.appInstance->dispatchEvent(event);
-  };
+  // 入力から修飾キー (押されていれば) を除いたキーを取り出す
+  // 例えば Crtl+C だったら "c" が返ってくる
+  // マルチバイト文字とかもあるから文字列で受け取るらしい
+  NSString *chars = [event charactersIgnoringModifiers];
+  if (chars.length > 0) {
+    // 先頭の文字を取り出す (なんか UTF-16 らしい)
+    // 普通 UTF-8 だと思うが従うしかない
+    unichar c = [chars characterAtIndex:0];
 
-  // Ctrl と 他の修飾キーが押されているとき (ただし Cmd キーは除く)
-  if ((event.modifierFlags & NSEventModifierFlagControl) &&
-      !(event.modifierFlags & NSEventModifierFlagCommand)) {
-    // 入力から修飾キーを除いたキーを取り出す
-    // 例えば Crtl+C だったら "c" が返ってくる
-    // マルチバイト文字とかもあるから文字列で受け取るらしい
-    NSString *chars = [event charactersIgnoringModifiers];
-    if (chars.length > 0) {
-      // 先頭の文字を取り出す (なんか UTF-16 らしい)
-      // 普通 UTF-8 だと思うが従うしかない
-      unichar c = [chars characterAtIndex:0];
+    // Ctrl と 他の修飾キーが押されているとき (ただし Cmd キーは除く)
+    if ((event.modifierFlags & NSEventModifierFlagControl) &&
+        !(event.modifierFlags & NSEventModifierFlagCommand)) {
       // 以下では Ctrl キーと組み合わせたコードを生成する
       // 下記サイトを参考
       // https://www.dojeun.com/contentsview.php?listid=00016
@@ -71,31 +72,12 @@
         // onEvent とか C++ 側のコードはコールベースで Cocoa
         // 側から呼ばれるのでスタック上のポインタを渡しても安全なはず
         const char buffer[2] = {ctrl_code, '\0'};
-        eventSendHelper(buffer);
+        [self sendEventHelper:buffer];
         return;
       }
-    }
-  }
-  NSString *chars = [event charactersIgnoringModifiers];
-  if (chars.length > 0) {
-    unichar c = [chars characterAtIndex:0];
-    if (c >= NSF1FunctionKey && c <= NSF12FunctionKey) {
-      static const char *fkeys[] = {
-          "\033OP",   // F1
-          "\033OQ",   // F2
-          "\033OR",   // F3
-          "\033OS",   // F4
-          "\033[15~", // F5
-          "\033[17~", // F6
-          "\033[18~", // F7
-          "\033[19~", // F8
-          "\033[20~", // F9
-          "\033[21~", // F10
-          "\033[23~", // F11
-          "\033[24~", // F12
-      };
-      const char *seq = fkeys[c - NSF1FunctionKey];
-      eventSendHelper(seq);
+    } else if (c >= NSF1FunctionKey && c <= NSF12FunctionKey) {
+      const char *seq = CommonWindow::fkeys[c - NSF1FunctionKey];
+      [self sendEventHelper:seq];
       return;
     }
   }
@@ -128,12 +110,7 @@
     const char *utf8 = [str UTF8String];
 
     // ここもスタック上のポインタを渡しても安全なはず
-    Event event;
-    event.type = EventType::TextInput;
-    event.window = self.iwindow;
-    event.text.utf8 = utf8; // そのまま渡す
-    event.text.len = std::strlen(utf8);
-    self.appInstance->dispatchEvent(event);
+    [self sendEventHelper:utf8];
   }
 }
 
@@ -172,12 +149,7 @@
 
   if (seq != nullptr) {
     // ここもスタック上のポインタを渡しても安全なはず
-    Event event;
-    event.type = EventType::TextInput;
-    event.window = self.iwindow;
-    event.text.utf8 = seq;
-    event.text.len = std::strlen(seq);
-    self.appInstance->dispatchEvent(event);
+    [self sendEventHelper:seq];
   }
 }
 
@@ -376,6 +348,10 @@ ImpMacWindow *ImpMacWindow::createWindow<ImpApplicationData>(
     window->data.view.iwindow = window;
     window->data.view.appInstance = appInstance;
     [window->data.window setContentView:window->data.view];
+
+    // あった方がいいらしい
+    // 確実に view にフォーカスを当てるためらしい
+    [window->data.window makeFirstResponder:window->data.view];
 
     window->setTitle(title);
     window->show();
