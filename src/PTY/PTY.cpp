@@ -34,13 +34,16 @@ private:
 
   void startShell(const char *) override;
   void writeInput(const void *, size_t) override;
-  void close();
-  static void *read_thread_entry(void *);
-  void read_loop();
   int release() override;
   int addRef() override;
+
+  void close();
+  void read_loop();
   ImpPTY() = default;
   ~ImpPTY();
+
+  static void *read_thread_entry(void *);
+  static void normalExitMsgHelper(int);
 
 public:
   static ImpPTY *createPTY();
@@ -59,6 +62,12 @@ int ImpPTY::release() {
     return 0;
   }
   return this->ref_count;
+}
+
+void ImpPTY::normalExitMsgHelper(int status) {
+  int exit_code = WEXITSTATUS(status);
+  std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
+            << std::endl;
 }
 
 ImpPTY::~ImpPTY() { this->close(); }
@@ -98,9 +107,7 @@ void ImpPTY::close() {
       waitpid(this->shell_pid, &status, 0);
     }
     if (WIFEXITED(status)) {
-      int exit_code = WEXITSTATUS(status);
-      std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
-                << std::endl;
+      normalExitMsgHelper(status);
     } else if (WIFSIGNALED(status)) {
       int sig = WTERMSIG(status);
       std::cout << "\n[INFO] Shell killed by signal: " << sig << std::endl;
@@ -136,6 +143,7 @@ void ImpPTY::read_loop() {
   // read
   // では読み取った分だけシークするので溢れたら自動的に複数に分割して読み込めるから
   // 1024 あればいいと思われる
+  // ただしエスケープシーケンスの途中で切れる可能性も考慮する必要がある
   char buffer[1024];
   pollfd pfds[2] = {};
   pfds[0].fd = this->master_fd;
@@ -146,7 +154,9 @@ void ImpPTY::read_loop() {
   while (true) {
     int ret = poll(pfds, 2, -1);
     if (ret < 0 || (pfds[1].revents & POLLIN)) {
-      kill(this->shell_pid, SIGHUP);
+      if (this->shell_pid > 0) {
+        kill(this->shell_pid, SIGHUP);
+      }
       break;
     }
 
@@ -164,9 +174,7 @@ void ImpPTY::read_loop() {
         // すでにシェルは終了しているのでブロッキングしても大丈夫 (すぐ返る)
         waitpid(this->shell_pid, &status, 0);
         if (WIFEXITED(status)) {
-          int exit_code = WEXITSTATUS(status);
-          std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
-                    << std::endl;
+          normalExitMsgHelper(status);
         }
         this->shell_pid = 0;
         break;
@@ -243,7 +251,7 @@ void ImpPTY::startShell(const char *shell) {
   }
 
   std::cout << "[INFO] Shell started (PID: " << pid << ")\n";
-  if (pthread_create(&this->read_thread, nullptr, read_thread_entry, this) <
+  if (pthread_create(&this->read_thread, nullptr, read_thread_entry, this) !=
       0) {
     std::perror("thread create failed");
     return;
