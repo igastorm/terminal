@@ -1,14 +1,22 @@
 #include "IApplication.hpp"
+#include "PTY/IPTY.hpp"
 #include <iostream>
 
 class TerminalApp : public IAppHandler {
 private:
   IWindow *window = nullptr;
+  IPTY *pty = nullptr;
 
 public:
   bool onInit(IApplication *appInstance) override {
     std::cout << "[INFO] onInit: Creating window and PTY...\n";
     this->window = appInstance->createWindow(800, 600, "Terminal");
+
+    this->pty = IPTY::createPTY();
+    if (this->pty != nullptr) {
+      pty->startShell("/bin/zsh");
+    }
+    
     return true;
   }
   AppResult onEvent(IApplication *app, const Event &event) override {
@@ -17,20 +25,9 @@ public:
     }
     // キーボード入力のテスト
     if (event.type == EventType::TextInput) {
-      std::cout << "[Key Input] len=" << event.text.len << ", text: \"";
-      for (size_t i = 0; i < event.text.len; ++i) {
-        unsigned char c = event.text.utf8[i];
-        if (c == '\r') {
-          std::cout << "\\r";
-        } else if (c == '\x1b') {
-          std::cout << "\\e";
-        } else if (c < 32) {
-          std::cout << "\\x" << std::hex << (int)c << std::dec;
-        } else {
-          std::cout << (char)c;
-        }
+      if (this->pty != nullptr) {
+        this->pty->writeInput(event.text.utf8, event.text.len);
       }
-      std::cout << "\"\n";
     }
     return AppResult::Continue;
   }
@@ -39,26 +36,13 @@ public:
     if (this->window) {
       this->window->release();
     }
+    if (this->pty) {
+      this->pty->release();
+    }
   }
 };
 
 int appMain(int argc, char **argv, IApplication *appInstance) {
-  // IWindow *window = appInstance->createWindow(200, 200, "test");
-  // while (true) {
-  //   appInstance->processEvent();
-  //   if (window->shouldClose()) {
-  //     window->release();
-  //     break;
-  //   }
-  // }
-  //  将来タブ機能をつけるために複数の PTY を作れるようにする
-  //  つまり GUI 化した時に接続する PTY を指定する仕組みが必要
-  //  IPTY *pty0 = appInstance->createPTY();
-  //  if (pty0) {
-  //   char shell[] = "/bin/zsh";
-  //   pty0->start_shell(shell);
-  //   pty0->release();
-  // }
   TerminalApp app;
   appInstance->run(&app);
   return 0;

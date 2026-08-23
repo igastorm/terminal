@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <new> // IWYU pragma: keep
+#include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
@@ -19,17 +21,22 @@ class ImpPTY : public IPTY {
 private:
   int ref_count = 0;
 
-  // 元のターミナル設定を保存
-  termios orig_termios;
-
   int master_fd = -1;
   char slave_path[256] = {0};
 
-  void event_loop();
-  // 親からの標準入力を行単位ではなく文字単位で受け取る設定
-  void enable_raw_mode();
-  void start_shell(const char *shell) override;
+  // 読み込みスレッドを終了させるためのパイプ
+  // 0: 読み込み, 1: 書き込み
+  int read_thread_pipe[2] = {-1, -1};
+  pthread_t read_thread = {};
+  bool is_running = false;
+
+  pid_t shell_pid = 0;
+
+  void startShell(const char *) override;
+  void writeInput(const void *, size_t) override;
   void close();
+  static void *read_thread_entry(void *);
+  void read_loop();
   int release() override;
   int addRef() override;
   ImpPTY() = default;
@@ -58,90 +65,118 @@ ImpPTY::~ImpPTY() { this->close(); }
 
 void ImpPTY::close() {
   if (master_fd >= 0) {
+    if (this->read_thread_pipe[1] >= 0) {
+      const char c = 'q';
+      // シェルの終了通知
+      // すでにシェルが終了していればこれは空振りするだけ
+      // (ループを抜けているはず)
+      write(this->read_thread_pipe[1], &c, sizeof(c));
+
+      // 読み込みスレッドが生成される前にエラー等で終了するときに join
+      // するとまずい
+      if (this->is_running) {
+        this->is_running = false;
+        pthread_join(this->read_thread,
+                     nullptr); // 読み取りスレッドの終了を待つ
+        std::cout << "\n[INFO] PTY Closed.\n";
+      }
+
+      if (this->read_thread_pipe[0] >= 0) {
+        ::close(this->read_thread_pipe[0]);
+        this->read_thread_pipe[0] = -1;
+      }
+      if (this->read_thread_pipe[1] >= 0) {
+        ::close(this->read_thread_pipe[1]);
+        this->read_thread_pipe[1] = -1;
+      }
+    }
+    // シェルの後始末
+    if (this->shell_pid > 0) {
+      int status = 0;
+      if (waitpid(this->shell_pid, &status, WNOHANG) == 0) {
+        kill(this->shell_pid, SIGKILL);
+        // 即座に kill するからブロッキングしもいい
+        waitpid(this->shell_pid, &status, 0);
+      }
+      if (WIFEXITED(status)) {
+        int exit_code = WEXITSTATUS(status);
+        std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
+                  << std::endl;
+      } else if (WIFSIGNALED(status)) {
+        int sig = WTERMSIG(status);
+        std::cout << "\n[INFO] Shell killed by signal: " << sig << std::endl;
+      }
+      this->shell_pid = 0;
+    }
     ::close(master_fd);
+    this->master_fd = -1;
     std::cout << std::endl << "Exit the terminal" << std::endl;
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
   } else {
     std::cout << std::endl
               << "The file descriptor does not exist." << std::endl;
   }
 }
 
-void ImpPTY::enable_raw_mode() {
-  tcgetattr(STDIN_FILENO, &orig_termios);
-
-  termios raw = orig_termios;
-
-  // raw モードになるように構造体を設定
-  cfmakeraw(&raw);
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+void ImpPTY::writeInput(const void *data, size_t len) {
+  if (this->is_running) {
+    if (this->master_fd >= 0 && data != nullptr && len > 0) {
+      write(this->master_fd, data, len);
+    }
+  }
 }
 
-void ImpPTY::event_loop() {
-  // ----------------------------
-  // メインループ
-  // ----------------------------
-  // イベントの監視対象を2つ設定する
-  pollfd fds[2];
+void *ImpPTY::read_thread_entry(void *args) {
+  ImpPTY *pty = reinterpret_cast<ImpPTY *>(args);
+  pty->read_loop();
+  return nullptr;
+}
 
-  // どちらも POLLIN なのは外部からターミナルへの入力を監視するから
-  // 監視対象 1: ユーザーのキーボード入力 (標準入力 STDIN_FILENO)
-  fds[0].fd = STDIN_FILENO;
-  fds[0].events = POLLIN;
-
-  // 監視対象 2: シェルからの出力 (PTY Master)
-  fds[1].fd = this->master_fd;
-  fds[1].events = POLLIN;
-
+void ImpPTY::read_loop() {
+  // シェルの起動が失敗したら何かしらのメッセージかダイアログを出すべき
+  // read
+  // では読み取った分だけシークするので溢れたら自動的に複数に分割して読み込めるから
+  // 1024 あればいいと思われる
   char buffer[1024];
+  pollfd pfds[2] = {};
+  pfds[0].fd = this->master_fd;
+  pfds[0].events = POLLIN; // masterfd への入力 (つまりシェルの出力) を監視
+  pfds[1].fd = this->read_thread_pipe[0];
+  pfds[1].events = POLLIN;
 
   while (true) {
-
-    // イベントを待機 (タイムアウトなし: -1)
-    int ret = poll(fds, 2, -1);
-
-    // 戻りはイベントが発生したファイル記述子の数
-    if (ret < 0) {
+    int ret = poll(pfds, 2, -1);
+    if (ret < 0 || (pfds[1].revents & POLLIN)) {
+      kill(this->shell_pid, SIGHUP);
       break;
     }
 
-    // キーボードから入力があった場合、入力を読み込む
-    if (fds[0].revents & POLLIN) {
-      ssize_t bytes_read = read(STDIN_FILENO, buffer, sizeof(buffer));
-
-      // キー入力があるのに何も読み込まなかったら異常
-      if (bytes_read <= 0) {
-        break;
-      }
-
-      // 特殊な終了キーチェック (Ctrl + ']' ＝ ASCIIコード 29)
-      // Ctrl + C はシェル側の終了コード
-      // Ctrl + C
-      // で端末が終了するとアプリを強制終了するとともに端末も終了することになる.
-      // 緊急でターミナルを終了する.
-      if (bytes_read == 1 && buffer[0] == 29) {
-        break;
-      }
-
-      // PTY Master にそのまま送る (自分が管理する PTY)
-      write(this->master_fd, buffer, bytes_read);
-    }
-
-    // シェル (PTY Master) から出力が届いた場合 -> 画面 (標準出力) に表示する
-    if (fds[1].revents & POLLIN) {
+    if (pfds[0].revents & POLLIN) {
       ssize_t bytes_read = read(this->master_fd, buffer, sizeof(buffer));
+      // シェルが終了すると slavefd が閉じられる
+      // slavefd が閉じれれている時に msterfd を読み取ると read の戻りが
+      // macOS では 0
+      // Linux では -1 になるらしい
       if (bytes_read <= 0) {
-        // シェルが終了した (exit など)
+        // シェルプロセスの後始末
+        // なんでわざわざゾンビ状態というのがあるのかと思ったら終了コードを取得するためだった
+        // つまり終了コードを受け取るコードがないといつまででも親切に待っていてくれてしまうということ
+        int status = 0;
+        // すでにシェルは終了しているのでブロッキングしても大丈夫 (すぐ返る)
+        waitpid(this->shell_pid, &status, 0);
+        if (WIFEXITED(status)) {
+          int exit_code = WEXITSTATUS(status);
+          std::cout << "\n[INFO] Shell exited normally with code: " << exit_code
+                    << std::endl;
+        }
+        this->shell_pid = 0;
         break;
       }
-
-      // 読み取った文字列をそのまま自分自身の標準出力へ流す
       write(STDOUT_FILENO, buffer, bytes_read);
     }
   }
 }
 
-void ImpPTY::start_shell(const char *shell) {
+void ImpPTY::startShell(const char *shell) {
   // ----------------------------
   // シェルを起動 (fork する)
   // ----------------------------
@@ -159,6 +194,10 @@ void ImpPTY::start_shell(const char *shell) {
 
     // 親プロセスの Master fd は不要なので閉じる (参照カウンタを減らす)
     ::close(this->master_fd);
+
+    // 同様に親プロセスのパイプは不要なので閉じる (参照カウンタを減らす)
+    ::close(this->read_thread_pipe[0]);
+    ::close(this->read_thread_pipe[1]);
 
     // 新しいセッションを作成し、プロセスグループのリーダーになる
     // 標準ターミナルとの縁を切って無理やり自作 pty
@@ -199,15 +238,17 @@ void ImpPTY::start_shell(const char *shell) {
     // execvp が失敗した場合のみここに来る
     std::perror("execvp failed");
     ::_exit(1);
+  } else {
+    this->shell_pid = pid;
   }
-  // --- 親プロセス（エミュレータ側）の処理 ---
-  std::cout << "[INFO] Shell started (PID: " << pid
-            << "). Entering main loop...\n";
-  std::cout << "[INFO] Press Ctrl+] to exit.\n\n";
 
-  // キー入力を1バイトずつ即時取得するため端末を Raw モードに切り替え
-  enable_raw_mode();
-  this->event_loop();
+  std::cout << "[INFO] Shell started (PID: " << pid << ")\n";
+  if (pthread_create(&this->read_thread, nullptr, read_thread_entry, this) <
+      0) {
+    std::perror("thread create failed");
+    return;
+  }
+  this->is_running = true;
 }
 
 ImpPTY *ImpPTY::createPTY() {
@@ -220,7 +261,6 @@ ImpPTY *ImpPTY::createPTY() {
   // 例外を使わないので配置 new (-fno-exceptions)
   pty = new (pty) ImpPTY;
   pty->addRef();
-  tcgetattr(STDIN_FILENO, &pty->orig_termios);
 
   // すでに作成済みならそのまま返す
   // ----------------------------
@@ -256,6 +296,13 @@ ImpPTY *ImpPTY::createPTY() {
   // 0 で成功らしい
   if (access(pty->slave_path, F_OK) != 0) {
     std::perror("slave device file does not exist");
+    pty->release();
+    return nullptr;
+  }
+
+  // パイプを作成
+  if (pipe(pty->read_thread_pipe) < 0) {
+    std::perror("pipe failed");
     pty->release();
     return nullptr;
   }

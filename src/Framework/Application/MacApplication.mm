@@ -50,6 +50,25 @@ template <> bool ImpMacApplicaton::initPlatform() {
     this->data.appDelegate = [[AppDelegate alloc] init];
     this->data.appDelegate.appInstance = this;
     [NSApp setDelegate:this->data.appDelegate];
+
+    // メニューバーの登録
+    // autorelase は autoreleasepool を活用するため
+    // 手動で参照カウントを減らすこともできるけどめんどくさい
+    NSMenu *main_menu = [[[NSMenu alloc] init] autorelease];
+    NSMenuItem *menu_item = [[[NSMenuItem alloc] init] autorelease];
+    [main_menu addItem:menu_item];
+
+    NSMenu *menu = [[[NSMenu alloc] init] autorelease];
+    NSMenuItem *quit_item =
+        [[[NSMenuItem alloc] initWithTitle:@"Quit"
+                                    action:@selector(terminate:)
+                             keyEquivalent:@"q"] autorelease];
+
+    [menu addItem:quit_item];
+    [menu_item setSubmenu:menu];
+
+    [NSApp setMainMenu:main_menu];
+
     return true;
   }
 }
