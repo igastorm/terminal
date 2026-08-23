@@ -5,7 +5,6 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
-#import <QuartzCore/CAMetalLayer.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -15,7 +14,7 @@
 // の中からしか呼ばれないものは @autoreleasepool がいらないらしい　
 
 // ----------------------------
-// キー入力と画面描画
+// キー入力と画面描画イベント
 // ----------------------------
 @interface WindowView : NSView <NSTextInputClient>
 @property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
