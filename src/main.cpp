@@ -16,9 +16,10 @@ public:
     if (this->pty != nullptr) {
       pty->startShell("/bin/zsh");
     }
-    
+
     return true;
   }
+
   AppResult onEvent(IApplication *app, const Event &event) override {
     if (event.type == EventType::WindowCloseRequest) {
       return AppResult::Quit;
@@ -31,6 +32,7 @@ public:
     }
     return AppResult::Continue;
   }
+
   void onQuit(IApplication *app) override {
     std::cout << "[INFO] onQuit: Cleaning up...\n";
     if (this->window) {

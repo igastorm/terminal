@@ -6,6 +6,7 @@ private:
   PlatformData data;
 
   IWindow *createWindow(int, int, const char *) override;
+  IGraphicsDevice* createGraphicsDevice() override;
   bool run(IAppHandler *) override;
   void terminate() override;
 

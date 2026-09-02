@@ -28,10 +28,12 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 add_executable(terminal
   "${SRC_DIR}/Framework/Application/CommonApplication.cpp"
   "${SRC_DIR}/Framework/Application/MacApplication.mm"
-  "${SRC_DIR}/main.cpp"
-  "${SRC_DIR}/PTY/PTY.cpp"
   "${SRC_DIR}/Framework/Window/MacWindow.mm"
   "${SRC_DIR}/Framework/Window/CommonWindow.cpp"
+  "${SRC_DIR}/Framework/Graphics/MacGraphics.mm"
+  "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
+  "${SRC_DIR}/main.cpp"
+  "${SRC_DIR}/PTY/PTY.cpp"
 )
 
 set(INCLUDE_DIR "${SRC_DIR}/Framework/include")

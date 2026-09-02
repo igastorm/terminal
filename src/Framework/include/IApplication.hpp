@@ -1,5 +1,6 @@
 #pragma once
 #include "IAppHandler.hpp"
+#include "IGraphicsDevice.hpp"
 #include "IObject.hpp"
 #include "IWindow.hpp"
 
@@ -9,6 +10,8 @@ public:
   virtual IWindow *createWindow(int, int, const char *) = 0;
   virtual bool run(IAppHandler *) = 0;
   virtual void terminate() = 0;
+
+  virtual IGraphicsDevice *createGraphicsDevice() = 0;
 
   virtual ~IApplication() = default;
 };
