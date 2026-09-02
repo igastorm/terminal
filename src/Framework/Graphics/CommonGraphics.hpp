@@ -1,12 +1,23 @@
 #pragma once
 #include "IGraphicsDevice.hpp"
+#include "ISurface.hpp"
 
-class CommonGraphics : public IGraphicsDevice {
+class CommonSurface : public ISurface {
 private:
   int ref_count = 0;
 
 public:
   int addRef() override;
   int release() override;
-  virtual ~CommonGraphics() = default;
+  virtual ~CommonSurface() = default;
+};
+
+class CommonGraphicsDevice : public IGraphicsDevice {
+private:
+  int ref_count = 0;
+
+public:
+  int addRef() override;
+  int release() override;
+  virtual ~CommonGraphicsDevice() = default;
 };

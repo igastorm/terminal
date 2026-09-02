@@ -1,6 +1,6 @@
 #pragma once
 #include "IObject.hpp"
-#include "IRendererPass.hpp"
+#include "IRenderPass.hpp"
 #include "ISurface.hpp"
 
 class IGraphicsDevice : public IObject {

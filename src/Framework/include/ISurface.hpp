@@ -6,7 +6,7 @@ class ISurface : public IObject {
 public:
   virtual ~ISurface() = default;
 
-  virtual bool bintToWindow(IWindow *) = 0;
+  virtual bool bindToWindow(IWindow *) = 0;
 
-  virtual void unbindWindow(IWindow *) = 0;
+  virtual void unbindWindow() = 0;
 };

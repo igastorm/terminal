@@ -12,6 +12,6 @@ private:
 public:
   template<class PlatformApplicationData>
   static ImpWindow *createWindow(ImpApplication<PlatformApplicationData> *, int, int, const char *);
-  virtual ~ImpWindow() override;
+  ~ImpWindow() override;
 };
 
