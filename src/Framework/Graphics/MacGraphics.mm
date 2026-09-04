@@ -1,3 +1,4 @@
+#include "MacGraphics.h"
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
 #include "IRenderPass.hpp"
@@ -15,28 +16,14 @@
 //  Surface
 //  ----------------------------
 
-struct ImpSurfaceData {
-  id<MTLDevice> device = nil;
-  int width = 0;
-  int height = 0;
-};
-
-using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
-
 // プラットフォーム依存内部用クラス
 // コンストラクタで MTLDeivce を渡すために経由する
+// 渡し忘れを防ぐため, ImpSurface のコンストラクタが private になっている
 class ImpMacSurface : public ImpSurface {
 public:
-  ImpMacSurface(id<MTLDevice>, int, int);
+  ImpMacSurface(ImpApplication<ImpApplicationData> *, ImpMacGraphicsDevice *,
+                int, int);
 };
-
-// 中身のオブジェクトの参照も増やす必要がある
-template <> int ImpSurface::addRef() {
-  if (this->data.device != nil) {
-    [this->data.device retain];
-  }
-  return this->addRefBase();
-}
 
 template <> bool ImpSurface::bindToWindow(IWindow *window) {
   window->addRef();
@@ -47,20 +34,25 @@ template <>
 void ImpSurface::unbindWindow() { // ウィンドウの参照カウントを減らす
 }
 
-template <> ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData>() {
+template <>
+ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
   @autoreleasepool {
     this->unbindWindow();
-    if (this->data.device != nil) {
+    if (this->data.device != nullptr) {
       // 参照カウントを減らす
-      [this->data.device release];
-      this->data.device = nil;
+      this->data.device->release();
+      this->data.device = nullptr;
     }
   }
 }
 
-ImpMacSurface::ImpMacSurface(id<MTLDevice> mtl_device, int w, int h) {
-  // 参照カウントを増やす
-  this->data.device = [mtl_device retain];
+ImpMacSurface::ImpMacSurface(ImpApplication<ImpApplicationData> *appInstance,
+                             ImpMacGraphicsDevice *device, int w, int h) {
+  // device を参照
+  this->data.device = device;
+  // こいつの参照が 0 にならないと appInstance は解放できない仕様
+  this->data.device->addRef();
+
   this->data.width = w;
   this->data.height = h;
 }
@@ -69,29 +61,9 @@ ImpMacSurface::ImpMacSurface(id<MTLDevice> mtl_device, int w, int h) {
 //  Graphics Device
 //  ----------------------------
 
-struct ImpGraphicsDeviceData {
-  id<MTLDevice> device = nil;
-  id<MTLCommandQueue> command_queue = nil;
-};
-
-using ImpMacGraphicsDevice = ImpGraphicsDevice<ImpGraphicsDeviceData>;
-
-// 中身のオブジェクトの参照も増やす必要がある
-template <> int ImpMacGraphicsDevice::addRef() {
-  if (this->data.device != nil) {
-    [this->data.device retain];
-  }
-  // 恐らく command_queue
-  // は他のオブジェクトから参照することはないと思われるので retain しない
-  /*
-  if (this->data.command_queue != nil) {
-    [this->data.command_queue retain];
-  }
-  */
-  return this->addRefBase();
-}
-
-template <> ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData>() {
+template <>
+ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
+                                         ImpApplicationData>() {
   @autoreleasepool {
     if (this->data.command_queue != nil) {
       [this->data.command_queue release];
@@ -100,6 +72,10 @@ template <> ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData>() {
     if (this->data.device != nil) {
       [this->data.device release];
       this->data.device = nil;
+    }
+    if (this->appInstance != nullptr) {
+      this->appInstance->release();
+      this->appInstance = nullptr;
     }
   }
 }
@@ -118,22 +94,17 @@ ISurface *ImpMacGraphicsDevice::createSurface(int width, int height) {
       std::perror("malloc failed (createSurface)");
       return nullptr;
     }
-    surface = new (surface) ImpMacSurface(this->data.device, width, height);
-    // この関数で生成するので ref_count を加算するだけ
-    surface->addRef();
 
-    // surface は device を参照するので参照カウントを増やす
-    // (MTLDevice だけでいい)
-    // しかし surface のコンストラクタで retain しているのでここではいらない
+    surface =
+        new (surface) ImpMacSurface(this->appInstance, this, width, height);
+    surface->addRef();
 
     return surface;
   }
 }
 
 template <>
-template <>
-ImpMacGraphicsDevice *
-ImpMacGraphicsDevice::createGraphicsDevice<ImpApplicationData>(
+ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
     ImpApplication<ImpApplicationData> *appInstance) {
   @autoreleasepool {
     ImpMacGraphicsDevice *device = static_cast<ImpMacGraphicsDevice *>(
@@ -144,8 +115,11 @@ ImpMacGraphicsDevice::createGraphicsDevice<ImpApplicationData>(
     }
 
     device = new (device) ImpMacGraphicsDevice;
-    // この関数で生成するので ref_count を加算するだけ
     device->addRef();
+
+    // appInstance を参照
+    device->appInstance = appInstance;
+    device->appInstance->addRef();
 
     if ((device->data.device = MTLCreateSystemDefaultDevice()) == nil) {
       device->release();

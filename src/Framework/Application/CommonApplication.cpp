@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-int CommonApplication::addRefBase() { return ++this->ref_count; }
+int CommonApplication::addRef() { return ++this->ref_count; }
 
 int CommonApplication::release() {
   if (--this->ref_count == 0) {

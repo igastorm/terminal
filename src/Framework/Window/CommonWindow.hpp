@@ -6,7 +6,7 @@ private:
   int ref_count = 0;
 
 protected:
-  int addRefBase();
+  int addRef() override;
   int release() override;
 
 public:

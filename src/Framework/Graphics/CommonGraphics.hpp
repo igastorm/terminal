@@ -7,7 +7,7 @@ private:
   int ref_count = 0;
 
 public:
-  int addRefBase();
+  int addRef() override;
   int release() override;
   virtual ~CommonSurface() = default;
 };
@@ -17,7 +17,7 @@ private:
   int ref_count = 0;
 
 public:
-  int addRefBase();
+  int addRef() override;
   int release() override;
   virtual ~CommonGraphicsDevice() = default;
 };

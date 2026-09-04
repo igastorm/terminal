@@ -6,17 +6,22 @@ class TerminalApp : public IAppHandler {
 private:
   IWindow *window = nullptr;
   IPTY *pty = nullptr;
+  IGraphicsDevice* device = nullptr;
+  ISurface* surface = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
       this->window = appInstance->createWindow(800, 600, "Terminal");
     }
 
-    if (this->pty == nullptr) {
+    if (this->pty == nullptr && this->window != nullptr) {
       this->pty = IPTY::createPTY();
       if (this->pty != nullptr) {
         pty->startShell("/bin/zsh");
       }
+
+      device = appInstance->createGraphicsDevice();
+      surface = device->createSurface(100, 100);
     }
   }
 
@@ -30,6 +35,16 @@ private:
       this->pty->release();
       this->pty = nullptr;
     }
+
+    if (this->device != nullptr) {
+      this->device->release();
+      this->device = nullptr;
+    }
+
+    if (this->surface != nullptr) {
+      this->surface->release();
+      this->surface = nullptr;
+    }
   }
 
   void processPTYInput(const Event& event) {
@@ -42,11 +57,6 @@ public:
   bool onInit(IApplication *appInstance) override {
     std::cout << "[INFO] onInit: Creating window and PTY...\n";
     createTerminalWindow(appInstance);
-
-    // IGraphicsDevice* device = appInstance->createGraphicsDevice();
-    // ISurface* surface = device->createSurface(100, 100);
-    // surface->release();
-    // device->release();
     return true;
   }
 

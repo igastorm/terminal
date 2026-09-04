@@ -44,17 +44,6 @@
 }
 @end
 
-template <> int ImpMacApplicaton::addRef() {
-  // 恐らく appDelegate
-  // は他のオブジェクトから参照することはないと思われるので retain しない
-  /*
-  if (this->data.appDelegate != nil) {
-    [this->data.appDelegate retain];
-  }
-  */
-  return this->addRefBase();
-}
-
 template <> bool ImpMacApplicaton::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）

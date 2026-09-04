@@ -9,7 +9,6 @@ private:
   bool setTitle(const char *) override;
   bool show() override;
   bool hide() override;
-  int addRef() override;
 
 public:
   static ImpWindow *createWindow(ImpApplication<PlatformApplicationData> *, int, int, const char *);

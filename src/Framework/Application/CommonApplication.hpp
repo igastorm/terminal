@@ -12,7 +12,7 @@ protected:
   friend CommonApplication *createPlatformApplication();
 
 public:
-  int addRefBase();
+  int addRef() override;
   int release() override;
 
   static int startApp(int, char **);

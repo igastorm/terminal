@@ -5,7 +5,7 @@
 //  Surface
 //  ----------------------------
 
-int CommonSurface::addRefBase() { return ++this->ref_count; }
+int CommonSurface::addRef() { return ++this->ref_count; }
 
 int CommonSurface::release() {
   if (--this->ref_count == 0) {
@@ -20,7 +20,7 @@ int CommonSurface::release() {
 //  Graphics Device
 //  ----------------------------
 
-int CommonGraphicsDevice::addRefBase() { return ++this->ref_count; }
+int CommonGraphicsDevice::addRef() { return ++this->ref_count; }
 
 int CommonGraphicsDevice::release() {
   if (--this->ref_count == 0) {

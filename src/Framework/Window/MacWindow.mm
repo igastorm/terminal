@@ -305,8 +305,6 @@ struct ImpWindowData {
 
 using ImpMacWindow = ImpWindow<ImpWindowData, ImpApplicationData>;
 
-template <> int ImpMacWindow::addRef() { return this->addRefBase(); }
-
 template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
   @autoreleasepool {
     if (this->data.window != nil) {
@@ -372,10 +370,9 @@ ImpMacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
     }
 
     window = new (window) ImpMacWindow;
-
-    // この関数で生成するので ref_count を加算するだけ
     window->addRef();
 
+    // appInstance を参照
     window->appInstance = appInstance;
     window->appInstance->addRef();
 
@@ -407,6 +404,7 @@ ImpMacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
     window->data.view = [[WindowView alloc] initWithFrame:frame];
     window->data.view.iwindow = window;
     window->data.view.appInstance = appInstance;
+    // appInstance を参照
     [window->data.window setContentView:window->data.view];
     window->data.view.appInstance->addRef();
 
