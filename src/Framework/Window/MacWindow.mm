@@ -259,6 +259,12 @@
 @end
 
 @implementation WindowDelegate
+- (void)dealloc {
+  std::cout << "\n[SUCCESS] WindowDelegate was DEALLOCATED! (RefCount reached "
+               "0)\n"
+            << std::endl;
+  [super dealloc];
+}
 // ----------------------------
 // ウィンドウの閉じるボタンを押した
 // 時のイベントを受け取るメソッド
@@ -272,23 +278,36 @@
 }
 @end
 
+@interface CocoaWindow : NSWindow
+@end
+
+@implementation CocoaWindow
+- (void)dealloc {
+  // 一度でも show
+  // したウィンドウはリリースするときに複数回のイベント送信を経て
+  // リリースされるらしいのでウィンドウを閉じると同時に終了するアプリでは
+  // dealloc は呼ばれない
+  std::cout << "\n[SUCCESS] Window was DEALLOCATED! (RefCount reached "
+               "0)\n"
+            << std::endl;
+  [super dealloc];
+}
+@end
+
 //  ----------------------------
 //  具象クラス
 //  ----------------------------
 struct ImpWindowData {
-  NSWindow *window = nil;
+  CocoaWindow *window = nil;
   WindowDelegate *delegate = nil;
   WindowView *view = nil;
 };
 
 using ImpMacWindow = ImpWindow<ImpWindowData, ImpApplicationData>;
 
-template <> int ImpMacWindow::addRef() {
-  return this->addRefBase();
-}
+template <> int ImpMacWindow::addRef() { return this->addRefBase(); }
 
 template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
-  NSView *dummy = nil;
   @autoreleasepool {
     if (this->data.window != nil) {
       [this->data.window setDelegate:nil];
@@ -296,10 +315,6 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
       [this->data.window makeFirstResponder:nil];
       [this->data.window setContentView:nil];
       [this->data.window orderOut:nil];
-      dummy = [[NSView alloc] init];
-       [this->data.window setContentView:dummy];
-       [dummy release];
-
       [this->data.window release];
       this->data.window = nil;
     }
@@ -308,7 +323,7 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
       this->data.view.appInstance = nullptr;
       [this->data.view removeFromSuperview];
       [this->data.view release];
-      //this->data.view = nil;
+      this->data.view = nil;
     }
     if (this->data.delegate != nil) {
       [this->data.delegate release];
@@ -319,7 +334,6 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
       this->appInstance = nullptr;
     }
   }
-  NSUInteger a = [this->data.view retainCount]; // a = 1, ログも出ず
 }
 
 template <> bool ImpMacWindow::setTitle(const char *title) {
@@ -371,10 +385,10 @@ ImpMacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
                            NSWindowStyleMaskMiniaturizable |
                            NSWindowStyleMaskResizable;
     window->data.window =
-        [[NSWindow alloc] initWithContentRect:frame
-                                    styleMask:styleMask
-                                      backing:NSBackingStoreBuffered
-                                        defer:NO];
+        [[CocoaWindow alloc] initWithContentRect:frame
+                                       styleMask:styleMask
+                                         backing:NSBackingStoreBuffered
+                                           defer:NO];
 
     // 閉じられた時に自動リリースされないようにする
     window->data.window.releasedWhenClosed = NO;

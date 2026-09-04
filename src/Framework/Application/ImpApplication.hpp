@@ -8,9 +8,10 @@ private:
   IWindow *createWindow(int, int, const char *) override;
   IGraphicsDevice* createGraphicsDevice() override;
   bool run(IAppHandler *) override;
-  void terminate() override;
 
 public:
+  void terminate() override;
+  
   void dispatchEvent(const Event &);
   bool initPlatform();
   int addRef() override;

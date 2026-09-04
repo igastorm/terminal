@@ -8,7 +8,7 @@
 #include <new>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
-@property(nonatomic, assign) IApplication *appInstance;
+@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
@@ -32,11 +32,17 @@
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication *)sender
                     hasVisibleWindows:(BOOL)hasVisibleWindows {
+  // OS に最小化の復元やウィンドウ前面化を任せる
+  if (hasVisibleWindows == YES) {
+    return YES;
+  }
+
+  Event event;
+  event.type = EventType::AppReopen;
+  self.appInstance->dispatchEvent(event);
   return NO;
 }
 @end
-
-using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
 
 template <> int ImpMacApplicaton::addRef() {
   // 恐らく appDelegate
