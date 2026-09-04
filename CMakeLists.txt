@@ -6,6 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+
+if(ENABLE_ASAN)
+  message(STATUS
+    "AddressSanitizer is ON (Use-After-Free / Double-Free check mode)")
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address)
+endif()
+
 include(CheckCXXCompilerFlag)
 include(CheckOBJCXXCompilerFlag)
 
@@ -39,5 +48,10 @@ add_executable(terminal
 set(INCLUDE_DIR "${SRC_DIR}/Framework/include")
 
 target_include_directories(terminal PRIVATE "${INCLUDE_DIR}")
-target_link_libraries(terminal "-lpthread -framework Cocoa"
-"-framework Metal" "-framework QuartzCore")
+
+target_link_libraries(terminal PRIVATE
+  pthread
+  "-framework Cocoa"
+  "-framework Metal"
+  "-framework QuartzCore"
+)

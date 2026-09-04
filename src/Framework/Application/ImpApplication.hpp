@@ -13,4 +13,5 @@ private:
 public:
   void dispatchEvent(const Event &);
   bool initPlatform();
+  int addRef() override;
 };

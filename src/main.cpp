@@ -17,10 +17,10 @@ public:
       pty->startShell("/bin/zsh");
     }
 
-    IGraphicsDevice* device = appInstance->createGraphicsDevice();
-    ISurface* surface = device->createSurface(100, 100);
-    surface->release();
-    device->release();
+    //IGraphicsDevice* device = appInstance->createGraphicsDevice();
+    //ISurface* surface = device->createSurface(100, 100);
+    //surface->release();
+    //device->release();
     return true;
   }
 

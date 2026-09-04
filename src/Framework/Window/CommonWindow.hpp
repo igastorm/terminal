@@ -5,6 +5,10 @@ class CommonWindow : public IWindow {
 private:
   int ref_count = 0;
 
+protected:
+  int addRefBase();
+  int release() override;
+
 public:
   inline static const char *fkeys[] = {
       "\033OP",   // F1
@@ -20,8 +24,5 @@ public:
       "\033[23~", // F11
       "\033[24~", // F12
   };
-
-  int addRef() override;
-  int release() override;
   virtual ~CommonWindow() = default;
 };

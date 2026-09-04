@@ -38,6 +38,17 @@
 
 using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
 
+template <> int ImpMacApplicaton::addRef() {
+  // 恐らく appDelegate
+  // は他のオブジェクトから参照することはないと思われるので retain しない
+  /*
+  if (this->data.appDelegate != nil) {
+    [this->data.appDelegate retain];
+  }
+  */
+  return this->addRefBase();
+}
+
 template <> bool ImpMacApplicaton::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
@@ -51,7 +62,7 @@ template <> bool ImpMacApplicaton::initPlatform() {
     this->data.appDelegate.appInstance = this;
     [NSApp setDelegate:this->data.appDelegate];
 
-    // メニューバーの登録
+    // メニューバーの登録 (強参照だから所有権が引き継がれる)
     // autorelase は autoreleasepool を活用するため
     // 手動で参照カウントを減らすこともできるけどめんどくさい
     NSMenu *main_menu = [[[NSMenu alloc] init] autorelease];
@@ -67,6 +78,7 @@ template <> bool ImpMacApplicaton::initPlatform() {
     [menu addItem:quit_item];
     [menu_item setSubmenu:menu];
 
+    // 最終的に NSApp が所有する
     [NSApp setMainMenu:main_menu];
 
     return true;
@@ -75,18 +87,34 @@ template <> bool ImpMacApplicaton::initPlatform() {
 
 template <> void ImpMacApplicaton::terminate() {
   @autoreleasepool {
-    [NSApp stop:nil];
-    NSEvent *event = [NSEvent otherEventWithType:NSEventTypeApplicationDefined
-                                        location:NSMakePoint(0, 0)
-                                   modifierFlags:0
-                                       timestamp:0
-                                    windowNumber:0
-                                         context:nil
-                                         subtype:0
-                                           data1:0
-                                           data2:0];
-    [NSApp postEvent:event atStart:YES];
+    // ループが生きている間に実行しないとリークっぽくなる
+    this->handler->onQuit(this);
   }
+
+  // イベントキューに終了処理を加えることで遅延解放を確実に待ったあとでアプリケーションを終了できる
+  // Objective-C のラムダ構文は奇妙なので f 版で C++ のラムダ式をブチ込むハック
+  // キャプチャなしなら関数ポインタにキャストできるらしい
+  dispatch_async_f(dispatch_get_main_queue(), nullptr,
+                   [](void *context) -> void {
+                     @autoreleasepool {
+                       [NSApp stop:nil];
+
+                       // stop を確実に効かせるためのダミーイベントを投げる
+                       // stop
+                       // で即座に停止するわけではなく次のイベントを処理した時に終了するらしい
+                       NSEvent *event = [NSEvent
+                           otherEventWithType:NSEventTypeApplicationDefined
+                                     location:NSMakePoint(0, 0)
+                                modifierFlags:0
+                                    timestamp:0
+                                 windowNumber:0
+                                      context:nil
+                                      subtype:0
+                                        data1:0
+                                        data2:0];
+                       [NSApp postEvent:event atStart:YES];
+                     }
+                   });
 }
 
 template <> void ImpMacApplicaton::dispatchEvent(const Event &event) {
@@ -99,23 +127,29 @@ template <> void ImpMacApplicaton::dispatchEvent(const Event &event) {
 }
 
 template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
+  this->handler = handler;
+  this->data.appDelegate.handler = handler;
   @autoreleasepool {
-    this->handler = handler;
-    this->data.appDelegate.handler = handler;
-
     [NSApp run];
-
-    // Cmd+Q だとここには戻らずに applicationShouldTerminate へ飛ぶ
-    // NSTerminateCancel によってここに戻ってくるっぽい
-    if (this->handler != nullptr) {
+  }
+  // Cmd+Q だとここには戻らずに applicationShouldTerminate へ飛ぶ
+  // NSTerminateCancel によってここに戻ってくるっぽい
+  // しかし, ループが生きている間に実行しないとリークっぽくなるの Terminate
+  // に引っ越し
+  /*
+  if (this->handler != nullptr) {
+    @autoreleasepool {
       this->handler->onQuit(this);
-      this->handler = nullptr;
     }
+    this->handler = nullptr;
+  }
+  */
 
+  @autoreleasepool {
     [this->data.appDelegate release];
     this->data.appDelegate = nil;
-    return true;
   }
+  return true;
 }
 
 // Common だがここで実装しないと Cocoa の初期化が呼べない気がする
@@ -128,7 +162,10 @@ CommonApplication *createPlatformApplication() {
     return nullptr;
   }
   app = new (app) ImpMacApplicaton;
+
+  // この関数で生成するので ref_count を加算するだけ
   app->addRef();
+
   // プラットフォーム依存部分の初期化
   if (!app->initPlatform()) {
     std::perror("initPlatform Failed");

@@ -8,6 +8,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 #include <new>
 
 //  ----------------------------
@@ -29,9 +30,22 @@ public:
   ImpMacSurface(id<MTLDevice>, int, int);
 };
 
-template <> bool ImpSurface::bindToWindow(IWindow *window) { return true; }
+// 中身のオブジェクトの参照も増やす必要がある
+template <> int ImpSurface::addRef() {
+  if (this->data.device != nil) {
+    [this->data.device retain];
+  }
+  return this->addRefBase();
+}
 
-template <> void ImpSurface::unbindWindow() {}
+template <> bool ImpSurface::bindToWindow(IWindow *window) {
+  window->addRef();
+  return true;
+}
+
+template <>
+void ImpSurface::unbindWindow() { // ウィンドウの参照カウントを減らす
+}
 
 template <> ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData>() {
   @autoreleasepool {
@@ -62,15 +76,30 @@ struct ImpGraphicsDeviceData {
 
 using ImpMacGraphicsDevice = ImpGraphicsDevice<ImpGraphicsDeviceData>;
 
+// 中身のオブジェクトの参照も増やす必要がある
+template <> int ImpMacGraphicsDevice::addRef() {
+  if (this->data.device != nil) {
+    [this->data.device retain];
+  }
+  // 恐らく command_queue
+  // は他のオブジェクトから参照することはないと思われるので retain しない
+  /*
+  if (this->data.command_queue != nil) {
+    [this->data.command_queue retain];
+  }
+  */
+  return this->addRefBase();
+}
+
 template <> ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData>() {
   @autoreleasepool {
-    if (this->data.device != nil) {
-      [this->data.device release];
-      this->data.device = nil;
-    }
     if (this->data.command_queue != nil) {
       [this->data.command_queue release];
       this->data.command_queue = nil;
+    }
+    if (this->data.device != nil) {
+      [this->data.device release];
+      this->data.device = nil;
     }
   }
 }
@@ -90,7 +119,12 @@ ISurface *ImpMacGraphicsDevice::createSurface(int width, int height) {
       return nullptr;
     }
     surface = new (surface) ImpMacSurface(this->data.device, width, height);
+    // この関数で生成するので ref_count を加算するだけ
     surface->addRef();
+
+    // surface は device を参照するので参照カウントを増やす
+    // (MTLDevice だけでいい)
+    // しかし surface のコンストラクタで retain しているのでここではいらない
 
     return surface;
   }
@@ -110,6 +144,7 @@ ImpMacGraphicsDevice::createGraphicsDevice<ImpApplicationData>(
     }
 
     device = new (device) ImpMacGraphicsDevice;
+    // この関数で生成するので ref_count を加算するだけ
     device->addRef();
 
     if ((device->data.device = MTLCreateSystemDefaultDevice()) == nil) {

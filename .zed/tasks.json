@@ -2,18 +2,32 @@
 
 [
   {
-    "label": "CMake: Configure",
-    "command": "cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-    "reveal": "always",
+    "label": "CMake: Configure (Default / for Leaks)",
+    "command": "cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    "reveal": "always"
+  },
+  {
+    "label": "CMake: Configure (ASan Enabled)",
+    "command": "cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    "reveal": "always"
   },
   {
     "label": "CMake: Build",
     "command": "cmake --build build --config Debug",
-    "reveal": "always",
+    "reveal": "always"
   },
   {
     "label": "Run",
     "command": "./build/terminal",
-    "reveal": "always",
+    "reveal": "always"
   },
+  {
+    "label": "Check Leaks (Filtered)",
+    "command": "MallocStackLogging=1 leaks --atExit --list -- ./build/terminal 2>&1 | awk -v RS='' '/Leak: 0x/ && /terminal/ {print; found=1} END {if (!found) print \"No leaks detected in terminal code!\"}'",
+  },
+  {
+    "label": "Check Leaks (Run & Check at Exit)",
+    "command": "MallocStackLogging=1 leaks --atExit --list -- ./build/terminal",
+    "reveal": "always"
+  }
 ]

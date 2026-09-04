@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <new>
 
 // C++ 側から呼ばれる可能性があるもの意外 ([NSApp run])
@@ -16,12 +17,19 @@
 // ----------------------------
 // キー入力と画面描画イベント
 // ----------------------------
-@interface WindowView : NSView <NSTextInputClient>
+@interface WindowView : NSView
 @property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
 @property(nonatomic, assign) IWindow *iwindow;
 @end
 
 @implementation WindowView
+- (void)dealloc {
+  std::cout << "\n[SUCCESS] WindowView was DEALLOCATED! (RefCount reached "
+               "0)\n"
+            << std::endl;
+  [super dealloc];
+}
+
 - (void)sendEventHelper:(const char *)utf8 {
   Event event;
   event.type = EventType::TextInput;
@@ -273,20 +281,45 @@ struct ImpWindowData {
   WindowView *view = nil;
 };
 
-using ImpMacWindow = ImpWindow<ImpWindowData>;
+using ImpMacWindow = ImpWindow<ImpWindowData, ImpApplicationData>;
 
-template <> ImpMacWindow::~ImpWindow<ImpWindowData>() {
+template <> int ImpMacWindow::addRef() {
+  return this->addRefBase();
+}
+
+template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
+  NSView *dummy = nil;
   @autoreleasepool {
-    if (this->data.window) {
+    if (this->data.window != nil) {
+      [this->data.window setDelegate:nil];
       [this->data.window close];
+      [this->data.window makeFirstResponder:nil];
+      [this->data.window setContentView:nil];
+      [this->data.window orderOut:nil];
+      dummy = [[NSView alloc] init];
+       [this->data.window setContentView:dummy];
+       [dummy release];
+
       [this->data.window release];
       this->data.window = nil;
     }
-    if (this->data.delegate) {
+    if (this->data.view != nil) {
+      this->data.view.appInstance->release();
+      this->data.view.appInstance = nullptr;
+      [this->data.view removeFromSuperview];
+      [this->data.view release];
+      //this->data.view = nil;
+    }
+    if (this->data.delegate != nil) {
       [this->data.delegate release];
       this->data.delegate = nil;
     }
+    if (this->appInstance != nullptr) {
+      this->appInstance->release();
+      this->appInstance = nullptr;
+    }
   }
+  NSUInteger a = [this->data.view retainCount]; // a = 1, ログも出ず
 }
 
 template <> bool ImpMacWindow::setTitle(const char *title) {
@@ -313,10 +346,9 @@ template <> bool ImpMacWindow::hide() {
 }
 
 template <>
-template <>
-ImpMacWindow *ImpMacWindow::createWindow<ImpApplicationData>(
-    ImpApplication<ImpApplicationData> *appInstance, int width, int height,
-    const char *title) {
+ImpMacWindow *
+ImpMacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
+                           int width, int height, const char *title) {
   @autoreleasepool {
     ImpMacWindow *window =
         static_cast<ImpMacWindow *>(std::malloc(sizeof(ImpMacWindow)));
@@ -326,7 +358,12 @@ ImpMacWindow *ImpMacWindow::createWindow<ImpApplicationData>(
     }
 
     window = new (window) ImpMacWindow;
+
+    // この関数で生成するので ref_count を加算するだけ
     window->addRef();
+
+    window->appInstance = appInstance;
+    window->appInstance->addRef();
 
     // ウィンドウを生成
     NSRect frame = NSMakeRect(0, 0, width, height);
@@ -357,6 +394,7 @@ ImpMacWindow *ImpMacWindow::createWindow<ImpApplicationData>(
     window->data.view.iwindow = window;
     window->data.view.appInstance = appInstance;
     [window->data.window setContentView:window->data.view];
+    window->data.view.appInstance->addRef();
 
     // あった方がいいらしい
     // 確実に view にフォーカスを当てるためらしい

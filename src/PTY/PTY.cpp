@@ -200,6 +200,12 @@ void ImpPTY::startShell(const char *shell) {
   if (pid == 0) {
     // --- 子プロセス側の処理 (zsh になる予定のプロセス)---
 
+    // デバッグ用環境変数を除去
+    unsetenv("MallocStackLogging");
+    unsetenv("MallocStackLoggingNoCompact");
+    unsetenv("ASAN_OPTIONS");
+    unsetenv("MTL_DEBUG_LAYER");
+
     // 親プロセスの Master fd は不要なので閉じる (参照カウンタを減らす)
     ::close(this->master_fd);
 

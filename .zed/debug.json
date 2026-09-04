@@ -10,6 +10,11 @@
     "program": "$ZED_WORKTREE_ROOT/build/terminal",
     "cwd": "$ZED_WORKTREE_ROOT",
     "args": [],
-    "build": "CMake: Build",
-  },
+    "env": {
+      "MallocStackLogging": "1",
+      "MTL_DEBUG_LAYER": "1",
+      "MTL_SHADER_VALIDATION": "1"
+    },
+    "build": "CMake: Build"
+  }
 ]
