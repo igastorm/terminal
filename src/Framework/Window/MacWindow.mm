@@ -17,7 +17,7 @@
 // ----------------------------
 // キー入力と画面描画イベント
 // ----------------------------
-@interface WindowView : NSView
+@interface WindowView : NSView <NSTextInputClient>
 @property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
 @property(nonatomic, assign) IWindow *iwindow;
 @end
