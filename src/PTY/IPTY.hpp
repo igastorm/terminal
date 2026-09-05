@@ -1,4 +1,5 @@
 #pragma once
+#include "IApplication.hpp"
 #include "IObject.hpp"
 #include <cstddef>
 
@@ -8,5 +9,5 @@ public:
   virtual void writeInput(const void *, size_t) = 0;
 
   virtual ~IPTY() = default;
-  static IPTY *createPTY();
+  static IPTY *createPTY(IApplication *);
 };

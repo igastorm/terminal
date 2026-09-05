@@ -21,6 +21,8 @@ class ImpPTY : public IPTY {
 private:
   int ref_count = 0;
 
+  IApplication* appInstance = nullptr;
+  
   int master_fd = -1;
   char slave_path[256] = {0};
 
@@ -46,7 +48,7 @@ private:
   static void normalExitMsgHelper(int);
 
 public:
-  static ImpPTY *createPTY();
+  static ImpPTY *createPTY(IApplication*);
 };
 
 // ----------------------------
@@ -179,6 +181,9 @@ void ImpPTY::read_loop() {
         this->shell_pid = 0;
         break;
       }
+
+      // main 側へ通知
+      this->appInstance->postEvent();
       write(STDOUT_FILENO, buffer, bytes_read);
     }
   }
@@ -265,7 +270,7 @@ void ImpPTY::startShell(const char *shell) {
   this->is_running = true;
 }
 
-ImpPTY *ImpPTY::createPTY() {
+ImpPTY *ImpPTY::createPTY(IApplication* appInstance) {
   ImpPTY *pty = static_cast<ImpPTY *>(std::malloc(sizeof(ImpPTY)));
   if (pty == nullptr) {
     std::perror("malloc failed (PTY)");
@@ -320,6 +325,9 @@ ImpPTY *ImpPTY::createPTY() {
     pty->release();
     return nullptr;
   }
+
+  pty->appInstance = appInstance;
+  
   std::cout << "[INFO] PTY Master opened. Slave path: " << pty->slave_path
             << std::endl;
   return pty;
@@ -330,7 +338,7 @@ ImpPTY *ImpPTY::createPTY() {
 // Application の PTY 部分
 // メンバ関数の実装
 // ----------------------------
-IPTY *IPTY::createPTY() {
-  ImpPTY *pty = ImpPTY::createPTY();
+IPTY *IPTY::createPTY(IApplication* appInstance) {
+  ImpPTY *pty = ImpPTY::createPTY(appInstance);
   return pty;
 }

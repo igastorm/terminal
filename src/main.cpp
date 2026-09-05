@@ -15,7 +15,7 @@ private:
     }
 
     if (this->pty == nullptr && this->window != nullptr) {
-      this->pty = IPTY::createPTY();
+      this->pty = IPTY::createPTY(appInstance);
       if (this->pty != nullptr) {
         pty->startShell("/bin/zsh");
       }
@@ -77,6 +77,11 @@ public:
     if (event.type == EventType::TextInput) {
       processPTYInput(event);
       return AppResult::Continue;
+    }
+
+    if (event.type == EventType::UserEvent) {
+      std::cout << "UserEvent\n";
+     return AppResult::Continue; 
     }
 
     if (event.type == EventType::WindowExpose) {
