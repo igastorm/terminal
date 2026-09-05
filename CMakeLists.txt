@@ -38,22 +38,26 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 # Shader
 # ----------------------------
 find_program(XCRUN xcrun REQUIRED)
-find_program(XXD_TOOL xxd REQUIRED)
 
 set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Shaders.metal")
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/Shaders.air")
 set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/Shaders.metallib")
-set(SHADER_HEADER "${GEN_DIR}/Shaders_metallib.h")
+set(SHADER_HEADER "${GEN_DIR}/Shaders_metallib.hpp")
+set(BIN2H_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/bin2hpp.cmake") 
 
 file(MAKE_DIRECTORY "${GEN_DIR}")
 
 add_custom_command(
   OUTPUT "${SHADER_HEADER}"
+  BYPRODUCTS "${SHADER_AIR}" "${SHADER_LIB}"
   COMMAND "${XCRUN}" -sdk macosx metal -c "${SHADER_SRC}" -o "${SHADER_AIR}"
   COMMAND "${XCRUN}" -sdk macosx metallib "${SHADER_AIR}" -o "${SHADER_LIB}"
-  # xxd -i で C 言語の unsigned char 配列ヘッダーに変換する
-  COMMAND "${XXD_TOOL}" -i "Shaders.metallib" "${SHADER_HEADER}"
+  COMMAND "${CMAKE_COMMAND}"
+            "-DINPUT=${SHADER_LIB}"
+            "-DOUTPUT=${SHADER_HEADER}"
+            "-DVARNAME=Shaders_metallib"
+            -P "${BIN2H_SCRIPT}"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   DEPENDS "${SHADER_SRC}"
   COMMENT "Compiling Metal Shader to Header: ${SHADER_HEADER}"

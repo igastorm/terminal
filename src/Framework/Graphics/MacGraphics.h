@@ -1,8 +1,10 @@
+#pragma once
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
+#include "Shaders_metallib.hpp"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -29,6 +31,7 @@ using ImpRenderPass =
 struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
+  id<MTLRenderPipelineState> pipeline_state = nil;
 };
 
 using ImpMacGraphicsDevice =
