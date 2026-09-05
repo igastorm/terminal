@@ -15,10 +15,12 @@
 //  Render Pass
 //  ----------------------------
 
-struct ImpRenderPassData {};
+struct ImpRenderPassData {
+  id<MTLRenderCommandEncoder> encoder = nil;
+};
 
-// using ImpMacRenderPass = ImpRenderPass<ImpRenderPassData,
-// ImpApplicationData>;
+using ImpRenderPass =
+    ImpRenderPassTemplate<ImpRenderPassData, ImpApplicationData>;
 
 //  ----------------------------
 //  Graphics Device
@@ -27,7 +29,6 @@ struct ImpRenderPassData {};
 struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
-  // ImpMacRenderPass* render_pass = nullptr;
 };
 
 using ImpMacGraphicsDevice =

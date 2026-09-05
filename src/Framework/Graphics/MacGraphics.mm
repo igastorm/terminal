@@ -14,6 +14,18 @@
 #include <new>
 
 //  ----------------------------
+//  Render Pass
+//  ----------------------------
+class ImpMacRenderPass : public ImpRenderPass {
+public:
+ImpMacRenderPass(id<MTLRenderCommandEncoder>);
+};
+
+ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder) {
+  this->data.encoder = encoder;
+}
+
+//  ----------------------------
 //  Surface
 //  ----------------------------
 
@@ -209,16 +221,19 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
                           (pass_desc.color & 0xFF) / 255.0,
                           ((pass_desc.color >> 24) & 0xFF) / 255.0);
 
+    // begin
     id<MTLCommandBuffer> cmdBuffer = [this->data.command_queue commandBuffer];
     id<MTLRenderCommandEncoder> encoder =
         [cmdBuffer renderCommandEncoderWithDescriptor:desc];
 
     // ここでコールバック (beign-end)
-    // RenderPass
-    callback(nullptr, data);
+    ImpMacRenderPass pass(encoder);
+    [encoder retain];
+    callback(&pass, data);
+    [encoder release];
 
+    //end
     [encoder endEncoding];
-
     [cmdBuffer presentDrawable:drawable];
     [cmdBuffer commit];
 
