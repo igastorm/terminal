@@ -23,7 +23,6 @@ private:
       device = appInstance->createGraphicsDevice();
       surface = device->createSurface(100, 100);
       surface->bindToWindow(window);
-      device->render(surface, [](IRenderPass *, void *) -> void {}, nullptr);
     }
   }
 
@@ -77,6 +76,13 @@ public:
     // キーボード入力のテスト
     if (event.type == EventType::TextInput) {
       processPTYInput(event);
+      return AppResult::Continue;
+    }
+
+    if (event.type == EventType::WindowExpose) {
+      if (event.window == this->window) {
+        device->render(surface, [](IRenderPass *, void *) -> void {}, nullptr);
+      }
     }
     return AppResult::Continue;
   }

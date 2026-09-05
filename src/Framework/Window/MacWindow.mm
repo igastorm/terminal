@@ -1,3 +1,4 @@
+#include "MacWindow.h"
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
 #include "IWindow.hpp"
@@ -5,12 +6,12 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
+#import <QuartzCore/CAMetalLayer.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <new>
-#include "MacWindow.h"
 
 // C++ 側から呼ばれる可能性があるもの意外 ([NSApp run])
 // の中からしか呼ばれないものは @autoreleasepool がいらないらしい　
@@ -49,7 +50,27 @@
 
 // WM_PAINT みたいなやつ
 // 初回表示やリサイズ時に OS から描画要求が来たとき
-- (void)drawRect:(NSRect)dirtyRect {
+// Metal Layer を貼り付けると無効になる
+// - (void)drawRect:(NSRect)dirtyRect {
+//   Event event;
+//   event.type = EventType::WindowExpose;
+//   event.window = self.iwindow;
+//   self.appInstance->dispatchEvent(event);
+// }
+- (void)layout {
+  [super layout];
+
+  // 解像度を Metal に伝える
+  if (self.layer != nil) {
+    self.layer.frame = self.bounds;
+    CGFloat scale = self.window ? self.window.backingScaleFactor : 1.0;
+    CGSize size = self.bounds.size;
+
+    CAMetalLayer *metalLayer = (CAMetalLayer *)self.layer;
+    metalLayer.drawableSize =
+        CGSizeMake(size.width * scale, size.height * scale);
+  }
+
   Event event;
   event.type = EventType::WindowExpose;
   event.window = self.iwindow;
@@ -317,7 +338,7 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
   }
 }
 
-template <> ImpWindowData ImpMacWindow::getPlatformData() const{
+template <> ImpWindowData ImpMacWindow::getPlatformData() const {
   return this->data;
 }
 
