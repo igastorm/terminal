@@ -34,6 +34,35 @@ endif()
 
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 
+# ----------------------------
+# Shader
+# ----------------------------
+find_program(XCRUN xcrun REQUIRED)
+find_program(XXD_TOOL xxd REQUIRED)
+
+set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Shaders.metal")
+set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/Shaders.air")
+set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/Shaders.metallib")
+set(SHADER_HEADER "${GEN_DIR}/Shaders_metallib.h")
+
+file(MAKE_DIRECTORY "${GEN_DIR}")
+
+add_custom_command(
+  OUTPUT "${SHADER_HEADER}"
+  COMMAND "${XCRUN}" -sdk macosx metal -c "${SHADER_SRC}" -o "${SHADER_AIR}"
+  COMMAND "${XCRUN}" -sdk macosx metallib "${SHADER_AIR}" -o "${SHADER_LIB}"
+  # xxd -i で C 言語の unsigned char 配列ヘッダーに変換する
+  COMMAND "${XXD_TOOL}" -i "Shaders.metallib" "${SHADER_HEADER}"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  DEPENDS "${SHADER_SRC}"
+  COMMENT "Compiling Metal Shader to Header: ${SHADER_HEADER}"
+  VERBATIM
+)
+
+# ----------------------------
+# Build
+# ----------------------------
 add_executable(terminal
   "${SRC_DIR}/Framework/Application/CommonApplication.cpp"
   "${SRC_DIR}/Framework/Application/MacApplication.mm"
@@ -43,11 +72,15 @@ add_executable(terminal
   "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"
+  "${SHADER_HEADER}"
 )
 
 set(INCLUDE_DIR "${SRC_DIR}/Framework/include")
 
-target_include_directories(terminal PRIVATE "${INCLUDE_DIR}")
+target_include_directories(terminal PRIVATE
+  "${INCLUDE_DIR}"
+  "${GEN_DIR}"
+)
 
 target_link_libraries(terminal PRIVATE
   pthread
