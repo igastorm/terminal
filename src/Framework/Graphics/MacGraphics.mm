@@ -18,7 +18,7 @@
 //  ----------------------------
 class ImpMacRenderPass : public ImpRenderPass {
 public:
-ImpMacRenderPass(id<MTLRenderCommandEncoder>);
+  ImpMacRenderPass(id<MTLRenderCommandEncoder>);
 };
 
 ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder) {
@@ -70,7 +70,7 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
   window->addRef();
 
   @autoreleasepool {
-    // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが)
+    // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが) ← OK (適切)
     // getter を IWindow に追加すればいいがそれだと内部が漏れる
     // ImpMacWindow
     // の先頭にマジックナンバーを置いて逆キャストできるかチェックするのもできる
@@ -232,7 +232,7 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     callback(&pass, data);
     [encoder release];
 
-    //end
+    // end
     [encoder endEncoding];
     [cmdBuffer presentDrawable:drawable];
     [cmdBuffer commit];
