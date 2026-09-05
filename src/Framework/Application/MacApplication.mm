@@ -3,6 +3,7 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
@@ -145,6 +146,30 @@ template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
     this->data.appDelegate = nil;
   }
   return true;
+}
+
+template <> void ImpMacApplicaton::postEvent() {
+  // もし, dispatch_async_f
+  // が処理中に再度同じイベントをぶち込むと重複してイベントが発行されることになるのでフラグで判定が必要
+  // (よっぽど重い時以外には問題にならないかもしれないが)
+  static std::atomic<bool> post_event_pending{false};
+
+  // 前の値を読み取って新しい値と交換
+  if (!post_event_pending.exchange(true)) {
+    dispatch_async_f(
+        dispatch_get_main_queue(), this, [](void *context) -> void {
+          @autoreleasepool {
+            post_event_pending.store(false);
+
+            ImpMacApplicaton *app = static_cast<ImpMacApplicaton *>(context);
+
+            // ★ メインスレッドで UserEvent を 1 回だけ発火
+            Event event;
+            event.type = EventType::UserEvent;
+            app->dispatchEvent(event);
+          }
+        });
+  }
 }
 
 // Common だがここで実装しないと Cocoa の初期化が呼べない気がする

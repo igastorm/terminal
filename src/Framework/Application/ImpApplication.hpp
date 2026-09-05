@@ -8,6 +8,7 @@ private:
   IWindow *createWindow(int, int, const char *) override;
   IGraphicsDevice* createGraphicsDevice() override;
   bool run(IAppHandler *) override;
+  void postEvent() override;
 
 public:
   void terminate() override;

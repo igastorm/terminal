@@ -14,7 +14,8 @@ enum class EventType {
   MouseUp,
   MouseMove,
   MouseScroll,
-  AppReopen
+  AppReopen,
+  UserEvent           // postEvent による通知
 };
 
 enum class AppResult {

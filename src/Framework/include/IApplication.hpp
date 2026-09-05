@@ -13,6 +13,8 @@ public:
 
   virtual IGraphicsDevice *createGraphicsDevice() = 0;
 
+  virtual void postEvent() = 0;
+
   virtual ~IApplication() = default;
 };
 
