@@ -31,4 +31,6 @@ public:
   static ImpGraphicsDevice *
   createGraphicsDevice(ImpApplication<PlatformApplicationData> *);
   virtual ~ImpGraphicsDevice() override;
+  
+  void getPlatformData(const PlatformData **) const;
 };

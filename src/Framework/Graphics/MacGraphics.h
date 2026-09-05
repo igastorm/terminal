@@ -23,12 +23,18 @@ struct ImpGraphicsDeviceData {
 using ImpMacGraphicsDevice =
     ImpGraphicsDevice<ImpGraphicsDeviceData, ImpApplicationData>;
 
+template <>
+void ImpMacGraphicsDevice::getPlatformData(
+    const ImpGraphicsDeviceData **platform_data) const;
+
 //  ----------------------------
 //  Surface
 //  ----------------------------
 
 struct ImpSurfaceData {
-  ImpMacGraphicsDevice* device = nullptr;
+  IWindow *window = nullptr;
+  CAMetalLayer *layer = nil;
+  ImpMacGraphicsDevice *device = nullptr;
   int width = 0;
   int height = 0;
 };

@@ -1,6 +1,7 @@
 #include "MacGraphics.h"
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
+#include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
@@ -25,13 +26,97 @@ public:
                 int, int);
 };
 
-template <> bool ImpSurface::bindToWindow(IWindow *window) {
-  window->addRef();
-  return true;
+template <> void ImpSurface::unbindWindow() {
+  @autoreleasepool {
+    if (this->data.window != nullptr) {
+      const ImpWindowData *window_data_ptr = nullptr;
+      static_cast<ImpMacWindow *>(this->data.window)
+          ->getPlatformData(&window_data_ptr);
+
+      if (window_data_ptr != nullptr) {
+        WindowView *view = window_data_ptr->view;
+        view.layer = nil;
+        view.wantsLayer = NO;
+      }
+
+      this->data.window->release();
+      this->data.window = nullptr;
+    }
+    if (this->data.layer != nil) {
+      [this->data.layer release];
+      this->data.layer = nil;
+    }
+  }
 }
 
-template <>
-void ImpSurface::unbindWindow() { // ウィンドウの参照カウントを減らす
+template <> bool ImpSurface::bindToWindow(IWindow *window) {
+  this->unbindWindow();
+  if (window == nullptr) {
+    return false;
+  }
+
+  // 参照を増やす
+  this->data.window = window;
+  window->addRef();
+
+  const ImpWindowData *window_data_ptr = nullptr;
+
+  // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが)
+  // getter を IWindow に追加すればいいがそれだと内部が漏れる
+  // ImpMacWindow
+  // の先頭にマジックナンバーを置いて逆キャストできるかチェックするのもできる
+  static_cast<ImpMacWindow *>(window)->getPlatformData(&window_data_ptr);
+  if (window_data_ptr == nullptr) {
+    this->unbindWindow();
+    return false;
+  }
+
+  const ImpGraphicsDeviceData *device_data_ptr = nullptr;
+  this->data.device->getPlatformData(&device_data_ptr);
+  if (device_data_ptr == nullptr) {
+    // ここの条件が成り立つのはおかしい (Framework
+    // 側の実装がミスってるからユーザは悪くない)
+    this->unbindWindow();
+    return false;
+  }
+
+  @autoreleasepool {
+    // view はポインタなので view に変更を加えると window_data_ptr->view
+    // 側にも反映される
+    WindowView *view = window_data_ptr->view;
+    if (view == nil) {
+      // ここの条件も成り立ったらもはやバグ
+      this->unbindWindow();
+      return false;
+    }
+
+    CAMetalLayer *layer = [[CAMetalLayer alloc] init];
+    // device の一部を参照するがデストラクタで必ず unbind を呼ぶので addRef
+    // は不要
+    layer.device = device_data_ptr->device;
+    layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    // NO にすると CPU で読み取りができるってことか
+    // しかし重たくなると思われる
+    // Unified メモリアーキテクチャだとそうでもない気がするが
+    layer.framebufferOnly = YES;
+    // ウィンドウ全体に貼り付ける
+    layer.frame = view.bounds;
+    if (view.window == nil) {
+      // 一応ガード用 if があるがこれが nil ということは createWindow がおかしい
+      // 高 DPI 対応 (Retina)？ ピクセルレベルのビューサイズを得るっぽい
+      layer.contentsScale = [view.window backingScaleFactor];
+      [layer release];
+      this->unbindWindow();
+      return false;
+    }
+
+    // Metal レイヤーを貼り付ける
+    view.layer = layer;
+    view.wantsLayer = YES;
+
+    this->data.layer = layer;
+  }
+  return true;
 }
 
 template <>
@@ -43,6 +128,13 @@ ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
       this->data.device->release();
       this->data.device = nullptr;
     }
+    // unbind の方でやるから不要
+    /*
+    if (this->data.window != nullptr) {
+      this->data.window->release();
+      this->data.window = nullptr;
+    }
+    */
   }
 }
 
@@ -78,6 +170,12 @@ ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
       this->appInstance = nullptr;
     }
   }
+}
+
+template <>
+void ImpMacGraphicsDevice::getPlatformData(
+    const ImpGraphicsDeviceData **platform_data) const {
+  *platform_data = &this->data;
 }
 
 template <>

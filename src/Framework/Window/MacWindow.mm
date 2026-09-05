@@ -10,6 +10,7 @@
 #include <cstring>
 #include <iostream>
 #include <new>
+#include "MacWindow.h"
 
 // C++ 側から呼ばれる可能性があるもの意外 ([NSApp run])
 // の中からしか呼ばれないものは @autoreleasepool がいらないらしい　
@@ -17,10 +18,6 @@
 // ----------------------------
 // キー入力と画面描画イベント
 // ----------------------------
-@interface WindowView : NSView <NSTextInputClient>
-@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
-@property(nonatomic, assign) IWindow *iwindow;
-@end
 
 @implementation WindowView
 - (void)dealloc {
@@ -253,10 +250,6 @@
 // ----------------------------
 // ウィンドウデリゲート
 // ----------------------------
-@interface WindowDelegate : NSObject <NSWindowDelegate>
-@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
-@property(nonatomic, assign) IWindow *iwindow;
-@end
 
 @implementation WindowDelegate
 - (void)dealloc {
@@ -278,9 +271,6 @@
 }
 @end
 
-@interface CocoaWindow : NSWindow
-@end
-
 @implementation CocoaWindow
 - (void)dealloc {
   // 一度でも show
@@ -297,13 +287,6 @@
 //  ----------------------------
 //  具象クラス
 //  ----------------------------
-struct ImpWindowData {
-  CocoaWindow *window = nil;
-  WindowDelegate *delegate = nil;
-  WindowView *view = nil;
-};
-
-using ImpMacWindow = ImpWindow<ImpWindowData, ImpApplicationData>;
 
 template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
   @autoreleasepool {
@@ -332,6 +315,10 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
       this->appInstance = nullptr;
     }
   }
+}
+
+template <> void ImpMacWindow::getPlatformData(const ImpWindowData** platform_data) const{
+  *platform_data = &this->data;
 }
 
 template <> bool ImpMacWindow::setTitle(const char *title) {

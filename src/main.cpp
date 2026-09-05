@@ -22,6 +22,7 @@ private:
 
       device = appInstance->createGraphicsDevice();
       surface = device->createSurface(100, 100);
+      //surface->bindToWindow(window);
     }
   }
 
