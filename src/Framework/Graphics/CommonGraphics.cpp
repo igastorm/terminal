@@ -2,6 +2,21 @@
 #include <cstdlib>
 
 //  ----------------------------
+//  Render Pass
+//  ----------------------------
+
+//int CommonRenderPass::addRef() { return ++this->ref_count; }
+
+//int CommonRenderPass::release() {
+//  if (--this->ref_count == 0) {
+//    this->~CommonRenderPass();
+//    free(this);
+//    return 0;
+//  }
+//  return this->ref_count;
+//}
+
+//  ----------------------------
 //  Surface
 //  ----------------------------
 

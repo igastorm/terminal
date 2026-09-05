@@ -317,8 +317,8 @@ template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
   }
 }
 
-template <> void ImpMacWindow::getPlatformData(const ImpWindowData** platform_data) const{
-  *platform_data = &this->data;
+template <> ImpWindowData ImpMacWindow::getPlatformData() const{
+  return this->data;
 }
 
 template <> bool ImpMacWindow::setTitle(const char *title) {

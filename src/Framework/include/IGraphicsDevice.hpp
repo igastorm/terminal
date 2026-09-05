@@ -9,5 +9,6 @@ public:
 
   virtual ISurface *createSurface(int, int) = 0;
 
-  virtual bool render(ISurface *, RenderCallBack, void *) = 0;
+  virtual bool render(ISurface *, RenderCallBack, void *,
+                      const RenderPassDesc = IRenderPass::DEFAULT_DESC) = 0;
 };

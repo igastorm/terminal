@@ -2,11 +2,15 @@
 #include "IObject.hpp"
 #include <cstdint>
 
-class IRenderPass : public IObject {
+struct RenderPassDesc {
+  bool clear = true;
+  std::uint32_t color = 0xFF000000;
+};
+
+class IRenderPass : private IObject {
 public:
   virtual ~IRenderPass() = default;
-
-  virtual void clear(std::uint32_t) = 0;
+  static inline const RenderPassDesc DEFAULT_DESC;
 };
 
 using RenderCallBack = void (*)(IRenderPass *, void *);

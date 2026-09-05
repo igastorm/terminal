@@ -12,20 +12,29 @@
 #include <new>
 
 //  ----------------------------
+//  Render Pass
+//  ----------------------------
+
+struct ImpRenderPassData {};
+
+// using ImpMacRenderPass = ImpRenderPass<ImpRenderPassData,
+// ImpApplicationData>;
+
+//  ----------------------------
 //  Graphics Device
 //  ----------------------------
 
 struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
+  // ImpMacRenderPass* render_pass = nullptr;
 };
 
 using ImpMacGraphicsDevice =
     ImpGraphicsDevice<ImpGraphicsDeviceData, ImpApplicationData>;
 
 template <>
-void ImpMacGraphicsDevice::getPlatformData(
-    const ImpGraphicsDeviceData **platform_data) const;
+ImpGraphicsDeviceData ImpMacGraphicsDevice::getPlatformData(void) const;
 
 //  ----------------------------
 //  Surface

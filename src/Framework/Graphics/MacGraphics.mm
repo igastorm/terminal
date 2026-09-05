@@ -29,15 +29,13 @@ public:
 template <> void ImpSurface::unbindWindow() {
   @autoreleasepool {
     if (this->data.window != nullptr) {
-      const ImpWindowData *window_data_ptr = nullptr;
       static_cast<ImpMacWindow *>(this->data.window)
-          ->getPlatformData(&window_data_ptr);
+          ->getPlatformData()
+          .view.layer = nil;
 
-      if (window_data_ptr != nullptr) {
-        WindowView *view = window_data_ptr->view;
-        view.layer = nil;
-        view.wantsLayer = NO;
-      }
+      static_cast<ImpMacWindow *>(this->data.window)
+          ->getPlatformData()
+          .view.wantsLayer = NO;
 
       this->data.window->release();
       this->data.window = nullptr;
@@ -59,31 +57,17 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
   this->data.window = window;
   window->addRef();
 
-  const ImpWindowData *window_data_ptr = nullptr;
-
-  // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが)
-  // getter を IWindow に追加すればいいがそれだと内部が漏れる
-  // ImpMacWindow
-  // の先頭にマジックナンバーを置いて逆キャストできるかチェックするのもできる
-  static_cast<ImpMacWindow *>(window)->getPlatformData(&window_data_ptr);
-  if (window_data_ptr == nullptr) {
-    this->unbindWindow();
-    return false;
-  }
-
-  const ImpGraphicsDeviceData *device_data_ptr = nullptr;
-  this->data.device->getPlatformData(&device_data_ptr);
-  if (device_data_ptr == nullptr) {
-    // ここの条件が成り立つのはおかしい (Framework
-    // 側の実装がミスってるからユーザは悪くない)
-    this->unbindWindow();
-    return false;
-  }
-
   @autoreleasepool {
-    // view はポインタなので view に変更を加えると window_data_ptr->view
+    // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが)
+    // getter を IWindow に追加すればいいがそれだと内部が漏れる
+    // ImpMacWindow
+    // の先頭にマジックナンバーを置いて逆キャストできるかチェックするのもできる
+    WindowView *view =
+        static_cast<ImpMacWindow *>(this->data.window)->getPlatformData().view;
+
+    // view はポインタなので view に変更を加えると window
     // 側にも反映される
-    WindowView *view = window_data_ptr->view;
+    // 型は NSView でも WindowView でもどっちでもいい
     if (view == nil) {
       // ここの条件も成り立ったらもはやバグ
       this->unbindWindow();
@@ -93,7 +77,7 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
     CAMetalLayer *layer = [[CAMetalLayer alloc] init];
     // device の一部を参照するがデストラクタで必ず unbind を呼ぶので addRef
     // は不要
-    layer.device = device_data_ptr->device;
+    layer.device = this->data.device->getPlatformData().device;
     layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     // NO にすると CPU で読み取りができるってことか
     // しかし重たくなると思われる
@@ -103,7 +87,7 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
     layer.frame = view.bounds;
     if (view.window == nil) {
       // 一応ガード用 if があるがこれが nil ということは createWindow がおかしい
-      // 高 DPI 対応 (Retina)？ ピクセルレベルのビューサイズを得るっぽい
+      // 高 DPI 対応 (Retina) ピクセルレベルのビューサイズを得るっぽい
       layer.contentsScale = [view.window backingScaleFactor];
       [layer release];
       this->unbindWindow();
@@ -117,6 +101,10 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
     this->data.layer = layer;
   }
   return true;
+}
+
+template <> ImpSurfaceData ImpSurface::getPlatformData() const {
+  return this->data;
 }
 
 template <>
@@ -173,14 +161,69 @@ ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
 }
 
 template <>
-void ImpMacGraphicsDevice::getPlatformData(
-    const ImpGraphicsDeviceData **platform_data) const {
-  *platform_data = &this->data;
+ImpGraphicsDeviceData ImpMacGraphicsDevice::getPlatformData() const {
+  return this->data;
 }
 
 template <>
-bool ImpMacGraphicsDevice::render(ISurface *, RenderCallBack, void *) {
-  return true;
+bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
+                                  void *data, const RenderPassDesc pass_desc) {
+  if (isurface == nullptr || callback == nullptr) {
+    // return false;
+  }
+
+  @autoreleasepool {
+    ImpSurface *surface = static_cast<ImpSurface *>(isurface);
+    CAMetalLayer *layer = surface->getPlatformData().layer;
+
+    if (layer == nil) {
+      return false;
+    }
+
+    // バックバッファを取得
+    // 複数のバッファがあって, 表示中のバッファ,
+    // 描画中のバッファというようになってるらしい (ティアリング 防止)
+    id<CAMetalDrawable> drawable = [layer nextDrawable];
+    if (drawable == nil) {
+      return false;
+    }
+
+    MTLRenderPassDescriptor *desc =
+        [MTLRenderPassDescriptor renderPassDescriptor];
+
+    // 描き込み先のテクスチャ
+    desc.colorAttachments[0].texture = drawable.texture;
+
+    // 描画を開始時に前のフレームをどうするか
+    // Clear: 指定色でクリア, Load: 保持 (遅いらしい)
+    desc.colorAttachments[0].loadAction =
+        pass_desc.clear ? MTLLoadActionClear : MTLLoadActionLoad;
+
+    // 描画が終わった後, 結果をテクスチャに保存するか
+    desc.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+    // クリアに使う色
+    desc.colorAttachments[0].clearColor =
+        MTLClearColorMake(((pass_desc.color >> 16) & 0xFF) / 255.0,
+                          ((pass_desc.color >> 8) & 0xFF) / 255.0,
+                          (pass_desc.color & 0xFF) / 255.0,
+                          ((pass_desc.color >> 24) & 0xFF) / 255.0);
+
+    id<MTLCommandBuffer> cmdBuffer = [this->data.command_queue commandBuffer];
+    id<MTLRenderCommandEncoder> encoder =
+        [cmdBuffer renderCommandEncoderWithDescriptor:desc];
+
+    // ここでコールバック (beign-end)
+    // RenderPass
+    callback(nullptr, data);
+
+    [encoder endEncoding];
+
+    [cmdBuffer presentDrawable:drawable];
+    [cmdBuffer commit];
+
+    return true;
+  }
 }
 
 template <>

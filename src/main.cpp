@@ -6,8 +6,8 @@ class TerminalApp : public IAppHandler {
 private:
   IWindow *window = nullptr;
   IPTY *pty = nullptr;
-  IGraphicsDevice* device = nullptr;
-  ISurface* surface = nullptr;
+  IGraphicsDevice *device = nullptr;
+  ISurface *surface = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -22,7 +22,8 @@ private:
 
       device = appInstance->createGraphicsDevice();
       surface = device->createSurface(100, 100);
-      //surface->bindToWindow(window);
+      surface->bindToWindow(window);
+      device->render(surface, [](IRenderPass *, void *) -> void {}, nullptr);
     }
   }
 
@@ -43,12 +44,13 @@ private:
     }
 
     if (this->surface != nullptr) {
+      this->surface->unbindWindow();
       this->surface->release();
       this->surface = nullptr;
     }
   }
 
-  void processPTYInput(const Event& event) {
+  void processPTYInput(const Event &event) {
     if (this->pty != nullptr) {
       this->pty->writeInput(event.text.utf8, event.text.len);
     }

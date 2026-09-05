@@ -2,6 +2,17 @@
 #include "../Application/ImpApplication.hpp"
 #include "CommonGraphics.hpp"
 
+//template <class PlatformData, class PlatformApplicationData>
+//class ImpRenderPass : public CommonRenderPass {
+//protected:
+//  PlatformData data;
+//
+//  void clear(std::uint32_t) override;
+//
+//public:
+//  ~ImpRenderPass() override;
+//};
+
 template <class PlatformData, class PlatformApplicationData>
 class ImpSurfaceTemplate : public CommonSurface {
 protected:
@@ -16,6 +27,8 @@ protected:
 
 public:
   ~ImpSurfaceTemplate() override;
+
+  PlatformData getPlatformData() const;
 };
 
 template <class PlatformData, class PlatformApplicationData>
@@ -25,12 +38,12 @@ private:
   ImpApplication<PlatformApplicationData> *appInstance;
 
   ISurface *createSurface(int, int) override;
-  bool render(ISurface *, RenderCallBack, void *) override;
+  bool render(ISurface *, RenderCallBack, void *, const RenderPassDesc) override;
 
 public:
   static ImpGraphicsDevice *
   createGraphicsDevice(ImpApplication<PlatformApplicationData> *);
-  virtual ~ImpGraphicsDevice() override;
+  ~ImpGraphicsDevice() override;
   
-  void getPlatformData(const PlatformData **) const;
+  PlatformData getPlatformData() const;
 };

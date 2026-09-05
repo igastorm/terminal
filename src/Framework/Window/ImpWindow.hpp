@@ -15,7 +15,7 @@ private:
 public:
   static ImpWindow *createWindow(ImpApplication<PlatformApplicationData> *, int,
                                  int, const char *);
-  void getPlatformData(const PlatformData **) const;
+  PlatformData getPlatformData() const;
 
   ~ImpWindow() override;
 };
