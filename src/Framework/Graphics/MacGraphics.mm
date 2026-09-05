@@ -181,7 +181,7 @@ template <>
 bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
                                   void *data, const RenderPassDesc pass_desc) {
   if (isurface == nullptr || callback == nullptr) {
-    // return false;
+    return false;
   }
 
   @autoreleasepool {
