@@ -4,7 +4,7 @@
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
-#include "Shaders_metallib.hpp"
+#include "shaders_metallib.hpp"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>

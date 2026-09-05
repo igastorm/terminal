@@ -41,10 +41,10 @@ find_program(XCRUN xcrun REQUIRED)
 
 set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Shaders.metal")
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/Shaders.air")
-set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/Shaders.metallib")
-set(SHADER_HEADER "${GEN_DIR}/Shaders_metallib.hpp")
-set(BIN2H_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/bin2hpp.cmake") 
+set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/shaders.air")
+set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/shaders.metallib")
+set(SHADER_HEADER "${GEN_DIR}/shaders_metallib.hpp")
+set(BIN2H_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/bin2hpp.cmake")
 
 file(MAKE_DIRECTORY "${GEN_DIR}")
 
@@ -56,7 +56,7 @@ add_custom_command(
   COMMAND "${CMAKE_COMMAND}"
             "-DINPUT=${SHADER_LIB}"
             "-DOUTPUT=${SHADER_HEADER}"
-            "-DVARNAME=Shaders_metallib"
+            "-DVARNAME=shaders_metallib"
             -P "${BIN2H_SCRIPT}"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   DEPENDS "${SHADER_SRC}"
