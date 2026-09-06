@@ -7,7 +7,7 @@
 #include "ImpGraphics.hpp"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
-#import <QuartzCore/CAMetalLayer.h>
+#import <QuartzCore/QuartzCore.h>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -18,7 +18,7 @@
 //  ----------------------------
 class ImpMacRenderPass : public ImpRenderPass {
 public:
-  ImpMacRenderPass(id<MTLRenderCommandEncoder>/*, id<MTLBuffer>*/);
+  ImpMacRenderPass(id<MTLRenderCommandEncoder> /*, id<MTLBuffer>*/);
 };
 
 ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder/*,
@@ -129,14 +129,22 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
     layer.framebufferOnly = YES;
     // ウィンドウ全体に貼り付ける
     layer.frame = view.bounds;
+    // フレームの絵が引き伸ばされずに, その場に元の等倍サイズのまま留まる
+    // ウィンドウサイズを変更した時にブレるのを防止
+    layer.contentsGravity = kCAGravityTopLeft;
+    // なんか OS 側のアニメーションのタイミングを調整するらしい
+    layer.presentsWithTransaction = YES;
     if (view.window == nil) {
       // 一応ガード用 if があるがこれが nil ということは createWindow がおかしい
-      // 高 DPI 対応 (Retina) ピクセルレベルのビューサイズを得るっぽい
-      layer.contentsScale = [view.window backingScaleFactor];
       [layer release];
       this->unbindWindow();
       return false;
     }
+    
+    CGFloat scale = [view.window backingScaleFactor];
+    layer.contentsScale = scale;
+    layer.drawableSize = CGSizeMake(view.bounds.size.width * scale,
+                                    view.bounds.size.height * scale);
 
     // Metal レイヤーを貼り付ける
     view.layer = layer;
@@ -226,6 +234,9 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
 
   bool result = true;
   @autoreleasepool {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    
     ImpSurface *surface = static_cast<ImpSurface *>(isurface);
     CAMetalLayer *layer = surface->getPlatformData().layer;
 
@@ -271,6 +282,22 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     if (this->data.pipeline_state != nil) {
       [encoder setRenderPipelineState:this->data.pipeline_state];
 
+      // Retina ディスプレイの論理ポイント座標系を使用
+      NSView *view =
+          static_cast<ImpMacWindow *>(surface->getPlatformData().window)
+              ->getPlatformData()
+              .view;
+
+      float true_width = view.bounds.size.width;
+      float true_height = view.bounds.size.height;
+
+      struct {
+        float width;
+        float r_height;
+      } viewport = {true_width, 2.0f / true_height};
+
+      [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
+
       // ここでコールバック (beign-end)
       if (callback != nullptr) {
         ImpMacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
@@ -286,6 +313,12 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     [encoder endEncoding];
     [cmdBuffer presentDrawable:drawable];
     [cmdBuffer commit];
+
+    // ウィンドウサイズ変更中に端の方にウィンドウの地肌が出るのを防ぐ
+    // GPU が描画を始めようとするまで待つので描画されない部分を減らせる
+    [cmdBuffer waitUntilScheduled]; 
+
+    [CATransaction commit];
 
     return result;
   }

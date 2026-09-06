@@ -86,16 +86,21 @@ public:
 
     if (event.type == EventType::WindowExpose) {
       if (event.window == this->window) {
+        float x = 50.0f;
+        float y = 50.0f;
+        float w = 300.0f;
+        float h = 200.0f;
+
         Vertex quad[6] = {
             // 三角形 1
-            {{-0.5f, -0.5f}, 0xFFFF0000}, // 左下 (赤)
-            {{0.5f, -0.5f}, 0xFF00FF00},  // 右下 (緑)
-            {{-0.5f, 0.5f}, 0xFF0000FF},  // 左上 (青)
+            {{x, y}, 0xFFFF0000},     // 左下 (赤)
+            {{x + w, y}, 0xFF00FF00}, // 右下 (緑)
+            {{x, y + h}, 0xFF0000FF}, // 左上 (青)
 
             // 三角形 2
-            {{-0.5f, 0.5f}, 0xFF0000FF}, // 左上 (青)
-            {{0.5f, -0.5f}, 0xFF00FF00}, // 右下 (緑)
-            {{0.5f, 0.5f}, 0xFFFFFF00},  // 右上 (黄)
+            {{x, y + h}, 0xFF0000FF},     // 左上 (青)
+            {{x + w, y}, 0xFF00FF00},     // 右下 (緑)
+            {{x + w, y + h}, 0xFFFFFF00}, // 右上 (黄)
         };
         device->render(
             surface,

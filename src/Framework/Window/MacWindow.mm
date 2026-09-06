@@ -67,6 +67,7 @@
     CGSize size = self.bounds.size;
 
     CAMetalLayer *metalLayer = (CAMetalLayer *)self.layer;
+    metalLayer.contentsScale = scale;
     metalLayer.drawableSize =
         CGSizeMake(size.width * scale, size.height * scale);
   }
