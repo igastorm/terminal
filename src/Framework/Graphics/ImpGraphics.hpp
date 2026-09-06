@@ -7,6 +7,8 @@ class ImpRenderPassTemplate : public CommonRenderPass {
 protected:
   PlatformData data;
 
+  bool draw() override;
+
 public:
   ~ImpRenderPassTemplate() override = default;
 };

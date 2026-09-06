@@ -81,12 +81,14 @@ public:
 
     if (event.type == EventType::UserEvent) {
       std::cout << "UserEvent\n";
-     return AppResult::Continue; 
+      return AppResult::Continue;
     }
 
     if (event.type == EventType::WindowExpose) {
       if (event.window == this->window) {
-        device->render(surface, [](IRenderPass *, void *) -> void {}, nullptr);
+        device->render(
+            surface, [](IRenderPass *pass, void *) -> void { pass->draw(); },
+            nullptr);
       }
     }
     return AppResult::Continue;

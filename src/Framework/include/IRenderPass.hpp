@@ -10,6 +10,8 @@ struct RenderPassDesc {
 class IRenderPass : private IObject {
 public:
   virtual ~IRenderPass() = default;
+  virtual bool draw() = 0;
+  
   static inline const RenderPassDesc DEFAULT_DESC;
 };
 

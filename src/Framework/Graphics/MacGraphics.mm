@@ -25,6 +25,19 @@ ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder) {
   this->data.encoder = encoder;
 }
 
+template <> bool ImpRenderPass::draw() {
+  // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
+  // そもそもここで使ってるメソッドはリソース生成しないらしい
+  if (this->data.encoder != nil) {
+    [this->data.encoder setTriangleFillMode:MTLTriangleFillModeLines];
+    [this->data.encoder drawPrimitives:MTLPrimitiveTypeTriangle
+                           vertexStart:0
+                           vertexCount:6];
+    return true;
+  }
+  return false;
+}
+
 //  ----------------------------
 //  Surface
 //  ----------------------------
@@ -157,6 +170,10 @@ template <>
 ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
                                          ImpApplicationData>() {
   @autoreleasepool {
+    if (this->data.pipeline_state != nil) {
+      [this->data.pipeline_state release];
+      this->data.pipeline_state = nil;
+    }
     if (this->data.command_queue != nil) {
       [this->data.command_queue release];
       this->data.command_queue = nil;
@@ -184,6 +201,7 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     return false;
   }
 
+  bool result = true;
   @autoreleasepool {
     ImpSurface *surface = static_cast<ImpSurface *>(isurface);
     CAMetalLayer *layer = surface->getPlatformData().layer;
@@ -226,18 +244,27 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     id<MTLRenderCommandEncoder> encoder =
         [cmdBuffer renderCommandEncoderWithDescriptor:desc];
 
-    // ここでコールバック (beign-end)
-    ImpMacRenderPass pass(encoder);
-    [encoder retain];
-    callback(&pass, data);
-    [encoder release];
+    // パイプラインステートをセット
+    if (this->data.pipeline_state != nil) {
+      [encoder setRenderPipelineState:this->data.pipeline_state];
+
+      // ここでコールバック (beign-end)
+      if (callback != nullptr) {
+        ImpMacRenderPass pass(encoder);
+        [encoder retain];
+        callback(&pass, data);
+        [encoder release];
+      }
+    } else {
+      result = false;
+    }
 
     // end
     [encoder endEncoding];
     [cmdBuffer presentDrawable:drawable];
     [cmdBuffer commit];
 
-    return true;
+    return result;
   }
 }
 
@@ -284,6 +311,68 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
 
     if ((device->data.command_queue = [device->data.device newCommandQueue]) ==
         nil) {
+      device->release();
+      return nullptr;
+    }
+
+    dispatch_data_t shader_data =
+        dispatch_data_create(shaders_metallib, shaders_metallib_size, nil,
+                             ^{
+                             });
+    NSError *error = nil;
+    id<MTLLibrary> library = [device->data.device newLibraryWithData:shader_data
+                                                               error:&error];
+
+    // library が参照カウントを増やすので release する
+    dispatch_release(shader_data);
+
+    if (library == nil) {
+      std::cerr << "Failed to load metallib: "
+                << (error ? [[error localizedDescription] UTF8String] : "")
+                << std::endl;
+      device->release();
+      return nullptr;
+    }
+
+    // 関数名でシェーダーを取り出す
+    id<MTLFunction> vs = [library newFunctionWithName:@"vertex_main"];
+    id<MTLFunction> ps = [library newFunctionWithName:@"fragment_main"];
+
+    // vs と ps が参照カウントを増やすので release する
+    [library release];
+
+    if (vs == nil || ps == nil) {
+      std::cerr << "Failed to find vertex or fragment function" << std::endl;
+      if (vs != nil) {
+        [vs release];
+      }
+      if (ps != nil) {
+        [ps release];
+      }
+      device->release();
+      return nullptr;
+    }
+
+    // パイプラインステートの設定
+    MTLRenderPipelineDescriptor *pDesc =
+        [[MTLRenderPipelineDescriptor alloc] init];
+    pDesc.vertexFunction = vs;
+    pDesc.fragmentFunction = ps;
+    pDesc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+
+    device->data.pipeline_state =
+        [device->data.device newRenderPipelineStateWithDescriptor:pDesc
+                                                            error:&error];
+
+    // 参照カウントが増えるので release しておく
+    [vs release];
+    [ps release];
+    [pDesc release];
+
+    if (device->data.pipeline_state == nil) {
+      std::cerr << "Failed to create pipeline state: "
+                << (error ? [[error localizedDescription] UTF8String] : "")
+                << std::endl;
       device->release();
       return nullptr;
     }
