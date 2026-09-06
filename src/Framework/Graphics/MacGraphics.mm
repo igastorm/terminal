@@ -18,31 +18,37 @@
 //  ----------------------------
 class ImpMacRenderPass : public ImpRenderPass {
 public:
-  ImpMacRenderPass(id<MTLRenderCommandEncoder>, id<MTLBuffer>);
+  ImpMacRenderPass(id<MTLRenderCommandEncoder>/*, id<MTLBuffer>*/);
 };
 
-ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder,
-                                   id<MTLBuffer> vertex_buf) {
+ImpMacRenderPass::ImpMacRenderPass(id<MTLRenderCommandEncoder> encoder/*,
+                                   id<MTLBuffer> vertex_buf*/) {
   this->data.encoder = encoder;
-  this->data.vertex_buffer = vertex_buf;
+  // this->data.vertex_buffer = vertex_buf;
 }
 
 template <>
 bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
-  if (this->data.encoder == nil || this->data.vertex_buffer == nil ||
+  if (this->data.encoder == nil /*|| this->data.vertex_buffer == nil*/ ||
       vertices == nil || vertex_count <= 0) {
     return false;
   }
 
-  void *ptr = [this->data.vertex_buffer contents];
-  std::memcpy(ptr, vertices, sizeof(Vertex) * vertex_count);
+  // void *ptr = [this->data.vertex_buffer contents];
+  // std::memcpy(ptr, vertices, sizeof(Vertex) * vertex_count);
+
+  // スロット 0 に頂点データ をセット(4KB
+  // 以内ならバッファを使わなくていいらしい)
+  [this->data.encoder setVertexBytes:vertices
+                              length:sizeof(Vertex) * vertex_count
+                             atIndex:0];
 
   // スロット 0 に頂点バッファをセット
-  [this->data.encoder setVertexBuffer:this->data.vertex_buffer
-                               offset:0
-                              atIndex:0];
+  //[this->data.encoder setVertexBuffer:this->data.vertex_buffer
+  //                             offset:0
+  //                            atIndex:0];
 
   [this->data.encoder drawPrimitives:MTLPrimitiveTypeTriangle
                          vertexStart:0
@@ -183,10 +189,10 @@ template <>
 ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
                                          ImpApplicationData>() {
   @autoreleasepool {
-    if (this->data.vertex_buffer != nil) {
-      [this->data.vertex_buffer release];
-      this->data.vertex_buffer = nil;
-    }
+    // if (this->data.vertex_buffer != nil) {
+    //   [this->data.vertex_buffer release];
+    //   this->data.vertex_buffer = nil;
+    // }
     if (this->data.pipeline_state != nil) {
       [this->data.pipeline_state release];
       this->data.pipeline_state = nil;
@@ -267,7 +273,7 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
 
       // ここでコールバック (beign-end)
       if (callback != nullptr) {
-        ImpMacRenderPass pass(encoder, this->data.vertex_buffer);
+        ImpMacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
         [encoder retain];
         callback(&pass, data);
         [encoder release];
@@ -395,14 +401,14 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
     }
 
     // 頂点 1024 個分くらいのメモリをあらかじめ確保しておく
-    size_t buffer_size = sizeof(Vertex) * 1024;
-    device->data.vertex_buffer =
-        [device->data.device newBufferWithLength:buffer_size
-                                         options:MTLResourceStorageModeShared];
-    if (device->data.vertex_buffer == nil) {
-      device->release();
-      return nullptr;
-    }
+    // size_t buffer_size = sizeof(Vertex) * 1024;
+    // device->data.vertex_buffer =
+    //     [device->data.device newBufferWithLength:buffer_size
+    //                                      options:MTLResourceStorageModeShared];
+    // if (device->data.vertex_buffer == nil) {
+    //   device->release();
+    //   return nullptr;
+    // }
 
     return device;
   }
