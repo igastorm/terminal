@@ -7,7 +7,7 @@ class ImpRenderPassTemplate : public CommonRenderPass {
 protected:
   PlatformData data;
 
-  bool draw() override;
+  bool drawVertices(const Vertex *vertices, int vertex_count) override;
 
 public:
   ~ImpRenderPassTemplate() override = default;

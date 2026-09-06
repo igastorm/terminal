@@ -19,6 +19,7 @@
 
 struct ImpRenderPassData {
   id<MTLRenderCommandEncoder> encoder = nil;
+  id<MTLBuffer> vertex_buffer = nil;
 };
 
 using ImpRenderPass =
@@ -32,6 +33,7 @@ struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
+  id<MTLBuffer> vertex_buffer = nil;
 };
 
 using ImpMacGraphicsDevice =

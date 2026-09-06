@@ -86,9 +86,24 @@ public:
 
     if (event.type == EventType::WindowExpose) {
       if (event.window == this->window) {
+        Vertex quad[6] = {
+            // 三角形 1
+            { {-0.5f, -0.5f}, 0xFFFF0000 }, // 左下 (赤)
+            { { 0.5f, -0.5f}, 0xFF00FF00 }, // 右下 (緑)
+            { {-0.5f,  0.5f}, 0xFF0000FF }, // 左上 (青)
+
+            // 三角形 2
+            { {-0.5f,  0.5f}, 0xFF0000FF }, // 左上 (青)
+            { { 0.5f, -0.5f}, 0xFF00FF00 }, // 右下 (緑)
+            { { 0.5f,  0.5f}, 0xFFFFFF00 }, // 右上 (黄)
+        };
         device->render(
-            surface, [](IRenderPass *pass, void *) -> void { pass->draw(); },
-            nullptr);
+            surface,
+            [](IRenderPass *pass, void *arg) -> void {
+              Vertex *v = static_cast<Vertex *>(arg);
+              pass->drawVertices(v, 6);
+            },
+            quad);
       }
     }
     return AppResult::Continue;
