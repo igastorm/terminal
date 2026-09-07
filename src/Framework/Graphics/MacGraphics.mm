@@ -453,20 +453,20 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
     }
 
     // パイプラインステートの設定
-    MTLRenderPipelineDescriptor *pDesc =
+    MTLRenderPipelineDescriptor *pipeline_desc =
         [[MTLRenderPipelineDescriptor alloc] init];
-    pDesc.vertexFunction = vs;
-    pDesc.fragmentFunction = ps;
-    pDesc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+    pipeline_desc.vertexFunction = vs;
+    pipeline_desc.fragmentFunction = ps;
+    pipeline_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 
     device->data.pipeline_state =
-        [device->data.device newRenderPipelineStateWithDescriptor:pDesc
+        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
     // 参照カウントが増えるので release しておく
     [vs release];
     [ps release];
-    [pDesc release];
+    [pipeline_desc release];
 
     if (device->data.pipeline_state == nil) {
       std::cerr << "Failed to create pipeline state: "
