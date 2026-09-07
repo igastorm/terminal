@@ -197,6 +197,10 @@ template <>
 ImpMacGraphicsDevice::~ImpGraphicsDevice<ImpGraphicsDeviceData,
                                          ImpApplicationData>() {
   @autoreleasepool {
+    if (this->data.in_flight_semaphore != nil) {
+      dispatch_release(this->data.in_flight_semaphore);
+      this->data.in_flight_semaphore = nil;
+    }
     // if (this->data.vertex_buffer != nil) {
     //   [this->data.vertex_buffer release];
     //   this->data.vertex_buffer = nil;
@@ -237,6 +241,14 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     //[CATransaction begin];
     //[CATransaction setDisableActions:YES];
 
+    if (dispatch_semaphore_wait(this->data.in_flight_semaphore,
+                                pass_desc.frame_dropping ==
+                                        FrameDropping::Enable
+                                    ? DISPATCH_TIME_NOW
+                                    : DISPATCH_TIME_FOREVER) != 0) {
+      return false;
+    }
+
     ImpSurface *surface = static_cast<ImpSurface *>(isurface);
     CAMetalLayer *layer = surface->getPlatformData().layer;
 
@@ -247,8 +259,11 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     // バックバッファを取得
     // 複数のバッファがあって, 表示中のバッファ,
     // 描画中のバッファというようになってるらしい (ティアリング 防止)
+    // 3 枚あるらしい
+    // 全てのバッファが埋まっているとここでスレッドが一時停止する
     id<CAMetalDrawable> drawable = [layer nextDrawable];
     if (drawable == nil) {
+      dispatch_semaphore_signal(this->data.in_flight_semaphore);
       return false;
     }
 
@@ -330,6 +345,13 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     // end
     [encoder endEncoding];
     [cmdBuffer presentDrawable:drawable];
+
+    // ローカル変数にコピーしないと this がキャプチャされる
+    // キャプチャしたものはヒープにコピーされて retain される
+    dispatch_semaphore_t semaphore = this->data.in_flight_semaphore;
+    [cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer>) {
+      dispatch_semaphore_signal(semaphore); // 返却
+    }];
     [cmdBuffer commit];
 
     // ウィンドウサイズ変更中に端の方にウィンドウの地肌が出るのを防ぐ
@@ -452,6 +474,11 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
                 << std::endl;
       device->release();
       return nullptr;
+    }
+
+    device->data.in_flight_semaphore = dispatch_semaphore_create(3);
+    if (device->data.in_flight_semaphore == nil) {
+      device->release();
     }
 
     // 頂点 1024 個分くらいのメモリをあらかじめ確保しておく

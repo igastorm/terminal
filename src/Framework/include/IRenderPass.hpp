@@ -2,9 +2,15 @@
 #include "IObject.hpp"
 #include <cstdint>
 
+enum class FrameDropping {
+  Enable,
+  Disable
+};
+
 struct RenderPassDesc {
   bool clear = true;
   std::uint32_t color = 0xFF000000;
+  FrameDropping frame_dropping = FrameDropping::Disable;
 };
 
 struct Vertex {
