@@ -324,10 +324,12 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     if (this->data.pipeline_state != nil) {
       [encoder setRenderPipelineState:this->data.pipeline_state];
 
+      constexpr float inv_255 = 1.0f / 255.0f;
       struct {
         float width;
         float r_height;
-      } viewport = {true_width, 2.0f / true_height};
+        float inv_255;
+      } viewport = {true_width, 2.0f / true_height, inv_255};
 
       [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
 

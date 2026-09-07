@@ -18,6 +18,7 @@ struct VertexOut {
 struct ViewportUniform {
   float width;
   float r_height; // 2.0 x 逆数
+  float inv_255; // 255 の逆数
 };
 
 vertex VertexOut vertex_main(const device Vertex *vertices [[buffer(0)]],
@@ -38,8 +39,8 @@ vertex VertexOut vertex_main(const device Vertex *vertices [[buffer(0)]],
   // BGRA
   // CPU 側で設定したフォーマットに関わらず RGBA の順になる
   out.color = float4(vertices[vertexID].color[2], vertices[vertexID].color[1],
-                     vertices[vertexID].color[0], vertices[vertexID].color[3]) /
-              255.0f;
+                     vertices[vertexID].color[0], vertices[vertexID].color[3]) *
+              uniforms.inv_255;
   return out;
 }
 
