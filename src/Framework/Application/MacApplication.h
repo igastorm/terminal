@@ -12,8 +12,3 @@ struct ImpApplicationData {
 };
 
 using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
-
-template <> bool ImpMacApplicaton::initPlatform();
-template <> void ImpMacApplicaton::terminate();
-template <> void ImpMacApplicaton::dispatchEvent(const Event &event);
-template <> bool ImpMacApplicaton::run(IAppHandler *handler);

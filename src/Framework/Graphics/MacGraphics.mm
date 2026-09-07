@@ -133,14 +133,14 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
     // ウィンドウサイズを変更した時にブレるのを防止
     layer.contentsGravity = kCAGravityTopLeft;
     // なんか OS 側のアニメーションのタイミングを調整するらしい
-    layer.presentsWithTransaction = YES;
+    // layer.presentsWithTransaction = YES;
     if (view.window == nil) {
       // 一応ガード用 if があるがこれが nil ということは createWindow がおかしい
       [layer release];
       this->unbindWindow();
       return false;
     }
-    
+
     CGFloat scale = [view.window backingScaleFactor];
     layer.contentsScale = scale;
     layer.drawableSize = CGSizeMake(view.bounds.size.width * scale,
@@ -234,9 +234,9 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
 
   bool result = true;
   @autoreleasepool {
-    [CATransaction begin];
-    [CATransaction setDisableActions:YES];
-    
+    //[CATransaction begin];
+    //[CATransaction setDisableActions:YES];
+
     ImpSurface *surface = static_cast<ImpSurface *>(isurface);
     CAMetalLayer *layer = surface->getPlatformData().layer;
 
@@ -278,18 +278,36 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     id<MTLRenderCommandEncoder> encoder =
         [cmdBuffer renderCommandEncoderWithDescriptor:desc];
 
-    // パイプラインステートをセット
-    if (this->data.pipeline_state != nil) {
-      [encoder setRenderPipelineState:this->data.pipeline_state];
-
-      // Retina ディスプレイの論理ポイント座標系を使用
+    // Retina ディスプレイの論理ポイント座標系を使用
+    float true_width = 0;
+    float true_height = 0;
+    ImpMacWindow *window =
+        static_cast<ImpMacWindow *>(surface->getPlatformData().window);
+    if (window != nullptr) {
+      // ウィンドウにバインドされている場合
+      // アンバインドした後に別の Surface
+      // 上に描画したら最後の貼り付けていたウィンドウのサイズの比に変化する
+      // ウィンドウに貼り付けている場合, Surface
+      // の大きさを変えずにそのまま引き延ばすため
+      // しかし, Metal では座標が正規化されているので解像度自体は直接扱わない
+      // なかなか言語化が難しい
+      // ウィンドウサイズに合わせて勝手に Surface
+      // のサイズを変えていいならこの問題は起きない
       NSView *view =
           static_cast<ImpMacWindow *>(surface->getPlatformData().window)
               ->getPlatformData()
               .view;
+      true_width = view.bounds.size.width;
+      true_height = view.bounds.size.height;
+    } else {
+      // ウィンドウにバインドされてない場合
+      true_width = surface->getPlatformData().width;
+      true_height = surface->getPlatformData().height;
+    }
 
-      float true_width = view.bounds.size.width;
-      float true_height = view.bounds.size.height;
+    // パイプラインステートをセット
+    if (this->data.pipeline_state != nil) {
+      [encoder setRenderPipelineState:this->data.pipeline_state];
 
       struct {
         float width;
@@ -316,9 +334,12 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
 
     // ウィンドウサイズ変更中に端の方にウィンドウの地肌が出るのを防ぐ
     // GPU が描画を始めようとするまで待つので描画されない部分を減らせる
-    [cmdBuffer waitUntilScheduled]; 
+    // 全てのデリゲート・イベントはメインスレッド
+    if (window != nullptr && window->getPlatformData().resizing) {
+      [cmdBuffer waitUntilScheduled];
+    }
 
-    [CATransaction commit];
+    //[CATransaction commit];
 
     return result;
   }

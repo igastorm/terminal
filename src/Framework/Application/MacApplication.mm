@@ -13,38 +13,6 @@
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
-@implementation AppDelegate
-- (void)applicationDidFinishLaunching:(NSNotification *)notification {
-  // onInit 呼び出し
-  if (!self.handler->onInit(self.appInstance)) {
-    // onInit が失敗したらアプリを終了させる
-    [NSApp terminate:nil];
-  }
-}
-
-// Cmd+Q や Dock からの終了要求が来たときに呼ばれるらしい
-- (NSApplicationTerminateReply)applicationShouldTerminate:
-    (NSApplication *)sender {
-  // 自動で終了せずに自前の処理を経由させる
-  self.appInstance->terminate();
-  // Cocoa による終了処理をキャンセル
-  return NSTerminateCancel;
-}
-
-- (BOOL)applicationShouldHandleReopen:(NSApplication *)sender
-                    hasVisibleWindows:(BOOL)hasVisibleWindows {
-  // OS に最小化の復元やウィンドウ前面化を任せる
-  if (hasVisibleWindows == YES) {
-    return YES;
-  }
-
-  Event event;
-  event.type = EventType::AppReopen;
-  self.appInstance->dispatchEvent(event);
-  return NO;
-}
-@end
-
 template <> bool ImpMacApplicaton::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
@@ -194,3 +162,35 @@ CommonApplication *createPlatformApplication() {
   }
   return app;
 }
+
+@implementation AppDelegate
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
+  // onInit 呼び出し
+  if (!self.handler->onInit(self.appInstance)) {
+    // onInit が失敗したらアプリを終了させる
+    [NSApp terminate:nil];
+  }
+}
+
+// Cmd+Q や Dock からの終了要求が来たときに呼ばれるらしい
+- (NSApplicationTerminateReply)applicationShouldTerminate:
+    (NSApplication *)sender {
+  // 自動で終了せずに自前の処理を経由させる
+  self.appInstance->terminate();
+  // Cocoa による終了処理をキャンセル
+  return NSTerminateCancel;
+}
+
+- (BOOL)applicationShouldHandleReopen:(NSApplication *)sender
+                    hasVisibleWindows:(BOOL)hasVisibleWindows {
+  // OS に最小化の復元やウィンドウ前面化を任せる
+  if (hasVisibleWindows == YES) {
+    return YES;
+  }
+
+  Event event;
+  event.type = EventType::AppReopen;
+  self.appInstance->dispatchEvent(event);
+  return NO;
+}
+@end

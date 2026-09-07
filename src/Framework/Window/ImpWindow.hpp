@@ -3,8 +3,8 @@
 #include "CommonWindow.hpp"
 
 template <class PlatformData, class PlatformApplicationData>
-class ImpWindow : public CommonWindow {
-private:
+class ImpWindowTemplate : public CommonWindow {
+protected:
   PlatformData data;
   ImpApplication<PlatformApplicationData> *appInstance;
 
@@ -13,9 +13,9 @@ private:
   bool hide() override;
 
 public:
-  static ImpWindow *createWindow(ImpApplication<PlatformApplicationData> *, int,
+  static ImpWindowTemplate *createWindow(ImpApplication<PlatformApplicationData> *, int,
                                  int, const char *);
   PlatformData getPlatformData() const;
 
-  ~ImpWindow() override;
+  ~ImpWindowTemplate() override;
 };

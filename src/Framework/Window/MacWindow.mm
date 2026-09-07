@@ -6,12 +6,147 @@
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
-#import <QuartzCore/CAMetalLayer.h>
+#import <QuartzCore/QuartzCore.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <new>
+
+//  ----------------------------
+//  具象クラス
+//  ----------------------------
+
+void ImpMacWindow::notifyResizing(bool flag) {
+  this->data.resizing = !flag;
+}
+
+template <> ImpWindow::~ImpWindowTemplate<ImpWindowData, ImpApplicationData>() {
+  @autoreleasepool {
+    if (this->data.window != nil) {
+      [this->data.window setDelegate:nil];
+      [this->data.window close];
+      [this->data.window makeFirstResponder:nil];
+      [this->data.window setContentView:nil];
+      [this->data.window orderOut:nil];
+      [this->data.window release];
+      this->data.window = nil;
+    }
+    if (this->data.view != nil) {
+      this->data.view.appInstance->release();
+      this->data.view.appInstance = nullptr;
+      [this->data.view removeFromSuperview];
+      [this->data.view release];
+      this->data.view = nil;
+    }
+    if (this->data.delegate != nil) {
+      [this->data.delegate release];
+      this->data.delegate = nil;
+    }
+    if (this->appInstance != nullptr) {
+      this->appInstance->release();
+      this->appInstance = nullptr;
+    }
+    this->data.resizing = false;
+  }
+}
+
+template <> ImpWindowData ImpWindow::getPlatformData() const {
+  return this->data;
+}
+
+template <> bool ImpWindow::setTitle(const char *title) {
+  @autoreleasepool {
+    NSString *ns_title = [NSString stringWithUTF8String:title];
+    [this->data.window setTitle:ns_title];
+    return true;
+  }
+}
+
+template <> bool ImpWindow::show() {
+  @autoreleasepool {
+    [this->data.window makeKeyAndOrderFront:nil];
+    [NSApp activateIgnoringOtherApps:YES];
+    return true;
+  }
+}
+
+template <> bool ImpWindow::hide() {
+  @autoreleasepool {
+    [this->data.window orderOut:nil];
+    return true;
+  }
+}
+
+template <>
+ImpWindow *
+ImpWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
+                        int width, int height, const char *title) {
+  @autoreleasepool {
+    ImpWindow *window =
+        static_cast<ImpWindow *>(std::malloc(sizeof(ImpWindow)));
+    if (window == nullptr) {
+      std::perror("malloc failed (createWindow)");
+      return nullptr;
+    }
+
+    window = new (window) ImpMacWindow;
+    window->addRef();
+
+    // appInstance を参照
+    window->appInstance = appInstance;
+    window->appInstance->addRef();
+
+    // ウィンドウを生成
+    NSRect frame = NSMakeRect(0, 0, width, height);
+    NSUInteger styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                           NSWindowStyleMaskMiniaturizable |
+                           NSWindowStyleMaskResizable;
+    window->data.window =
+        [[CocoaWindow alloc] initWithContentRect:frame
+                                       styleMask:styleMask
+                                         backing:NSBackingStoreBuffered
+                                           defer:NO];
+
+    // 閉じられた時に自動リリースされないようにする
+    window->data.window.releasedWhenClosed = NO;
+
+    // 中央に配置
+    [window->data.window center];
+
+    // WndProc みたいなやつの設定
+    // ウィンドウデリゲート
+    window->data.delegate = [[WindowDelegate alloc] init];
+    window->data.delegate.iwindow = window;
+    window->data.delegate.appInstance = appInstance;
+    [window->data.window setDelegate:window->data.delegate];
+
+    // ビュー
+    window->data.view = [[WindowView alloc] initWithFrame:frame];
+    window->data.view.iwindow = window;
+    window->data.view.appInstance = appInstance;
+    // appInstance を参照
+    [window->data.window setContentView:window->data.view];
+    window->data.view.appInstance->addRef();
+
+    // あった方がいいらしい
+    // 確実に view にフォーカスを当てるためらしい
+    [window->data.window makeFirstResponder:window->data.view];
+
+    window->setTitle(title);
+    window->show();
+
+    return window;
+  }
+}
+//} // namespace
+
+template <>
+IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
+                                                          const char *title) {
+  IWindow *window = ImpWindow::createWindow(this, width, height, title);
+  return window;
+}
 
 // C++ 側から呼ばれる可能性があるもの意外 ([NSApp run])
 // の中からしか呼ばれないものは @autoreleasepool がいらないらしい　
@@ -291,6 +426,16 @@
   self.appInstance->dispatchEvent(event);
   return NO;
 }
+
+- (void)windowWillStartLiveResize:(NSNotification *)notification {
+  ImpMacWindow *window = static_cast<ImpMacWindow *>(self.iwindow);
+  window->notifyResizing(true);
+}
+
+- (void)windowDidEndLiveResize:(NSNotification *)notification {
+  ImpMacWindow *window = static_cast<ImpMacWindow *>(self.iwindow);
+  window->notifyResizing(false);
+}
 @end
 
 @implementation CocoaWindow
@@ -305,133 +450,3 @@
   [super dealloc];
 }
 @end
-
-//  ----------------------------
-//  具象クラス
-//  ----------------------------
-
-template <> ImpMacWindow::~ImpWindow<ImpWindowData, ImpApplicationData>() {
-  @autoreleasepool {
-    if (this->data.window != nil) {
-      [this->data.window setDelegate:nil];
-      [this->data.window close];
-      [this->data.window makeFirstResponder:nil];
-      [this->data.window setContentView:nil];
-      [this->data.window orderOut:nil];
-      [this->data.window release];
-      this->data.window = nil;
-    }
-    if (this->data.view != nil) {
-      this->data.view.appInstance->release();
-      this->data.view.appInstance = nullptr;
-      [this->data.view removeFromSuperview];
-      [this->data.view release];
-      this->data.view = nil;
-    }
-    if (this->data.delegate != nil) {
-      [this->data.delegate release];
-      this->data.delegate = nil;
-    }
-    if (this->appInstance != nullptr) {
-      this->appInstance->release();
-      this->appInstance = nullptr;
-    }
-  }
-}
-
-template <> ImpWindowData ImpMacWindow::getPlatformData() const {
-  return this->data;
-}
-
-template <> bool ImpMacWindow::setTitle(const char *title) {
-  @autoreleasepool {
-    NSString *ns_title = [NSString stringWithUTF8String:title];
-    [this->data.window setTitle:ns_title];
-    return true;
-  }
-}
-
-template <> bool ImpMacWindow::show() {
-  @autoreleasepool {
-    [this->data.window makeKeyAndOrderFront:nil];
-    [NSApp activateIgnoringOtherApps:YES];
-    return true;
-  }
-}
-
-template <> bool ImpMacWindow::hide() {
-  @autoreleasepool {
-    [this->data.window orderOut:nil];
-    return true;
-  }
-}
-
-template <>
-ImpMacWindow *
-ImpMacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
-                           int width, int height, const char *title) {
-  @autoreleasepool {
-    ImpMacWindow *window =
-        static_cast<ImpMacWindow *>(std::malloc(sizeof(ImpMacWindow)));
-    if (window == nullptr) {
-      std::perror("malloc failed (createWindow)");
-      return nullptr;
-    }
-
-    window = new (window) ImpMacWindow;
-    window->addRef();
-
-    // appInstance を参照
-    window->appInstance = appInstance;
-    window->appInstance->addRef();
-
-    // ウィンドウを生成
-    NSRect frame = NSMakeRect(0, 0, width, height);
-    NSUInteger styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-                           NSWindowStyleMaskMiniaturizable |
-                           NSWindowStyleMaskResizable;
-    window->data.window =
-        [[CocoaWindow alloc] initWithContentRect:frame
-                                       styleMask:styleMask
-                                         backing:NSBackingStoreBuffered
-                                           defer:NO];
-
-    // 閉じられた時に自動リリースされないようにする
-    window->data.window.releasedWhenClosed = NO;
-
-    // 中央に配置
-    [window->data.window center];
-
-    // WndProc みたいなやつの設定
-    // ウィンドウデリゲート
-    window->data.delegate = [[WindowDelegate alloc] init];
-    window->data.delegate.iwindow = window;
-    window->data.delegate.appInstance = appInstance;
-    [window->data.window setDelegate:window->data.delegate];
-
-    // ビュー
-    window->data.view = [[WindowView alloc] initWithFrame:frame];
-    window->data.view.iwindow = window;
-    window->data.view.appInstance = appInstance;
-    // appInstance を参照
-    [window->data.window setContentView:window->data.view];
-    window->data.view.appInstance->addRef();
-
-    // あった方がいいらしい
-    // 確実に view にフォーカスを当てるためらしい
-    [window->data.window makeFirstResponder:window->data.view];
-
-    window->setTitle(title);
-    window->show();
-
-    return window;
-  }
-}
-//} // namespace
-
-template <>
-IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
-                                                          const char *title) {
-  ImpMacWindow *window = ImpMacWindow::createWindow(this, width, height, title);
-  return window;
-}

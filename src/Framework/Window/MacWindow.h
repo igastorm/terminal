@@ -35,6 +35,14 @@ struct ImpWindowData {
   CocoaWindow *window = nil;
   WindowDelegate *delegate = nil;
   WindowView *view = nil;
+  bool resizing = false;
 };
 
-using ImpMacWindow = ImpWindow<ImpWindowData, ImpApplicationData>;
+using ImpWindow = ImpWindowTemplate<ImpWindowData, ImpApplicationData>;
+
+class ImpMacWindow : public ImpWindow {
+public:
+  ImpMacWindow() = default;
+  ~ImpMacWindow() = default;
+  void notifyResizing(bool);
+};
