@@ -17,6 +17,21 @@ int CommonRenderPass::release() {
 }
 
 //  ----------------------------
+//  Texture
+//  ----------------------------
+
+int CommonTexture::addRef() { return ++this->ref_count; }
+
+int CommonTexture::release() {
+  if (--this->ref_count == 0) {
+    this->~CommonTexture();
+    free(this);
+    return 0;
+  }
+  return this->ref_count;
+}
+
+//  ----------------------------
 //  Surface
 //  ----------------------------
 

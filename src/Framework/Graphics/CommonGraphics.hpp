@@ -18,6 +18,16 @@ public:
   virtual ~CommonRenderPass() = default;
 };
 
+class CommonTexture : public ITexture {
+private:
+  int ref_count = 0;
+
+public:
+  int addRef() override;
+  int release() override;
+  virtual ~CommonTexture() = default;
+};
+
 class CommonSurface : public ISurface {
 private:
   int ref_count = 0;

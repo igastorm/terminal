@@ -14,6 +14,15 @@ public:
 };
 
 template <class PlatformData, class PlatformApplicationData>
+class ImpTextureTemplate : public CommonTexture {
+protected:
+  PlatformData data;
+
+public:
+  ~ImpTextureTemplate() override = default;
+};
+
+template <class PlatformData, class PlatformApplicationData>
 class ImpSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
@@ -37,7 +46,8 @@ private:
   PlatformData data;
   ImpApplication<PlatformApplicationData> *appInstance;
 
-  ISurface *createSurface(int, int) override;
+  ISurface *createSurface() override;
+  ITexture *createTexture(int, int) override;
   bool render(ISurface *, RenderCallBack, void *,
               const RenderPassDesc) override;
 

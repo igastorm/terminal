@@ -51,8 +51,14 @@ struct ImpSurfaceData {
   IWindow *window = nullptr;
   CAMetalLayer *layer = nil;
   ImpMacGraphicsDevice *device = nullptr;
-  int width = 0;
-  int height = 0;
 };
 
 using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>;
+
+//  ----------------------------
+//  Texture
+//  ----------------------------
+
+struct ImpTextureData {};
+
+using ImpTexture = ImpTextureTemplate<ImpSurfaceData, ImpApplicationData>;

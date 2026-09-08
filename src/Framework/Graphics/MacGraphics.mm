@@ -58,6 +58,13 @@ bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 }
 
 //  ----------------------------
+//  Texture
+//  ----------------------------
+class ImpMacTexture : public ImpTexture {
+public:
+};
+
+//  ----------------------------
 //  Surface
 //  ----------------------------
 
@@ -66,8 +73,7 @@ bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 // 渡し忘れを防ぐため, ImpSurface のコンストラクタが private になっている
 class ImpMacSurface : public ImpSurface {
 public:
-  ImpMacSurface(ImpApplication<ImpApplicationData> *, ImpMacGraphicsDevice *,
-                int, int);
+  ImpMacSurface(ImpApplication<ImpApplicationData> *, ImpMacGraphicsDevice *);
 };
 
 template <> void ImpSurface::unbindWindow() {
@@ -179,14 +185,11 @@ ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
 }
 
 ImpMacSurface::ImpMacSurface(ImpApplication<ImpApplicationData> *appInstance,
-                             ImpMacGraphicsDevice *device, int w, int h) {
+                             ImpMacGraphicsDevice *device) {
   // device を参照
   this->data.device = device;
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
   this->data.device->addRef();
-
-  this->data.width = w;
-  this->data.height = h;
 }
 
 //  ----------------------------
@@ -316,8 +319,8 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
       true_height = view.bounds.size.height;
     } else {
       // ウィンドウにバインドされてない場合
-      true_width = surface->getPlatformData().width;
-      true_height = surface->getPlatformData().height;
+      // true_width = surface->getPlatformData().width;
+      // true_height = surface->getPlatformData().height;
     }
 
     // パイプラインステートをセット
@@ -369,8 +372,11 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
   }
 }
 
-template <>
-ISurface *ImpMacGraphicsDevice::createSurface(int width, int height) {
+template <> ITexture *ImpMacGraphicsDevice::createTexture(int, int) {
+  return nullptr;
+}
+
+template <> ISurface *ImpMacGraphicsDevice::createSurface() {
   @autoreleasepool {
     ImpMacSurface *surface =
         static_cast<ImpMacSurface *>(std::malloc(sizeof(ImpMacSurface)));
@@ -379,8 +385,7 @@ ISurface *ImpMacGraphicsDevice::createSurface(int width, int height) {
       return nullptr;
     }
 
-    surface =
-        new (surface) ImpMacSurface(this->appInstance, this, width, height);
+    surface = new (surface) ImpMacSurface(this->appInstance, this);
     surface->addRef();
 
     return surface;
