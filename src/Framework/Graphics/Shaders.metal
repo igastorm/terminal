@@ -9,21 +9,9 @@ struct Vertex {
   uint8_t color[4];
 };
 
-struct VertexWithUV {
-  float position[2];
-  float uv[2];
-  uint8_t color[4];
-};
-
 struct VertexOut {
   vector_float4 position [[position]];
   vector_float4 color;
-};
-
-struct VertexOutWithUV {
-  vector_float4 position [[position]];
-  vector_float4 color;
-  vector_float2 uv;
 };
 
 // 画面サイズ
@@ -49,6 +37,18 @@ VertexOut vertexConvert(float2 pos, uint4 col, ViewportUniform uniforms) {
   out.color = float4(col[2], col[1], col[0], col[3]) * uniforms.inv_255;
   return out;
 }
+
+struct VertexWithUV {
+  float position[2];
+  float uv[2];
+  uint8_t color[4];
+};
+
+struct VertexOutWithUV {
+  vector_float4 position [[position]];
+  vector_float4 color;
+  vector_float2 uv;
+};
 
 vertex VertexOut vertexMain(const device Vertex *vertices [[buffer(0)]],
                             constant ViewportUniform &uniforms [[buffer(1)]],

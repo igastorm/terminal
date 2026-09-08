@@ -2,6 +2,12 @@
 #include "../Application/ImpApplication.hpp"
 #include "CommonGraphics.hpp"
 
+//  ========================================================
+//
+//  Render Pass
+//
+//  ========================================================
+
 template <class PlatformData>
 class ImpRenderPassTemplate : public CommonRenderPass {
 protected:
@@ -13,6 +19,13 @@ public:
   ~ImpRenderPassTemplate() override = default;
 };
 
+
+//  ========================================================
+//
+//  Texture
+//
+//  ========================================================
+
 template <class PlatformData>
 class ImpTextureTemplate : public CommonTexture {
 protected:
@@ -21,6 +34,12 @@ protected:
 public:
   ~ImpTextureTemplate() override;
 };
+
+//  ========================================================
+//
+//  Surface
+//
+//  ========================================================
 
 template <class PlatformData>
 class ImpSurfaceTemplate : public CommonSurface {
@@ -40,9 +59,15 @@ public:
   PlatformData getPlatformData() const;
 };
 
+//  ========================================================
+//
+//  Graphics Device
+//
+//  ========================================================
+
 template <class PlatformData, class PlatformApplicationData>
-class ImpGraphicsDevice : public CommonGraphicsDevice {
-private:
+class ImpGraphicsDeviceTemplate : public CommonGraphicsDevice {
+protected:
   PlatformData data;
   ImpApplication<PlatformApplicationData> *appInstance;
 
@@ -52,9 +77,8 @@ private:
               const RenderPassDesc) override;
 
 public:
-  static ImpGraphicsDevice *
-  createGraphicsDevice(ImpApplication<PlatformApplicationData> *);
-  ~ImpGraphicsDevice() override;
+
+  ~ImpGraphicsDeviceTemplate() override;
 
   PlatformData getPlatformData() const;
 };

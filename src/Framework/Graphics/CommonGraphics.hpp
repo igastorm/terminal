@@ -5,6 +5,12 @@
 
 enum class BindObject { none, window, texture };
 
+//  ========================================================
+//
+//  Render Pass
+//
+//  ========================================================
+
 class CommonRenderPass : public IRenderPass {
 private:
   int ref_count = 0;
@@ -21,6 +27,12 @@ public:
   virtual ~CommonRenderPass() = default;
 };
 
+//  ========================================================
+//
+//  Texture
+//
+//  ========================================================
+
 class CommonTexture : public ITexture {
 private:
   int ref_count = 0;
@@ -30,6 +42,12 @@ public:
   int release() override;
   virtual ~CommonTexture() = default;
 };
+
+//  ========================================================
+//
+//  Surface
+//
+//  ========================================================
 
 class CommonSurface : public ISurface {
 private:
@@ -43,6 +61,12 @@ public:
   int release() override;
   virtual ~CommonSurface() = default;
 };
+
+//  ========================================================
+//
+//  Graphics Device
+//
+//  ========================================================
 
 class CommonGraphicsDevice : public IGraphicsDevice {
 private:
