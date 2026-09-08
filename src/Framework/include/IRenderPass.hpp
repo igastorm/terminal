@@ -23,7 +23,7 @@ public:
   virtual ~IRenderPass() = default;
   virtual bool drawVertices(const Vertex *, int) = 0;
   
-  static inline const RenderPassDesc DEFAULT_DESC;
+  static inline constexpr RenderPassDesc DEFAULT_DESC;
 };
 
 using RenderCallBack = void (*)(IRenderPass *, void *);

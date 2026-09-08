@@ -61,8 +61,74 @@ bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 //  Texture
 //  ----------------------------
 class ImpMacTexture : public ImpTexture {
+private:
+  ImpMacTexture(ImpMacGraphicsDevice *, int, int);
+
 public:
+  static ImpMacTexture *createImpMacTexture(ImpMacGraphicsDevice *, int, int,
+                                            TextureDrawable);
 };
+
+ImpMacTexture *
+ImpMacTexture::createImpMacTexture(ImpMacGraphicsDevice *device, int width,
+                                   int height, TextureDrawable drawable_flag) {
+  ImpMacTexture *texture =
+      static_cast<ImpMacTexture *>(std::malloc(sizeof(ImpMacTexture)));
+  if (texture == nullptr) {
+    std::perror("malloc failed (createTexture)");
+    return nullptr;
+  }
+
+  texture = new (texture) ImpMacTexture(device, width, height);
+  texture->addRef();
+
+  @autoreleasepool {
+    MTLTextureDescriptor *texture_desc = [MTLTextureDescriptor
+        texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                     width:width
+                                    height:height
+                                 mipmapped:NO];
+
+    // texture_desc.storageMode
+    if (drawable_flag == TextureDrawable::Enable) {
+      texture_desc.usage =
+          MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
+    } else {
+      texture_desc.usage = MTLTextureUsageShaderRead;
+    }
+
+    texture->data.texture = [device->getPlatformData().device
+        newTextureWithDescriptor:texture_desc];
+    if (texture->data.texture == nil) {
+      texture->release();
+      return nullptr;
+    }
+  }
+
+  return texture;
+}
+
+ImpMacTexture::ImpMacTexture(ImpMacGraphicsDevice *device, int width,
+                             int height) {
+  this->data.device = device;
+  device->addRef();
+
+  this->data.width = width;
+  this->data.height = height;
+}
+
+template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
+  @autoreleasepool {
+    if (this->data.texture != nil) {
+      [this->data.texture release];
+      this->data.texture = nil;
+    }
+    if (this->data.device != nullptr) {
+      this->data.device->release();
+      this->data.device = nullptr;
+    }
+  }
+}
 
 //  ----------------------------
 //  Surface
@@ -72,11 +138,40 @@ public:
 // コンストラクタで MTLDeivce を渡すために経由する
 // 渡し忘れを防ぐため, ImpSurface のコンストラクタが private になっている
 class ImpMacSurface : public ImpSurface {
+private:
+  ImpMacSurface(ImpMacGraphicsDevice *);
+
 public:
-  ImpMacSurface(ImpApplication<ImpApplicationData> *, ImpMacGraphicsDevice *);
+  static ImpMacSurface *createImpMacSurface(ImpMacGraphicsDevice *);
 };
 
+ImpMacSurface::ImpMacSurface(ImpMacGraphicsDevice *device) {
+  // この中では Objc のオブジェクトに対して操作してないから
+  // autoreleasepool はいらん
+  // device を参照 (直接 MTLDevice を代入するのでなく ImpMacGraphicsDevice
+  // だからプールはいらん)
+  this->data.device = device;
+  // こいつの参照が 0 にならないと appInstance は解放できない仕様
+  this->data.device->addRef();
+}
+
+ImpMacSurface *
+ImpMacSurface::createImpMacSurface(ImpMacGraphicsDevice *device) {
+  ImpMacSurface *surface =
+      static_cast<ImpMacSurface *>(std::malloc(sizeof(ImpMacSurface)));
+  if (surface == nullptr) {
+    std::perror("malloc failed (createSurface)");
+    return nullptr;
+  }
+
+  surface = new (surface) ImpMacSurface(device);
+  surface->addRef();
+
+  return surface;
+}
+
 template <> void ImpSurface::unbindWindow() {
+  this->bind_flag = BindObject::none;
   @autoreleasepool {
     if (this->data.window != nullptr) {
       static_cast<ImpMacWindow *>(this->data.window)
@@ -106,6 +201,7 @@ template <> bool ImpSurface::bindToWindow(IWindow *window) {
   // 参照を増やす
   this->data.window = window;
   window->addRef();
+  this->bind_flag = BindObject::window;
 
   @autoreleasepool {
     // これ逆向き的なキャストだけどいいのか (やらないと無理そうだが) ← OK (適切)
@@ -165,8 +261,7 @@ template <> ImpSurfaceData ImpSurface::getPlatformData() const {
   return this->data;
 }
 
-template <>
-ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
+template <> ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData>() {
   @autoreleasepool {
     this->unbindWindow();
     if (this->data.device != nullptr) {
@@ -174,7 +269,7 @@ ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
       this->data.device->release();
       this->data.device = nullptr;
     }
-    // unbind の方でやるから不要
+    // unbind の方でやるから不要 Layer についても
     /*
     if (this->data.window != nullptr) {
       this->data.window->release();
@@ -182,14 +277,6 @@ ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>() {
     }
     */
   }
-}
-
-ImpMacSurface::ImpMacSurface(ImpApplication<ImpApplicationData> *appInstance,
-                             ImpMacGraphicsDevice *device) {
-  // device を参照
-  this->data.device = device;
-  // こいつの参照が 0 にならないと appInstance は解放できない仕様
-  this->data.device->addRef();
 }
 
 //  ----------------------------
@@ -372,24 +459,14 @@ bool ImpMacGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
   }
 }
 
-template <> ITexture *ImpMacGraphicsDevice::createTexture(int, int) {
-  return nullptr;
+template <>
+ITexture *ImpMacGraphicsDevice::createTexture(int width, int height,
+                                              TextureDrawable drawable_flag) {
+  return ImpMacTexture::createImpMacTexture(this, width, height, drawable_flag);
 }
 
 template <> ISurface *ImpMacGraphicsDevice::createSurface() {
-  @autoreleasepool {
-    ImpMacSurface *surface =
-        static_cast<ImpMacSurface *>(std::malloc(sizeof(ImpMacSurface)));
-    if (surface == nullptr) {
-      std::perror("malloc failed (createSurface)");
-      return nullptr;
-    }
-
-    surface = new (surface) ImpMacSurface(this->appInstance, this);
-    surface->addRef();
-
-    return surface;
-  }
+  return ImpMacSurface::createImpMacSurface(this);
 }
 
 template <>
@@ -441,8 +518,8 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
     }
 
     // 関数名でシェーダーを取り出す
-    id<MTLFunction> vs = [library newFunctionWithName:@"vertex_main"];
-    id<MTLFunction> ps = [library newFunctionWithName:@"fragment_main"];
+    id<MTLFunction> vs = [library newFunctionWithName:@"vertexMain"];
+    id<MTLFunction> ps = [library newFunctionWithName:@"fragmentMain"];
 
     // vs と ps が参照カウントを増やすので release する
     [library release];
@@ -509,10 +586,19 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
         [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
+    MTLSamplerDescriptor *sampler_desc = [[MTLSamplerDescriptor alloc] init];
+    sampler_desc.minFilter = MTLSamplerMinMagFilterNearest;
+    sampler_desc.magFilter = MTLSamplerMinMagFilterNearest;
+    sampler_desc.sAddressMode = MTLSamplerAddressModeClampToEdge;
+    sampler_desc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+    device->data.sampler_state =
+        [device->data.device newSamplerStateWithDescriptor:sampler_desc];
+
     // 参照カウントが増えるので release しておく
     [vs release];
     [ps release];
     [pipeline_desc release];
+    [sampler_desc release];
 
     if (device->data.pipeline_state == nil) {
       std::cerr << "Failed to create pipeline state: "

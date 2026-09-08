@@ -1,6 +1,9 @@
 #pragma once
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
+#include "ITexture.hpp"
+
+enum class BindObject { none, window, texture };
 
 class CommonRenderPass : public IRenderPass {
 private:
@@ -31,6 +34,9 @@ public:
 class CommonSurface : public ISurface {
 private:
   int ref_count = 0;
+
+protected:
+  BindObject bind_flag = BindObject::none;
 
 public:
   int addRef() override;

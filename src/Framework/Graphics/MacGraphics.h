@@ -23,7 +23,7 @@ struct ImpRenderPassData {
 };
 
 using ImpRenderPass =
-    ImpRenderPassTemplate<ImpRenderPassData, ImpApplicationData>;
+    ImpRenderPassTemplate<ImpRenderPassData>;
 
 //  ----------------------------
 //  Graphics Device
@@ -33,6 +33,7 @@ struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
+  id<MTLSamplerState> sampler_state = nil;
   // id<MTLBuffer> vertex_buffer = nil;
   dispatch_semaphore_t in_flight_semaphore = nil;
 };
@@ -53,12 +54,17 @@ struct ImpSurfaceData {
   ImpMacGraphicsDevice *device = nullptr;
 };
 
-using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData, ImpApplicationData>;
+using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
 
 //  ----------------------------
 //  Texture
 //  ----------------------------
 
-struct ImpTextureData {};
+struct ImpTextureData {
+  id<MTLTexture> texture = nil;
+  ImpMacGraphicsDevice *device = nullptr;
+  int width = 0;
+  int height = 0;
+};
 
-using ImpTexture = ImpTextureTemplate<ImpSurfaceData, ImpApplicationData>;
+using ImpTexture = ImpTextureTemplate<ImpTextureData>;

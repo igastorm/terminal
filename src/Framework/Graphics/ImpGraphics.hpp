@@ -2,7 +2,7 @@
 #include "../Application/ImpApplication.hpp"
 #include "CommonGraphics.hpp"
 
-template <class PlatformData, class PlatformApplicationData>
+template <class PlatformData>
 class ImpRenderPassTemplate : public CommonRenderPass {
 protected:
   PlatformData data;
@@ -13,16 +13,16 @@ public:
   ~ImpRenderPassTemplate() override = default;
 };
 
-template <class PlatformData, class PlatformApplicationData>
+template <class PlatformData>
 class ImpTextureTemplate : public CommonTexture {
 protected:
   PlatformData data;
 
 public:
-  ~ImpTextureTemplate() override = default;
+  ~ImpTextureTemplate() override;
 };
 
-template <class PlatformData, class PlatformApplicationData>
+template <class PlatformData>
 class ImpSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
@@ -47,7 +47,7 @@ private:
   ImpApplication<PlatformApplicationData> *appInstance;
 
   ISurface *createSurface() override;
-  ITexture *createTexture(int, int) override;
+  ITexture *createTexture(int, int, TextureDrawable) override;
   bool render(ISurface *, RenderCallBack, void *,
               const RenderPassDesc) override;
 

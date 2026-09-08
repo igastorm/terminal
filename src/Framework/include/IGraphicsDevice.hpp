@@ -10,7 +10,7 @@ public:
 
   virtual ISurface *createSurface() = 0;
 
-  virtual ITexture* createTexture(int, int) = 0;
+  virtual ITexture* createTexture(int, int, TextureDrawable = TextureDrawable::Disable) = 0;
 
   virtual bool render(ISurface *, RenderCallBack, void *,
                       const RenderPassDesc = IRenderPass::DEFAULT_DESC) = 0;
