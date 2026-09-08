@@ -1,10 +1,10 @@
-#include "MacGraphics.h"
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
+#include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
@@ -51,6 +51,11 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
         dispatch_data_create(shaders_metallib, shaders_metallib_size, nil,
                              ^{
                              });
+    if (shader_data == nil) {
+      device->release();
+      return nullptr;
+    }
+
     NSError *error = nil;
     id<MTLLibrary> library = [device->data.device newLibraryWithData:shader_data
                                                                error:&error];
@@ -69,18 +74,30 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     // 関数名でシェーダーを取り出す
     id<MTLFunction> vs = [library newFunctionWithName:@"vertexMain"];
     id<MTLFunction> ps = [library newFunctionWithName:@"fragmentMain"];
+    id<MTLFunction> vs_tex = [library newFunctionWithName:@"vertexMainUV"];
+    id<MTLFunction> ps_tex = [library newFunctionWithName:@"fragmentMainTex"];
 
-    // vs と ps が参照カウントを増やすので release する
-    [library release];
-
-    if (vs == nil || ps == nil) {
-      std::cerr << "Failed to find vertex or fragment function" << std::endl;
+    auto shaderRelease = [vs, ps, vs_tex, ps_tex]() -> void {
       if (vs != nil) {
         [vs release];
       }
       if (ps != nil) {
         [ps release];
       }
+      if (vs_tex != nil) {
+        [vs_tex release];
+      }
+      if (ps_tex != nil) {
+        [ps_tex release];
+      }
+    };
+
+    // vs と ps が参照カウントを増やすので release する
+    [library release];
+
+    if (vs == nil || ps == nil || vs_tex == nil || ps_tex == nil) {
+      std::cerr << "Failed to find vertex or fragment function" << std::endl;
+      shaderRelease();
       device->release();
       return nullptr;
     }
@@ -88,6 +105,11 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     // パイプラインステートの設定
     MTLRenderPipelineDescriptor *pipeline_desc =
         [[MTLRenderPipelineDescriptor alloc] init];
+    if (pipeline_desc == nil) {
+      shaderRelease();
+      device->release();
+    }
+
     pipeline_desc.vertexFunction = vs;
     pipeline_desc.fragmentFunction = ps;
     pipeline_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
@@ -135,24 +157,38 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
         [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
+    pipeline_desc.vertexFunction = vs_tex;
+    pipeline_desc.fragmentFunction = ps_tex;
+
+    device->data.pipeline_state_tex =
+        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
+                                                            error:&error];
+    [pipeline_desc release];
+    shaderRelease();
+    if (device->data.pipeline_state == nil ||
+        device->data.pipeline_state_tex == nil) {
+      device->release();
+      return nullptr;
+    }
+
     MTLSamplerDescriptor *sampler_desc = [[MTLSamplerDescriptor alloc] init];
+    if (sampler_desc == nil) {
+      device->release();
+      return nullptr;
+    }
+
     sampler_desc.minFilter = MTLSamplerMinMagFilterNearest;
     sampler_desc.magFilter = MTLSamplerMinMagFilterNearest;
     sampler_desc.sAddressMode = MTLSamplerAddressModeClampToEdge;
     sampler_desc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+
     device->data.sampler_state =
         [device->data.device newSamplerStateWithDescriptor:sampler_desc];
 
     // 参照カウントが増えるので release しておく
-    [vs release];
-    [ps release];
-    [pipeline_desc release];
     [sampler_desc release];
 
-    if (device->data.pipeline_state == nil) {
-      std::cerr << "Failed to create pipeline state: "
-                << (error ? [[error localizedDescription] UTF8String] : "")
-                << std::endl;
+    if (device->data.sampler_state == nil) {
       device->release();
       return nullptr;
     }
@@ -188,6 +224,14 @@ ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
     //   [this->data.vertex_buffer release];
     //   this->data.vertex_buffer = nil;
     // }
+    if (this->data.sampler_state != nil) {
+      [this->data.sampler_state release];
+      this->data.sampler_state = nil;
+    }
+    if (this->data.pipeline_state_tex != nil) {
+      [this->data.pipeline_state_tex release];
+      this->data.pipeline_state = nil;
+    }
     if (this->data.pipeline_state != nil) {
       [this->data.pipeline_state release];
       this->data.pipeline_state = nil;
@@ -363,7 +407,6 @@ template <> ISurface *ImpGraphicsDevice::createSurface() {
 
 template <>
 IGraphicsDevice *ImpApplication<ImpApplicationData>::createGraphicsDevice() {
-  IGraphicsDevice *device =
-      MacGraphicsDevice::createMacGraphicsDevice(this);
+  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
   return device;
 }

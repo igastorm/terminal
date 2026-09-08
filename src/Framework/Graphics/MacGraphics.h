@@ -41,6 +41,7 @@ struct ImpGraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
+  id<MTLRenderPipelineState> pipeline_state_tex = nil;
   id<MTLSamplerState> sampler_state = nil;
   // id<MTLBuffer> vertex_buffer = nil;
   dispatch_semaphore_t in_flight_semaphore = nil;
