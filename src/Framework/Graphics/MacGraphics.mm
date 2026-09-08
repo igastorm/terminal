@@ -460,6 +460,45 @@ ImpMacGraphicsDevice *ImpMacGraphicsDevice::createGraphicsDevice(
     pipeline_desc.vertexFunction = vs;
     pipeline_desc.fragmentFunction = ps;
     pipeline_desc.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+    // アルファブレンドを行うかどうか
+    pipeline_desc.colorAttachments[0].blendingEnabled = YES;
+    // RGB (色) のブレンド式 (ガラスのように透ける表現にする場合):
+    // Source * SourceAlpha + Dest * (1 - SourceAlpha)
+
+    // 他にも Dest の係数を MTLBlendFactorOne (そのまま)
+    // にすると色が重なるほど明るくなる
+
+    // RGB のブレンドでは単一の図形の半透明にするやつで Alpha
+    // のブレンドは二つの図形を重ねた時に
+    // (特に両方とも半透明)
+    // だった時に重なった部分の透明度がどうなるかだと思われる
+    // 例: 透明度 50% の赤と透明度 50% の青
+    // 色自体はブレンドされて紫
+    // 重なりあった部分の透明度→Alpha のブレンドによって決まる
+    // RGB のブレンド式と Alpha のブレンド式は独立しており, 別物
+
+    // RGB をどう混ぜるか
+    // Source の係数 (SourceAlpha の値) 与えられた透明度をそのまま使う
+    pipeline_desc.colorAttachments[0].sourceRGBBlendFactor =
+        MTLBlendFactorSourceAlpha;
+    // Dest の係数: 1 - sourceAlpha
+    pipeline_desc.colorAttachments[0].destinationRGBBlendFactor =
+        MTLBlendFactorOneMinusSourceAlpha;
+    // ブレンドの計算方法: 加算 +
+    pipeline_desc.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+
+    // A をどう混ぜるか
+    // Alpha = Source * Factor + Dest * (1 - Factor)
+    // Alpha (透明度) 自体の計算式
+    // Source の係数: 係数は1でそのまま使うので MTLBlendFactorOne
+    pipeline_desc.colorAttachments[0].sourceAlphaBlendFactor =
+        MTLBlendFactorOne;
+    // Dest の係数: 1 - Factor
+    pipeline_desc.colorAttachments[0].destinationAlphaBlendFactor =
+        MTLBlendFactorOneMinusSourceAlpha;
+    // ブレンドの計算方法: 加算 +
+    pipeline_desc.colorAttachments[0].alphaBlendOperation =
+        MTLBlendOperationAdd;
 
     device->data.pipeline_state =
         [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
