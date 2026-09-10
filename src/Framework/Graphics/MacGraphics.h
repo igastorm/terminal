@@ -44,7 +44,9 @@ struct ImpGraphicsDeviceData {
   id<MTLRenderPipelineState> pipeline_state_tex = nil;
   id<MTLSamplerState> sampler_state = nil;
   // id<MTLBuffer> vertex_buffer = nil;
-  dispatch_semaphore_t in_flight_semaphore = nil;
+  // セマフォはデバイスごとではなく描画先ごとに持つべきらしいので Surface
+  // に引っ越し
+  // dispatch_semaphore_t in_flight_semaphore = nil;
 };
 
 using ImpGraphicsDevice =
@@ -67,8 +69,17 @@ ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
 //  ========================================================
 
 struct ImpSurfaceData {
-  IWindow *window = nullptr;
+  union {
+    // ポインタサイズ分を共有することになる
+    ITexture *texture = nullptr;
+    IWindow *window;
+  };
+  dispatch_semaphore_t in_flight_semaphore = nil;
+
+  // 描画先がテクスチャの時は無駄になってしまう
+  // 実質フラグとして使ってるからいいか
   CAMetalLayer *layer = nil;
+
   MacGraphicsDevice *device = nullptr;
 };
 
@@ -80,10 +91,10 @@ using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
 class MacSurface : public ImpSurface {
 private:
   MacSurface() = default;
-  static MacSurface* createMacSurfaceBase(MacGraphicsDevice*);
+  static MacSurface *createMacSurfaceBase(MacGraphicsDevice *);
 
 public:
-  static MacSurface *createMacSurfaceFromWindow(MacGraphicsDevice *, IWindow*);
+  static MacSurface *createMacSurfaceFromWindow(MacGraphicsDevice *, IWindow *);
 };
 
 //  ========================================================
@@ -103,9 +114,10 @@ using ImpTexture = ImpTextureTemplate<ImpTextureData>;
 
 class MacTexture : public ImpTexture {
 private:
-  MacTexture(ImpGraphicsDevice *, int, int);
+  MacTexture() = default;
+  // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:
-  static MacTexture *createMacTexture(ImpGraphicsDevice *, int, int,
+  static MacTexture *createMacTexture(MacGraphicsDevice *, int, int,
                                       TextureDrawable);
 };

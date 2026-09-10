@@ -31,6 +31,7 @@ protected:
 
 public:
   ~ImpTextureTemplate() override;
+  PlatformData getPlatformData() const;
 };
 
 //  ========================================================
@@ -46,6 +47,8 @@ protected:
   // ImpApplication<PlatformApplicationData> *appInstance;
 
   ImpSurfaceTemplate() = default;
+  bool render(RenderCallBack, void *,
+              const RenderPassDesc) override;
 
 public:
   ~ImpSurfaceTemplate() override;
@@ -66,9 +69,8 @@ protected:
   ImpApplication<PlatformApplicationData> *appInstance;
 
   ISurface *createSurfaceFromWindow(IWindow *) override;
+  ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, TextureDrawable) override;
-  bool render(ISurface *, RenderCallBack, void *,
-              const RenderPassDesc) override;
 
 public:
   ~ImpGraphicsDeviceTemplate() override;

@@ -1,10 +1,10 @@
-#include "MacGraphics.h"
 #include "../Application/ImpApplication.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
+#include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
@@ -19,9 +19,9 @@
 //
 //  ========================================================
 
-MacTexture *
-MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
-                                   int height, TextureDrawable drawable_flag) {
+MacTexture *MacTexture::createMacTexture(MacGraphicsDevice *device, int width,
+                                         int height,
+                                         TextureDrawable drawable_flag) {
   MacTexture *texture =
       static_cast<MacTexture *>(std::malloc(sizeof(MacTexture)));
   if (texture == nullptr) {
@@ -29,17 +29,31 @@ MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
     return nullptr;
   }
 
-  texture = new (texture) MacTexture(device, width, height);
+  texture = new (texture) MacTexture;
   texture->addRef();
 
+  texture->data.device = device;
+  device->addRef();
+
+  texture->data.width = width;
+  texture->data.height = height;
+
   @autoreleasepool {
-    MTLTextureDescriptor *texture_desc = [MTLTextureDescriptor
-        texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-                                     width:width
-                                    height:height
-                                 mipmapped:NO];
+    MTLTextureDescriptor *texture_desc = [[MTLTextureDescriptor alloc] init];
+    if (texture_desc == nil) {
+      texture->release();
+      return nullptr;
+    }
+
+    texture_desc.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    texture_desc.width = width;
+    texture_desc.height = height;
+    // 縮小した画像をあらかじめ生成する設定らしい
+    // 使わないので 1
+    texture_desc.mipmapLevelCount = 1;
 
     // texture_desc.storageMode
+
     if (drawable_flag == TextureDrawable::Enable) {
       texture_desc.usage =
           MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
@@ -49,6 +63,7 @@ MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
 
     texture->data.texture = [device->getPlatformData().device
         newTextureWithDescriptor:texture_desc];
+    [texture_desc release];
     if (texture->data.texture == nil) {
       texture->release();
       return nullptr;
@@ -56,14 +71,6 @@ MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
   }
 
   return texture;
-}
-
-MacTexture::MacTexture(ImpGraphicsDevice *device, int width, int height) {
-  this->data.device = device;
-  device->addRef();
-
-  this->data.width = width;
-  this->data.height = height;
 }
 
 template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
@@ -77,4 +84,8 @@ template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
       this->data.device = nullptr;
     }
   }
+}
+
+template <> ImpTextureData ImpTexture::getPlatformData() const {
+  return this->data;
 }

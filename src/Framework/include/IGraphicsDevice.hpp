@@ -1,6 +1,5 @@
 #pragma once
 #include "IObject.hpp"
-#include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
 #include "IWindow.hpp"
@@ -10,10 +9,8 @@ public:
   virtual ~IGraphicsDevice() = default;
 
   virtual ISurface *createSurfaceFromWindow(IWindow *) = 0;
+  virtual ISurface* createSurfaceFromTexture(ITexture*) = 0;
 
   virtual ITexture *
   createTexture(int, int, TextureDrawable = TextureDrawable::Disable) = 0;
-
-  virtual bool render(ISurface *, RenderCallBack, void *,
-                      const RenderPassDesc = IRenderPass::DEFAULT_DESC) = 0;
 };

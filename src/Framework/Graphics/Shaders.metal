@@ -83,10 +83,10 @@ vertex VertexOutWithUV vertexMainUV(const device VertexWithUV *vertices
 fragment float4 fragmentMain(VertexOut in [[stage_in]]) { return in.color; }
 
 fragment float4 fragmentMainTex(VertexOutWithUV in [[stage_in]],
-                              texture2d<float> tex [[texture(0)]],
-                              sampler samp [[sampler(0)]]) {
+                                texture2d<float> tex [[texture(0)]],
+                                sampler samp [[sampler(0)]]) {
   // テクスチャサンプリング
-  float4 out = in.color + tex.sample(samp, in.uv) - 1.0f;
-
+  // float4 out = in.color + tex.sample(samp, in.uv) - 1.0f;
+  float4 out = tex.sample(samp, in.uv);
   return out;
 }

@@ -57,6 +57,7 @@ public:
   bool onInit(IApplication *appInstance) override {
     std::cout << "[INFO] onInit: Creating window and PTY...\n";
     createTerminalWindow(appInstance);
+    //ITexture* tex = device->createTexture(100, 100);
     return true;
   }
 
@@ -84,8 +85,7 @@ public:
 
     if (event.type == EventType::WindowExpose) {
       if (event.window == this->window) {
-        device->render(
-            surface,
+        surface->render(
             [](IRenderPass *pass, void *arg) -> void {
               float x = 50.0f;
               float y = 50.0f;

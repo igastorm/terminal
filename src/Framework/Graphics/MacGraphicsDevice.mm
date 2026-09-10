@@ -194,12 +194,6 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
       return nullptr;
     }
 
-    device->data.in_flight_semaphore = dispatch_semaphore_create(3);
-    if (device->data.in_flight_semaphore == nil) {
-      device->release();
-      return nullptr;
-    }
-
     // 頂点 1024 個分くらいのメモリをあらかじめ確保しておく
     // size_t buffer_size = sizeof(Vertex) * 1024;
     // device->data.vertex_buffer =
@@ -218,10 +212,6 @@ template <>
 ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
                                               ImpApplicationData>() {
   @autoreleasepool {
-    if (this->data.in_flight_semaphore != nil) {
-      dispatch_release(this->data.in_flight_semaphore);
-      this->data.in_flight_semaphore = nil;
-    }
     // if (this->data.vertex_buffer != nil) {
     //   [this->data.vertex_buffer release];
     //   this->data.vertex_buffer = nil;
@@ -258,174 +248,20 @@ template <> ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData() const {
 }
 
 template <>
-bool ImpGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
-                               void *data, const RenderPassDesc pass_desc) {
-  if (isurface == nullptr || callback == nullptr) {
-    return false;
-  }
-
-  bool result = true;
-  @autoreleasepool {
-    //[CATransaction begin];
-    //[CATransaction setDisableActions:YES];
-
-    ImpSurface *surface = static_cast<ImpSurface *>(isurface);
-    CAMetalLayer *layer = surface->getPlatformData().layer;
-
-    if (layer == nil) {
-      return false;
-    }
-
-    ImpMacWindow *window =
-        static_cast<ImpMacWindow *>(surface->getPlatformData().window);
-
-    if (window == nullptr) {
-      return false;
-    }
-
-    NSView *view = window->getPlatformData().view;
-
-    if (view == nil) {
-      return false;
-    }
-
-    // Retina ディスプレイの論理ポイント座標系を使用
-    float true_width = 0;
-    float true_height = 0;
-    if (window != nullptr) {
-      // ウィンドウにバインドされている場合
-      // アンバインドした後に別の Surface
-      // 上に描画したら最後の貼り付けていたウィンドウのサイズの比に変化する
-      // ウィンドウに貼り付けている場合, Surface
-      // の大きさを変えずにそのまま引き延ばすため
-      // しかし, Metal では座標が正規化されているので解像度自体は直接扱わない
-      // なかなか言語化が難しい
-      // ウィンドウサイズに合わせて勝手に Surface
-      // のサイズを変えていいならこの問題は起きない
-
-      // 解像度を設定 (drawaableSize だけ手動でサイズ変更が必要)
-      CAMetalLayer *metal_layer = surface->getPlatformData().layer;
-      CGSize size = view.bounds.size;
-      CGFloat scale = metal_layer.contentsScale;
-      CGSize new_drawble_size =
-          CGSizeMake(size.width * scale, size.height * scale);
-      if (!CGSizeEqualToSize(new_drawble_size, metal_layer.drawableSize)) {
-        metal_layer.drawableSize = new_drawble_size;
-      }
-          
-
-      true_width = view.bounds.size.width;
-      true_height = view.bounds.size.height;
-    } else {
-      // ウィンドウにバインドされてない場合
-      // true_width = surface->getPlatformData().width;
-      // true_height = surface->getPlatformData().height;
-    }
-
-    if (dispatch_semaphore_wait(this->data.in_flight_semaphore,
-                                pass_desc.frame_dropping ==
-                                        FrameDropping::Enable
-                                    ? DISPATCH_TIME_NOW
-                                    : DISPATCH_TIME_FOREVER) != 0) {
-      return false;
-    }
-
-    // バックバッファを取得
-    // 複数のバッファがあって, 表示中のバッファ,
-    // 描画中のバッファというようになってるらしい (ティアリング 防止)
-    // 3 枚あるらしい
-    // 全てのバッファが埋まっているとここでスレッドが一時停止する
-    id<CAMetalDrawable> drawable = [layer nextDrawable];
-    if (drawable == nil) {
-      dispatch_semaphore_signal(this->data.in_flight_semaphore);
-      return false;
-    }
-
-    MTLRenderPassDescriptor *desc =
-        [MTLRenderPassDescriptor renderPassDescriptor];
-
-    // 描き込み先のテクスチャ
-    desc.colorAttachments[0].texture = drawable.texture;
-
-    // 描画を開始時に前のフレームをどうするか
-    // Clear: 指定色でクリア, Load: 保持 (遅いらしい)
-    desc.colorAttachments[0].loadAction =
-        pass_desc.clear ? MTLLoadActionClear : MTLLoadActionLoad;
-
-    // 描画が終わった後, 結果をテクスチャに保存するか
-    desc.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-    // クリアに使う色
-    desc.colorAttachments[0].clearColor =
-        MTLClearColorMake(((pass_desc.color >> 16) & 0xFF) / 255.0,
-                          ((pass_desc.color >> 8) & 0xFF) / 255.0,
-                          (pass_desc.color & 0xFF) / 255.0,
-                          ((pass_desc.color >> 24) & 0xFF) / 255.0);
-
-    // begin
-    id<MTLCommandBuffer> cmdBuffer = [this->data.command_queue commandBuffer];
-    id<MTLRenderCommandEncoder> encoder =
-        [cmdBuffer renderCommandEncoderWithDescriptor:desc];
-
-    // パイプラインステートをセット
-    if (this->data.pipeline_state != nil) {
-      [encoder setRenderPipelineState:this->data.pipeline_state];
-
-      constexpr float inv_255 = 1.0f / 255.0f;
-      struct {
-        float width;
-        float r_height;
-        float inv_255;
-      } viewport = {true_width, 2.0f / true_height, inv_255};
-
-      [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
-
-      // ここでコールバック (beign-end)
-      if (callback != nullptr) {
-        MacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
-        [encoder retain];
-        callback(&pass, data);
-        [encoder release];
-      }
-    } else {
-      result = false;
-    }
-
-    // end
-    [encoder endEncoding];
-    [cmdBuffer presentDrawable:drawable];
-
-    // ローカル変数にコピーしないと this がキャプチャされる
-    // キャプチャしたものはヒープにコピーされて retain される
-    dispatch_semaphore_t semaphore = this->data.in_flight_semaphore;
-    [cmdBuffer addCompletedHandler:^(id<MTLCommandBuffer>) {
-      dispatch_semaphore_signal(semaphore); // 返却
-    }];
-    [cmdBuffer commit];
-
-    // ウィンドウサイズ変更中に端の方にウィンドウの地肌が出るのを防ぐ
-    // GPU が描画を始めようとするまで待つので描画されない部分を減らせる
-    // 全てのデリゲート・イベントはメインスレッド
-    if (window != nullptr && window->getPlatformData().resizing) {
-      [cmdBuffer waitUntilScheduled];
-    }
-
-    //[CATransaction commit];
-
-    return result;
-  }
-}
-
-template <>
 ITexture *ImpGraphicsDevice::createTexture(int width, int height,
                                            TextureDrawable drawable_flag) {
-  return MacTexture::createMacTexture(this, width, height, drawable_flag);
+  return MacTexture::createMacTexture(static_cast<MacGraphicsDevice *>(this),
+                                      width, height, drawable_flag);
 }
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
   return MacSurface::createMacSurfaceFromWindow(
       static_cast<MacGraphicsDevice *>(this), window);
+}
+
+template <> ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *) {
+  return nullptr;
 }
 
 template <>
