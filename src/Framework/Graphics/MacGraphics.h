@@ -68,33 +68,28 @@ ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
 //
 //  ========================================================
 
-struct ImpSurfaceData {
-  union {
-    // ポインタサイズ分を共有することになる
-    ITexture *texture = nullptr;
-    IWindow *window;
-  };
+struct ImpWindowSurfaceData {
   dispatch_semaphore_t in_flight_semaphore = nil;
-
-  // 描画先がテクスチャの時は無駄になってしまう
-  // 実質フラグとして使ってるからいいか
-  CAMetalLayer *layer = nil;
-
   MacGraphicsDevice *device = nullptr;
+  IWindow *window = nullptr;
+  CAMetalLayer *metal_layer = nil;
 };
 
-using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
+using ImpWindowSurface = ImpWindowSurfaceTemplate<ImpWindowSurfaceData>;
 
-// プラットフォーム依存内部用クラス
-// コンストラクタで MTLDeivce を渡すために経由する
-// 渡し忘れを防ぐため, ImpSurface のコンストラクタが protected になっている
-class MacSurface : public ImpSurface {
+class MacWindowSurface : public ImpWindowSurface {
 private:
-  MacSurface() = default;
-  static MacSurface *createMacSurfaceBase(MacGraphicsDevice *);
 
 public:
-  static MacSurface *createMacSurfaceFromWindow(MacGraphicsDevice *, IWindow *);
+  static MacWindowSurface *createMacSurfaceFromWindow(MacGraphicsDevice *,
+                                                      IWindow *);
+};
+
+class MacTexureSurface /*: public MacSurface*/ {
+private:
+  ITexture *texture = nullptr;
+
+public:
 };
 
 //  ========================================================

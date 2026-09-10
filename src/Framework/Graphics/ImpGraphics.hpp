@@ -40,20 +40,15 @@ public:
 //
 //  ========================================================
 
-template <class PlatformData> class ImpSurfaceTemplate : public CommonSurface {
+template <class PlatformData>
+class ImpWindowSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
-  // Surface の所有者は Device だからより上位の appInstance を参照する必要はない
-  // ImpApplication<PlatformApplicationData> *appInstance;
-
-  ImpSurfaceTemplate() = default;
-  bool render(RenderCallBack, void *,
-              const RenderPassDesc) override;
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
 
 public:
-  ~ImpSurfaceTemplate() override;
-
   PlatformData getPlatformData() const;
+  ~ImpWindowSurfaceTemplate();
 };
 
 //  ========================================================

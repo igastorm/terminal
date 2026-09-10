@@ -256,7 +256,7 @@ ITexture *ImpGraphicsDevice::createTexture(int width, int height,
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
-  return MacSurface::createMacSurfaceFromWindow(
+  return MacWindowSurface::createMacSurfaceFromWindow(
       static_cast<MacGraphicsDevice *>(this), window);
 }
 
