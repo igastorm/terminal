@@ -40,15 +40,14 @@ public:
 //
 //  ========================================================
 
-template <class PlatformData>
-class ImpWindowSurfaceTemplate : public CommonSurface {
+template <class PlatformData> class ImpSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
-  bool render(RenderCallBack, void *, const RenderPassDesc) override;
-
+  // 内部でウィンドウ版とテクスチャ版で分けるべきなのでここではオーバーライドしない
+  // bool render(RenderCallBack, void *, const RenderPassDesc) override;
 public:
   PlatformData getPlatformData() const;
-  ~ImpWindowSurfaceTemplate();
+  ~ImpSurfaceTemplate();
 };
 
 //  ========================================================

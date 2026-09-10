@@ -260,8 +260,10 @@ ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
       static_cast<MacGraphicsDevice *>(this), window);
 }
 
-template <> ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *) {
-  return nullptr;
+template <>
+ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
+  return MacTextureSurface::createMacSurfaceFromTexture(
+      static_cast<MacGraphicsDevice *>(this), texture);
 }
 
 template <>

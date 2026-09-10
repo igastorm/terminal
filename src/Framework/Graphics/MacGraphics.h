@@ -68,28 +68,36 @@ ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
 //
 //  ========================================================
 
-struct ImpWindowSurfaceData {
+struct ImpSurfaceData {
   dispatch_semaphore_t in_flight_semaphore = nil;
   MacGraphicsDevice *device = nullptr;
-  IWindow *window = nullptr;
-  CAMetalLayer *metal_layer = nil;
 };
 
-using ImpWindowSurface = ImpWindowSurfaceTemplate<ImpWindowSurfaceData>;
+using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
 
-class MacWindowSurface : public ImpWindowSurface {
+class MacWindowSurface : public ImpSurface {
 private:
+  IWindow *window = nullptr;
+  CAMetalLayer *metal_layer = nil;
+  
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
 
 public:
+  ~MacWindowSurface();
   static MacWindowSurface *createMacSurfaceFromWindow(MacGraphicsDevice *,
                                                       IWindow *);
 };
 
-class MacTexureSurface /*: public MacSurface*/ {
+class MacTextureSurface : public ImpSurface {
 private:
   ITexture *texture = nullptr;
 
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
+
 public:
+~MacTextureSurface();
+static MacTextureSurface *createMacSurfaceFromTexture(MacGraphicsDevice *,
+                                                    ITexture *);
 };
 
 //  ========================================================
