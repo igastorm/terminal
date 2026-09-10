@@ -69,20 +69,21 @@ ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
 struct ImpSurfaceData {
   IWindow *window = nullptr;
   CAMetalLayer *layer = nil;
-  ImpGraphicsDevice *device = nullptr;
+  MacGraphicsDevice *device = nullptr;
 };
 
 using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
 
 // プラットフォーム依存内部用クラス
 // コンストラクタで MTLDeivce を渡すために経由する
-// 渡し忘れを防ぐため, ImpSurface のコンストラクタが private になっている
+// 渡し忘れを防ぐため, ImpSurface のコンストラクタが protected になっている
 class MacSurface : public ImpSurface {
 private:
-  MacSurface(ImpGraphicsDevice *);
+  MacSurface() = default;
+  static MacSurface* createMacSurfaceBase(MacGraphicsDevice*);
 
 public:
-  static MacSurface *createMacSurface(ImpGraphicsDevice *);
+  static MacSurface *createMacSurfaceFromWindow(MacGraphicsDevice *, IWindow*);
 };
 
 //  ========================================================

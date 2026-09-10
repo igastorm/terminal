@@ -21,8 +21,7 @@ private:
       }
 
       device = appInstance->createGraphicsDevice();
-      surface = device->createSurface();
-      surface->bindToWindow(window);
+      surface = device->createSurfaceFromWindow(this->window);
     }
   }
 
@@ -43,7 +42,6 @@ private:
     }
 
     if (this->surface != nullptr) {
-      this->surface->unbindWindow();
       this->surface->release();
       this->surface = nullptr;
     }

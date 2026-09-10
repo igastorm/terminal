@@ -92,7 +92,7 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
       }
     };
 
-    // vs と ps が参照カウントを増やすので release する
+    // vs と ps (tex も) が参照カウントを増やすので release する
     [library release];
 
     if (vs == nil || ps == nil || vs_tex == nil || ps_tex == nil) {
@@ -108,6 +108,7 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     if (pipeline_desc == nil) {
       shaderRelease();
       device->release();
+      return nullptr;
     }
 
     pipeline_desc.vertexFunction = vs;
@@ -196,6 +197,7 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     device->data.in_flight_semaphore = dispatch_semaphore_create(3);
     if (device->data.in_flight_semaphore == nil) {
       device->release();
+      return nullptr;
     }
 
     // 頂点 1024 個分くらいのメモリをあらかじめ確保しておく
@@ -230,7 +232,7 @@ ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
     }
     if (this->data.pipeline_state_tex != nil) {
       [this->data.pipeline_state_tex release];
-      this->data.pipeline_state = nil;
+      this->data.pipeline_state_tex = nil;
     }
     if (this->data.pipeline_state != nil) {
       [this->data.pipeline_state release];
@@ -267,18 +269,64 @@ bool ImpGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     //[CATransaction begin];
     //[CATransaction setDisableActions:YES];
 
+    ImpSurface *surface = static_cast<ImpSurface *>(isurface);
+    CAMetalLayer *layer = surface->getPlatformData().layer;
+
+    if (layer == nil) {
+      return false;
+    }
+
+    ImpMacWindow *window =
+        static_cast<ImpMacWindow *>(surface->getPlatformData().window);
+
+    if (window == nullptr) {
+      return false;
+    }
+
+    NSView *view = window->getPlatformData().view;
+
+    if (view == nil) {
+      return false;
+    }
+
+    // Retina ディスプレイの論理ポイント座標系を使用
+    float true_width = 0;
+    float true_height = 0;
+    if (window != nullptr) {
+      // ウィンドウにバインドされている場合
+      // アンバインドした後に別の Surface
+      // 上に描画したら最後の貼り付けていたウィンドウのサイズの比に変化する
+      // ウィンドウに貼り付けている場合, Surface
+      // の大きさを変えずにそのまま引き延ばすため
+      // しかし, Metal では座標が正規化されているので解像度自体は直接扱わない
+      // なかなか言語化が難しい
+      // ウィンドウサイズに合わせて勝手に Surface
+      // のサイズを変えていいならこの問題は起きない
+
+      // 解像度を設定 (drawaableSize だけ手動でサイズ変更が必要)
+      CAMetalLayer *metal_layer = surface->getPlatformData().layer;
+      CGSize size = view.bounds.size;
+      CGFloat scale = metal_layer.contentsScale;
+      CGSize new_drawble_size =
+          CGSizeMake(size.width * scale, size.height * scale);
+      if (!CGSizeEqualToSize(new_drawble_size, metal_layer.drawableSize)) {
+        metal_layer.drawableSize = new_drawble_size;
+      }
+          
+
+      true_width = view.bounds.size.width;
+      true_height = view.bounds.size.height;
+    } else {
+      // ウィンドウにバインドされてない場合
+      // true_width = surface->getPlatformData().width;
+      // true_height = surface->getPlatformData().height;
+    }
+
     if (dispatch_semaphore_wait(this->data.in_flight_semaphore,
                                 pass_desc.frame_dropping ==
                                         FrameDropping::Enable
                                     ? DISPATCH_TIME_NOW
                                     : DISPATCH_TIME_FOREVER) != 0) {
-      return false;
-    }
-
-    ImpSurface *surface = static_cast<ImpSurface *>(isurface);
-    CAMetalLayer *layer = surface->getPlatformData().layer;
-
-    if (layer == nil) {
       return false;
     }
 
@@ -318,33 +366,6 @@ bool ImpGraphicsDevice::render(ISurface *isurface, RenderCallBack callback,
     id<MTLCommandBuffer> cmdBuffer = [this->data.command_queue commandBuffer];
     id<MTLRenderCommandEncoder> encoder =
         [cmdBuffer renderCommandEncoderWithDescriptor:desc];
-
-    // Retina ディスプレイの論理ポイント座標系を使用
-    float true_width = 0;
-    float true_height = 0;
-    ImpMacWindow *window =
-        static_cast<ImpMacWindow *>(surface->getPlatformData().window);
-    if (window != nullptr) {
-      // ウィンドウにバインドされている場合
-      // アンバインドした後に別の Surface
-      // 上に描画したら最後の貼り付けていたウィンドウのサイズの比に変化する
-      // ウィンドウに貼り付けている場合, Surface
-      // の大きさを変えずにそのまま引き延ばすため
-      // しかし, Metal では座標が正規化されているので解像度自体は直接扱わない
-      // なかなか言語化が難しい
-      // ウィンドウサイズに合わせて勝手に Surface
-      // のサイズを変えていいならこの問題は起きない
-      NSView *view =
-          static_cast<ImpMacWindow *>(surface->getPlatformData().window)
-              ->getPlatformData()
-              .view;
-      true_width = view.bounds.size.width;
-      true_height = view.bounds.size.height;
-    } else {
-      // ウィンドウにバインドされてない場合
-      // true_width = surface->getPlatformData().width;
-      // true_height = surface->getPlatformData().height;
-    }
 
     // パイプラインステートをセット
     if (this->data.pipeline_state != nil) {
@@ -401,8 +422,10 @@ ITexture *ImpGraphicsDevice::createTexture(int width, int height,
   return MacTexture::createMacTexture(this, width, height, drawable_flag);
 }
 
-template <> ISurface *ImpGraphicsDevice::createSurface() {
-  return MacSurface::createMacSurface(this);
+template <>
+ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
+  return MacSurface::createMacSurfaceFromWindow(
+      static_cast<MacGraphicsDevice *>(this), window);
 }
 
 template <>

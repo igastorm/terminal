@@ -17,9 +17,7 @@
 //  具象クラス
 //  ----------------------------
 
-void ImpMacWindow::notifyResizing(bool flag) {
-  this->data.resizing = !flag;
-}
+void ImpMacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
 template <> ImpWindow::~ImpWindowTemplate<ImpWindowData, ImpApplicationData>() {
   @autoreleasepool {
@@ -195,17 +193,21 @@ IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
 - (void)layout {
   [super layout];
 
-  // 解像度を Metal に伝える
-  if (self.layer != nil) {
-    self.layer.frame = self.bounds;
-    CGFloat scale = self.window ? self.window.backingScaleFactor : 1.0;
-    CGSize size = self.bounds.size;
+  // 解像度を Metal に伝える (ここで伝えても render()
+  // に入らない限り結果が見えないのであっちに引越し)
+  // その方このソースファイルに一切 Metal 関連のコードが含まれなくなるので美しい
+  // なぜか CAMetalLayer
+  // を貼り付けるまえでも nil じゃない
+  // if (self.layer != nil) {
+  //  self.layer.frame = self.bounds;
+  //  CGFloat scale = self.window ? self.window.backingScaleFactor : 1.0;
+  //  CGSize size = self.bounds.size;
 
-    CAMetalLayer *metalLayer = (CAMetalLayer *)self.layer;
-    metalLayer.contentsScale = scale;
-    metalLayer.drawableSize =
-        CGSizeMake(size.width * scale, size.height * scale);
-  }
+  //  CAMetalLayer *metalLayer = (CAMetalLayer *)self.layer;
+  //  metalLayer.contentsScale = scale;
+  //  metalLayer.drawableSize =
+  //      CGSizeMake(size.width * scale, size.height * scale);
+  //}
 
   Event event;
   event.type = EventType::WindowExpose;
