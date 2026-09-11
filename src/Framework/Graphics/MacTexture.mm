@@ -32,7 +32,7 @@ MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
   texture = new (texture) MacTexture;
   texture->addRef();
 
-  texture->data.device = static_cast<MacGraphicsDevice*>(device);
+  texture->data.device = static_cast<MacGraphicsDevice *>(device);
   device->addRef();
 
   texture->data.width = width;
@@ -88,4 +88,25 @@ template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
 
 template <> ImpTextureData ImpTexture::getPlatformData() const {
   return this->data;
+}
+
+template <> bool ImpTexture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
+  if (this->data.texture == nil || pixels == nullptr) {
+    return false;
+  }
+  @autoreleasepool {
+    if (bytes_per_row / sizeof(std::uint32_t) != this->data.width) {
+      return false;
+    }
+    if (bytes / bytes_per_row != this->data.height) {
+      return false;
+    }
+    MTLRegion region =
+        MTLRegionMake2D(0, 0, this->data.width, this->data.height);
+    [this->data.texture replaceRegion:region
+                          mipmapLevel:0
+                            withBytes:pixels
+                          bytesPerRow:bytes_per_row];
+    return true;
+  }
 }

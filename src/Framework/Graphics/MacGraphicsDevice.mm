@@ -178,9 +178,15 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
       return nullptr;
     }
 
+    // 縮小時の補完方法
+    // 一番近いテセル (実際の画面上ではなくて画像のピクセル) に合わせる
     sampler_desc.minFilter = MTLSamplerMinMagFilterNearest;
+    // 拡大時の補完方法
+    // 一番近いテセル (実際の画面上ではなくて画像のピクセル) に合わせる
     sampler_desc.magFilter = MTLSamplerMinMagFilterNearest;
+    // 横方向に関して座標が範囲外の時に座標を 0.0f か 1.0f として扱うっぽい
     sampler_desc.sAddressMode = MTLSamplerAddressModeClampToEdge;
+    // 縦方向に関して座標が範囲外の時に座標を 0.0f か 1.0f として扱うっぽい
     sampler_desc.tAddressMode = MTLSamplerAddressModeClampToEdge;
 
     device->data.sampler_state =

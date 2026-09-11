@@ -34,6 +34,7 @@ protected:
 public:
   ~ImpTextureTemplate() override;
   [[nodiscard]] PlatformData getPlatformData() const;
+  bool upload(const void *, size_t, size_t) override;
 };
 
 //  ========================================================

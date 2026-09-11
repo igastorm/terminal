@@ -25,6 +25,11 @@ private:
       device = appInstance->createGraphicsDevice();
       surface = device->createSurfaceFromWindow(this->window);
       texture = device->createTexture(800, 600, TextureDrawable::Enable);
+      uint32_t green_pixels[800 * 600];
+      for (int i = 0; i < 800 * 600; ++i) {
+        green_pixels[i] = 0xFF00FF00; // 不透明な黒
+      }
+      texture->upload(green_pixels, sizeof(green_pixels), 800 * sizeof(uint32_t));
       texture_surface = device->createSurfaceFromTexture(texture);
     }
   }
@@ -137,7 +142,7 @@ public:
               pass->drawVertices(quad1, 6);
               pass->drawVertices(quad2, 6);
             },
-            nullptr, {true, 0xFF1F1F1F, FrameDropping::Disable});
+            nullptr, {false, 0xFF1F1F1F, FrameDropping::Disable});
         surface->render(
             [](IRenderPass *pass, void *arg) -> void {
               ITexture *tex = static_cast<ITexture *>(arg);
