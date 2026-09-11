@@ -21,14 +21,23 @@
 
 struct ImpRenderPassData {
   id<MTLRenderCommandEncoder> encoder = nil;
+  id<MTLRenderPipelineState> pipeline_state = nil;
+  id<MTLRenderPipelineState> pipeline_state_tex = nil;
+  id<MTLSamplerState> sampler_state = nil;
+  bool is_ready = false;
   // id<MTLBuffer> vertex_buffer = nil;
 };
 
 using ImpRenderPass = ImpRenderPassTemplate<ImpRenderPassData>;
 
 class MacRenderPass : public ImpRenderPass {
+private:
 public:
-  MacRenderPass(id<MTLRenderCommandEncoder> /*, id<MTLBuffer>*/);
+  MacRenderPass(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
+                id<MTLRenderPipelineState>,
+                id<MTLSamplerState> /*, id<MTLBuffer>*/);
+  bool isReady() const;
+  ~MacRenderPass();
 };
 
 //  ========================================================
@@ -55,8 +64,7 @@ using ImpGraphicsDevice =
 class MacGraphicsDevice : public ImpGraphicsDevice {
 private:
 public:
-  static MacGraphicsDevice *
-  createMacGraphicsDevice(ImpApplication *);
+  static MacGraphicsDevice *createMacGraphicsDevice(ImpApplication *);
 };
 
 template <>
@@ -94,7 +102,8 @@ public:
   MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
                                                       const RenderPassDesc *);
   void renderBase(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
-                  float, float, RenderCallBack callback, void *data);
+                  id<MTLRenderPipelineState>, id<MTLSamplerState>, float, float,
+                  RenderCallBack callback, void *data);
   RenderHelper(MacGraphicsDevice *);
   ~RenderHelper();
 };

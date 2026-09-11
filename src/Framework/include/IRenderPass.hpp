@@ -1,11 +1,9 @@
 #pragma once
 #include "IObject.hpp"
+#include "ITexture.hpp"
 #include <cstdint>
 
-enum class FrameDropping {
-  Enable,
-  Disable
-};
+enum class FrameDropping { Enable, Disable };
 
 struct RenderPassDesc {
   bool clear = true;
@@ -18,11 +16,18 @@ struct Vertex {
   std::uint32_t color;
 };
 
+struct VertexTex {
+  float position[2];
+  float uv[2];
+  std::uint32_t color;
+};
+
 class IRenderPass : private IObject {
 public:
   virtual ~IRenderPass() = default;
   virtual bool drawVertices(const Vertex *, int) = 0;
-  
+  virtual bool drawVerticesTex(ITexture *, const VertexTex *, int) = 0;
+
   static inline constexpr RenderPassDesc DEFAULT_DESC;
 };
 

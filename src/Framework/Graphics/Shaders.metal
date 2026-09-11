@@ -87,7 +87,6 @@ fragment float4 fragmentMainTex(VertexOutWithUV in [[stage_in]],
                                 texture2d<float> tex [[texture(0)]],
                                 sampler samp [[sampler(0)]]) {
   // テクスチャサンプリング
-  // float4 out = in.color + tex.sample(samp, in.uv) - 1.0f;
-  float4 out = tex.sample(samp, in.uv);
+  float4 out = tex.sample(samp, in.uv) * in.color;
   return out;
 }

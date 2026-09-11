@@ -14,6 +14,8 @@ protected:
   PlatformData data;
 
   bool drawVertices(const Vertex *vertices, int vertex_count) override;
+  bool drawVerticesTex(ITexture *, const VertexTex *vertices,
+                       int vertex_count) override;
 
 public:
   ~ImpRenderPassTemplate() override = default;
@@ -43,8 +45,9 @@ public:
 template <class PlatformData> class ImpSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
-  
+
   bool render(RenderCallBack, void *, const RenderPassDesc) override;
+
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
   ~ImpSurfaceTemplate();

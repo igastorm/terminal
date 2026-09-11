@@ -8,6 +8,8 @@ private:
   IPTY *pty = nullptr;
   IGraphicsDevice *device = nullptr;
   ISurface *surface = nullptr;
+  ITexture *texture = nullptr;
+  ISurface *texture_surface = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -22,6 +24,8 @@ private:
 
       device = appInstance->createGraphicsDevice();
       surface = device->createSurfaceFromWindow(this->window);
+      texture = device->createTexture(800, 600, TextureDrawable::Enable);
+      texture_surface = device->createSurfaceFromTexture(texture);
     }
   }
 
@@ -45,6 +49,16 @@ private:
       this->surface->release();
       this->surface = nullptr;
     }
+
+    if (this->texture != nullptr) {
+      this->texture->release();
+      this->texture = nullptr;
+    }
+
+    if (this->texture_surface != nullptr) {
+      this->texture_surface->release();
+      this->texture_surface = nullptr;
+    }
   }
 
   void processPTYInput(const Event &event) {
@@ -57,7 +71,7 @@ public:
   bool onInit(IApplication *appInstance) override {
     std::cout << "[INFO] onInit: Creating window and PTY...\n";
     createTerminalWindow(appInstance);
-    //ITexture* tex = device->createTexture(100, 100);
+    // ITexture* tex = device->createTexture(100, 100);
     return true;
   }
 
@@ -85,7 +99,7 @@ public:
 
     if (event.type == EventType::WindowExpose) {
       if (event.window == this->window) {
-        surface->render(
+        texture_surface->render(
             [](IRenderPass *pass, void *arg) -> void {
               float x = 50.0f;
               float y = 50.0f;
@@ -123,7 +137,28 @@ public:
               pass->drawVertices(quad1, 6);
               pass->drawVertices(quad2, 6);
             },
-            nullptr);
+            nullptr, {true, 0xFF1F1F1F, FrameDropping::Disable});
+        surface->render(
+            [](IRenderPass *pass, void *arg) -> void {
+              ITexture *tex = static_cast<ITexture *>(arg);
+              // 二分の一に縮小表示されることになる
+              float x = 50.0f;
+              float y = 50.0f;
+              float w = 400.0f;
+              float h = 300.0f;
+
+              VertexTex quad[6] = {
+                  {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF}, // 左上
+                  {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF}, // 右上
+                  {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF}, // 左下
+
+                  {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF},     // 左下
+                  {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF},     // 右上
+                  {{x + w, y + h}, {1.0f, 1.0f}, 0xFFFFFFFF}, // 右下
+              };
+              pass->drawVerticesTex(tex, quad, 6);
+            },
+            this->texture);
       }
     }
     return AppResult::Continue;

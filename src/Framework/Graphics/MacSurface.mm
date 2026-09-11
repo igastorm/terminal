@@ -64,13 +64,14 @@ RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
 
 void RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
                               id<MTLRenderPipelineState> pipeline_state,
+                              id<MTLRenderPipelineState> pipeline_state_tex,
+                              id<MTLSamplerState> sampler_state,
                               float true_width, float true_height,
                               RenderCallBack callback, void *data) {
   if (encoder == nil || pipeline_state == nil || true_width == 0.0f ||
       true_height == 0.0f) {
     return;
   }
-  [encoder setRenderPipelineState:pipeline_state];
 
   struct {
     float width;
@@ -81,10 +82,13 @@ void RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
   [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
 
   // ここでコールバック
-  MacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
-  [encoder retain];
-  callback(&pass, data);
-  [encoder release];
+  MacRenderPass pass(encoder, pipeline_state, pipeline_state_tex,
+                     sampler_state);
+  if (pass.isReady()) {
+    [encoder retain];
+    callback(&pass, data);
+    [encoder release];
+  }
 }
 
 // 共通デストラクタ
@@ -118,9 +122,8 @@ MacWindowSurface::~MacWindowSurface() {
       this->data.metal_layer = nil;
     }
     if (this->data.window != nullptr) {
-      NSView *view = static_cast<MacWindow *>(this->data.window)
-                         ->getPlatformData()
-                         .view;
+      NSView *view =
+          static_cast<MacWindow *>(this->data.window)->getPlatformData().view;
       if (view != nil) {
         view.wantsLayer = NO;
       }
@@ -162,8 +165,12 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
 
     id<MTLRenderPipelineState> pipeline_state =
         device->getPlatformData().pipeline_state;
+    id<MTLRenderPipelineState> pipeline_state_tex =
+        device->getPlatformData().pipeline_state_tex;
+    id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
 
-    if (pipeline_state == nil) {
+    if (pipeline_state == nil || pipeline_state_tex == nil ||
+        sampler_state == nil) {
       return false;
     }
 
@@ -212,8 +219,8 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
     }
 
     // 描画処理
-    helper.renderBase(encoder, pipeline_state, true_width, true_height,
-                      callback, data);
+    helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
+                      sampler_state, true_width, true_height, callback, data);
 
     // end
     [encoder endEncoding];
@@ -259,7 +266,7 @@ MacWindowSurface::createMacSurfaceFromWindow(ImpGraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = static_cast<MacGraphicsDevice*>(device);
+  surface->data.device = static_cast<MacGraphicsDevice *>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
   surface->data.device->addRef();
 
@@ -269,9 +276,8 @@ MacWindowSurface::createMacSurfaceFromWindow(ImpGraphicsDevice *device,
 
   @autoreleasepool {
     // getter を IWindow に追加すればいいがそれだと内部が漏れる
-    WindowView *view = static_cast<MacWindow *>(surface->data.window)
-                           ->getPlatformData()
-                           .view;
+    WindowView *view =
+        static_cast<MacWindow *>(surface->data.window)->getPlatformData().view;
 
     // view はポインタなので view に変更を加えると window
     // 側にも反映される
@@ -363,7 +369,7 @@ MacTextureSurface::createMacSurfaceFromTexture(ImpGraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = static_cast<MacGraphicsDevice*>(device);
+  surface->data.device = static_cast<MacGraphicsDevice *>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
   surface->data.device->addRef();
 
@@ -406,13 +412,17 @@ bool ImpTextureSurface::render(RenderCallBack callback, void *data,
 
     id<MTLTexture> mtl_texture = texture->getPlatformData().texture;
     id<MTLRenderPipelineState> pipeline_state =
+        device->getPlatformData().pipeline_state;
+    id<MTLRenderPipelineState> pipeline_state_tex =
         device->getPlatformData().pipeline_state_tex;
+    id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
 
     float true_width = texture->getPlatformData().width;
     float true_height = texture->getPlatformData().height;
 
-    if (mtl_texture == nil || pipeline_state == nil || true_width == 0 ||
-        true_height == 0) {
+    if (mtl_texture == nil || pipeline_state == nil ||
+        pipeline_state_tex == nil || true_width == 0 || true_height == 0 ||
+        sampler_state == nil) {
       return false;
     }
 
@@ -432,8 +442,8 @@ bool ImpTextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    helper.renderBase(encoder, pipeline_state, true_width, true_height,
-                      callback, data);
+    helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
+                      sampler_state, true_width, true_height, callback, data);
 
     // end
     [encoder endEncoding];
