@@ -60,7 +60,7 @@ template <class PlatformData, class PlatformApplicationData>
 class ImpGraphicsDeviceTemplate : public CommonGraphicsDevice {
 protected:
   PlatformData data;
-  ImpApplication<PlatformApplicationData> *appInstance;
+  ImpApplicationTemplate<PlatformApplicationData> *appInstance;
 
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;

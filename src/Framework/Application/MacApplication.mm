@@ -9,11 +9,11 @@
 #include <new>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
-@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
+@property(nonatomic, assign) MacApplication *appInstance;
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
-template <> bool MacApplication::initPlatform() {
+bool MacApplication::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
     [NSApplication sharedApplication];
@@ -49,7 +49,7 @@ template <> bool MacApplication::initPlatform() {
   }
 }
 
-template <> void MacApplication::terminate() {
+template <> void ImpApplication::terminate() {
   @autoreleasepool {
     // ループが生きている間に実行しないとリークっぽくなる
     this->handler->onQuit(this);
@@ -81,7 +81,7 @@ template <> void MacApplication::terminate() {
                    });
 }
 
-template <> void MacApplication::dispatchEvent(const Event &event) {
+template <> void ImpApplication::dispatchEvent(const Event &event) {
   if (this->handler != nullptr) {
     if (this->handler->onEvent(this, event) == AppResult::Continue) {
       return;
@@ -90,7 +90,7 @@ template <> void MacApplication::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-template <> bool MacApplication::run(IAppHandler *handler) {
+template <> bool ImpApplication::run(IAppHandler *handler) {
   this->handler = handler;
   this->data.appDelegate.handler = handler;
   @autoreleasepool {
@@ -116,7 +116,7 @@ template <> bool MacApplication::run(IAppHandler *handler) {
   return true;
 }
 
-template <> void MacApplication::postEvent() {
+template <> void ImpApplication::postEvent() {
   // もし, dispatch_async_f
   // が処理中に再度同じイベントをぶち込むと重複してイベントが発行されることになるのでフラグで判定が必要
   // (よっぽど重い時以外には問題にならないかもしれないが)

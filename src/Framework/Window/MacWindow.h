@@ -16,7 +16,7 @@
 // キー入力と画面描画イベント
 // ----------------------------
 @interface WindowView : NSView <NSTextInputClient>
-@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
+@property(nonatomic, assign) MacApplication *appInstance;
 @property(nonatomic, assign) IWindow *iwindow;
 @end
 
@@ -24,7 +24,7 @@
 // ウィンドウデリゲート
 // ----------------------------
 @interface WindowDelegate : NSObject <NSWindowDelegate>
-@property(nonatomic, assign) ImpApplication<ImpApplicationData> *appInstance;
+@property(nonatomic, assign) MacApplication *appInstance;
 @property(nonatomic, assign) IWindow *iwindow;
 @end
 
@@ -45,8 +45,7 @@ public:
   MacWindow() = default;
   ~MacWindow() = default;
   void notifyResizing(bool);
-  template <class PlatformApplicationData>
   [[nodiscard]] static MacWindow *
-  createWindow(ImpApplication<PlatformApplicationData> *, int, int,
+  createWindow(ImpApplication *, int, int,
                const char *);
 };

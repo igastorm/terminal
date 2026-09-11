@@ -240,7 +240,7 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
 }
 
 MacWindowSurface *
-MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
+MacWindowSurface::createMacSurfaceFromWindow(ImpGraphicsDevice *device,
                                              IWindow *window) {
   if (window == nullptr) {
     return nullptr;
@@ -259,7 +259,7 @@ MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = device;
+  surface->data.device = static_cast<MacGraphicsDevice*>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
   surface->data.device->addRef();
 
@@ -344,7 +344,7 @@ MacTextureSurface::~MacTextureSurface() {
 }
 
 MacTextureSurface *
-MacTextureSurface::createMacSurfaceFromTexture(MacGraphicsDevice *device,
+MacTextureSurface::createMacSurfaceFromTexture(ImpGraphicsDevice *device,
                                                ITexture *texture) {
   if (texture == nullptr) {
     return nullptr;
@@ -363,7 +363,7 @@ MacTextureSurface::createMacSurfaceFromTexture(MacGraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = device;
+  surface->data.device = static_cast<MacGraphicsDevice*>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
   surface->data.device->addRef();
 

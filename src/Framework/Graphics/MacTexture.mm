@@ -19,7 +19,7 @@
 //
 //  ========================================================
 
-MacTexture *MacTexture::createMacTexture(MacGraphicsDevice *device, int width,
+MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
                                          int height,
                                          TextureDrawable drawable_flag) {
   MacTexture *texture =
@@ -32,7 +32,7 @@ MacTexture *MacTexture::createMacTexture(MacGraphicsDevice *device, int width,
   texture = new (texture) MacTexture;
   texture->addRef();
 
-  texture->data.device = device;
+  texture->data.device = static_cast<MacGraphicsDevice*>(device);
   device->addRef();
 
   texture->data.width = width;

@@ -20,7 +20,7 @@
 //  ========================================================
 
 MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
-    ImpApplication<ImpApplicationData> *appInstance) {
+    ImpApplication *appInstance) {
   @autoreleasepool {
     MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(
         std::malloc(sizeof(MacGraphicsDevice)));
@@ -250,24 +250,26 @@ template <> ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData() const {
 template <>
 ITexture *ImpGraphicsDevice::createTexture(int width, int height,
                                            TextureDrawable drawable_flag) {
-  return MacTexture::createMacTexture(static_cast<MacGraphicsDevice *>(this),
+  return MacTexture::createMacTexture(this,
                                       width, height, drawable_flag);
 }
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
   return MacWindowSurface::createMacSurfaceFromWindow(
-      static_cast<MacGraphicsDevice *>(this), window);
+      this, window);
 }
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
   return MacTextureSurface::createMacSurfaceFromTexture(
-      static_cast<MacGraphicsDevice *>(this), texture);
+      this, texture);
 }
 
 template <>
-IGraphicsDevice *ImpApplication<ImpApplicationData>::createGraphicsDevice() {
-  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
+IGraphicsDevice *
+ImpApplicationTemplate<ImpApplicationData>::createGraphicsDevice() {
+  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(
+      this);
   return device;
 }

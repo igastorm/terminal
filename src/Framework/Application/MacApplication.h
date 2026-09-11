@@ -11,4 +11,9 @@ struct ImpApplicationData {
   AppDelegate *appDelegate;
 };
 
-using MacApplication = ImpApplication<ImpApplicationData>;
+using ImpApplication = ImpApplicationTemplate<ImpApplicationData>;
+
+class MacApplication : public ImpApplication {
+public:
+  bool initPlatform();
+};

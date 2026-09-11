@@ -76,9 +76,8 @@ template <> bool ImpWindow::hide() {
   }
 }
 
-template <>
 MacWindow *
-MacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
+MacWindow::createWindow(ImpApplication *appInstance,
                         int width, int height, const char *title) {
   @autoreleasepool {
     MacWindow *window =
@@ -116,13 +115,14 @@ MacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
     // ウィンドウデリゲート
     window->data.delegate = [[WindowDelegate alloc] init];
     window->data.delegate.iwindow = window;
-    window->data.delegate.appInstance = appInstance;
+    window->data.delegate.appInstance =
+        static_cast<MacApplication *>(appInstance);
     [window->data.window setDelegate:window->data.delegate];
 
     // ビュー
     window->data.view = [[WindowView alloc] initWithFrame:frame];
     window->data.view.iwindow = window;
-    window->data.view.appInstance = appInstance;
+    window->data.view.appInstance = static_cast<MacApplication *>(appInstance);
     // appInstance を参照
     [window->data.window setContentView:window->data.view];
     window->data.view.appInstance->addRef();
@@ -140,8 +140,9 @@ MacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
 //} // namespace
 
 template <>
-IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
-                                                          const char *title) {
+IWindow *
+ImpApplicationTemplate<ImpApplicationData>::createWindow(int width, int height,
+                                                         const char *title) {
   IWindow *window = MacWindow::createWindow(this, width, height, title);
   return window;
 }

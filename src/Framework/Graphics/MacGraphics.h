@@ -56,7 +56,7 @@ class MacGraphicsDevice : public ImpGraphicsDevice {
 private:
 public:
   static MacGraphicsDevice *
-  createMacGraphicsDevice(ImpApplication<ImpApplicationData> *);
+  createMacGraphicsDevice(ImpApplication *);
 };
 
 template <>
@@ -102,14 +102,14 @@ public:
 class MacWindowSurface : public ImpWindowSurface {
 public:
   ~MacWindowSurface();
-  static MacWindowSurface *createMacSurfaceFromWindow(MacGraphicsDevice *,
+  static MacWindowSurface *createMacSurfaceFromWindow(ImpGraphicsDevice *,
                                                       IWindow *);
 };
 
 class MacTextureSurface : public ImpTextureSurface {
 public:
   ~MacTextureSurface();
-  static MacTextureSurface *createMacSurfaceFromTexture(MacGraphicsDevice *,
+  static MacTextureSurface *createMacSurfaceFromTexture(ImpGraphicsDevice *,
                                                         ITexture *);
 };
 
@@ -121,7 +121,7 @@ public:
 
 struct ImpTextureData {
   id<MTLTexture> texture = nil;
-  ImpGraphicsDevice *device = nullptr;
+  MacGraphicsDevice *device = nullptr;
   int width = 0;
   int height = 0;
 };
@@ -134,6 +134,6 @@ private:
   // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:
-  static MacTexture *createMacTexture(MacGraphicsDevice *, int, int,
+  static MacTexture *createMacTexture(ImpGraphicsDevice *, int, int,
                                       TextureDrawable);
 };

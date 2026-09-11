@@ -6,7 +6,7 @@ template <class PlatformData, class PlatformApplicationData>
 class ImpWindowTemplate : public CommonWindow {
 protected:
   PlatformData data;
-  ImpApplication<PlatformApplicationData> *appInstance;
+  ImpApplicationTemplate<PlatformApplicationData> *appInstance;
 
   bool setTitle(const char *) override;
   bool show() override;
