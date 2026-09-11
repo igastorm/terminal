@@ -73,27 +73,26 @@ struct ImpSurfaceData {
   MacGraphicsDevice *device = nullptr;
 };
 
-using ImpSurface = ImpSurfaceTemplate<ImpSurfaceData>;
-
-class MacWindowSurface : public ImpSurface {
-private:
+struct ImpWindowSurfaceData : public ImpSurfaceData {
   IWindow *window = nullptr;
   CAMetalLayer *metal_layer = nil;
-  
-  bool render(RenderCallBack, void *, const RenderPassDesc) override;
+};
 
+struct ImpTextureSurfaceData : public ImpSurfaceData {
+  ITexture* texture = nullptr;
+};
+
+using ImpWindowSurface = ImpSurfaceTemplate<ImpWindowSurfaceData>;
+using ImpTextureSurface = ImpSurfaceTemplate<ImpTextureSurfaceData>;
+
+class MacWindowSurface : public ImpWindowSurface {
 public:
   ~MacWindowSurface();
   static MacWindowSurface *createMacSurfaceFromWindow(MacGraphicsDevice *,
                                                       IWindow *);
 };
 
-class MacTextureSurface : public ImpSurface {
-private:
-  ITexture *texture = nullptr;
-
-  bool render(RenderCallBack, void *, const RenderPassDesc) override;
-
+class MacTextureSurface : public ImpTextureSurface {
 public:
 ~MacTextureSurface();
 static MacTextureSurface *createMacSurfaceFromTexture(MacGraphicsDevice *,

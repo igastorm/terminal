@@ -19,7 +19,9 @@
 //
 //  ========================================================
 
-template <> ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData>() {
+// 共通デストラクタ
+template <class PlatformData>
+ImpSurfaceTemplate<PlatformData>::~ImpSurfaceTemplate<PlatformData>() {
   @autoreleasepool {
     if (this->data.in_flight_semaphore != nil) {
       dispatch_release(this->data.in_flight_semaphore);
@@ -33,30 +35,35 @@ template <> ImpSurface::~ImpSurfaceTemplate<ImpSurfaceData>() {
   }
 }
 
+// 共通ゲッター
+template <class PlatformData>
+PlatformData ImpSurfaceTemplate<PlatformData>::getPlatformData() const {
+  return this->data;
+}
+
+// ウィンドウ専用デストラクタ
 MacWindowSurface::~MacWindowSurface() {
   @autoreleasepool {
-    if (this->metal_layer != nil) {
-      [this->metal_layer removeFromSuperlayer];
-      [this->metal_layer release];
-      this->metal_layer = nil;
+    if (this->data.metal_layer != nil) {
+      [this->data.metal_layer removeFromSuperlayer];
+      [this->data.metal_layer release];
+      this->data.metal_layer = nil;
     }
-    if (this->window != nullptr) {
-      NSView *view =
-          static_cast<ImpMacWindow *>(this->window)->getPlatformData().view;
+    if (this->data.window != nullptr) {
+      NSView *view = static_cast<ImpMacWindow *>(this->data.window)
+                         ->getPlatformData()
+                         .view;
       if (view != nil) {
         view.wantsLayer = NO;
       }
-      this->window->release();
-      this->window = nullptr;
+      this->data.window->release();
+      this->data.window = nullptr;
     }
   }
 }
 
-template <> ImpSurfaceData ImpSurface::getPlatformData() const {
-  return this->data;
-}
-
-bool MacWindowSurface::render(RenderCallBack callback, void *data,
+template <>
+bool ImpWindowSurface::render(RenderCallBack callback, void *data,
                               const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費
@@ -70,9 +77,9 @@ bool MacWindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    ImpMacWindow *window = static_cast<ImpMacWindow *>(this->window);
+    ImpMacWindow *window = static_cast<ImpMacWindow *>(this->data.window);
     MacGraphicsDevice *device = this->data.device;
-    CAMetalLayer *metal_layer = this->metal_layer;
+    CAMetalLayer *metal_layer = this->data.metal_layer;
 
     if (callback == nullptr || window == nullptr || device == nullptr ||
         metal_layer == nullptr) {
@@ -221,13 +228,14 @@ MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
   surface->data.device->addRef();
 
   // 参照カウントを増やす
-  surface->window = window;
+  surface->data.window = window;
   window->addRef();
 
   @autoreleasepool {
     // getter を IWindow に追加すればいいがそれだと内部が漏れる
-    WindowView *view =
-        static_cast<ImpMacWindow *>(surface->window)->getPlatformData().view;
+    WindowView *view = static_cast<ImpMacWindow *>(surface->data.window)
+                           ->getPlatformData()
+                           .view;
 
     // view はポインタなので view に変更を加えると window
     // 側にも反映される
@@ -278,7 +286,7 @@ MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
     view.wantsLayer = YES;
     [view.layer addSublayer:layer];
 
-    surface->metal_layer = layer;
+    surface->data.metal_layer = layer;
 
     // CAMetalView の drawable は 3 枚ある
     surface->data.in_flight_semaphore = dispatch_semaphore_create(3);
@@ -290,10 +298,11 @@ MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
   return surface;
 }
 
+// テクスチャ専用デストラクタd
 MacTextureSurface::~MacTextureSurface() {
   @autoreleasepool {
-    if (this->texture != nullptr) {
-      this->texture->release();
+    if (this->data.texture != nullptr) {
+      this->data.texture->release();
     }
   }
 }
@@ -323,7 +332,7 @@ MacTextureSurface::createMacSurfaceFromTexture(MacGraphicsDevice *device,
   surface->data.device->addRef();
 
   // 参照カウントを増やす
-  surface->texture = texture;
+  surface->data.texture = texture;
   texture->addRef();
 
   @autoreleasepool {
@@ -337,7 +346,8 @@ MacTextureSurface::createMacSurfaceFromTexture(MacGraphicsDevice *device,
   return surface;
 }
 
-bool MacTextureSurface::render(RenderCallBack callback, void *data,
+template <>
+bool ImpTextureSurface::render(RenderCallBack callback, void *data,
                                const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費
@@ -351,7 +361,7 @@ bool MacTextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    MacTexture *texture = static_cast<MacTexture *>(this->texture);
+    MacTexture *texture = static_cast<MacTexture *>(this->data.texture);
     MacGraphicsDevice *device =
         static_cast<MacGraphicsDevice *>(this->data.device);
     if (texture == nullptr || device == nullptr) {

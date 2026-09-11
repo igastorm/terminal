@@ -43,8 +43,8 @@ public:
 template <class PlatformData> class ImpSurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
-  // 内部でウィンドウ版とテクスチャ版で分けるべきなのでここではオーバーライドしない
-  // bool render(RenderCallBack, void *, const RenderPassDesc) override;
+  
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
 public:
   PlatformData getPlatformData() const;
   ~ImpSurfaceTemplate();
