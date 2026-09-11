@@ -23,6 +23,7 @@ struct ImpRenderPassData {
   id<MTLRenderCommandEncoder> encoder = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
   id<MTLRenderPipelineState> pipeline_state_tex = nil;
+  id<MTLRenderPipelineState> pipeline_state_tex_outline = nil;
   id<MTLSamplerState> sampler_state = nil;
   bool is_ready = false;
   // id<MTLBuffer> vertex_buffer = nil;
@@ -34,7 +35,7 @@ class MacRenderPass : public ImpRenderPass {
 private:
 public:
   MacRenderPass(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
-                id<MTLRenderPipelineState>,
+                id<MTLRenderPipelineState>, id<MTLRenderPipelineState>,
                 id<MTLSamplerState> /*, id<MTLBuffer>*/);
   bool isReady() const;
   ~MacRenderPass();
@@ -51,6 +52,7 @@ struct ImpGraphicsDeviceData {
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
   id<MTLRenderPipelineState> pipeline_state_tex = nil;
+  id<MTLRenderPipelineState> pipeline_state_tex_outline = nil;
   id<MTLSamplerState> sampler_state = nil;
   // id<MTLBuffer> vertex_buffer = nil;
   // セマフォはデバイスごとではなく描画先ごとに持つべきらしいので Surface
@@ -102,8 +104,9 @@ public:
   MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
                                                       const RenderPassDesc *);
   void renderBase(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
-                  id<MTLRenderPipelineState>, id<MTLSamplerState>, float, float,
-                  RenderCallBack callback, void *data);
+                  id<MTLRenderPipelineState>, id<MTLRenderPipelineState>,
+                  id<MTLSamplerState>, float, float, RenderCallBack callback,
+                  void *data);
   RenderHelper(MacGraphicsDevice *);
   ~RenderHelper();
 };

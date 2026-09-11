@@ -21,7 +21,8 @@ struct ViewportUniform {
   float inv_255;  // 255 の逆数
 };
 
-VertexOut vertexConvert(float2 pos, uint4 col, ViewportUniform uniforms) {
+VertexOut vertexConvert(const float2 pos, const uint4 col,
+                        const ViewportUniform uniforms) {
 
   // float ndc_x = (pixel_pos.x / uniforms.r_width) * 2.0 - 1.0;
   float ndc_x = pos.x * 2.0 - uniforms.width;
@@ -51,8 +52,14 @@ struct VertexOutWithUV {
   vector_float2 uv;
 };
 
+// device や constant はアドレス空間を指すらしい
+// float は 32bit だから MTLPixelFormatBGRA8Unorm
+// に対して違和感を持つが演算時には float で行うが VRAM には演算結果を 1B
+// に圧縮して保存するという意味らしい
+// なかなかややこしいが
 vertex VertexOut vertexMain(const device Vertex *vertices [[buffer(0)]],
-                            constant ViewportUniform &uniforms [[buffer(1)]],
+                            const constant ViewportUniform &uniforms
+                            [[buffer(1)]],
                             uint vertexID [[vertex_id]]) {
 
   return vertexConvert(
@@ -64,7 +71,7 @@ vertex VertexOut vertexMain(const device Vertex *vertices [[buffer(0)]],
 
 vertex VertexOutWithUV vertexMainUV(const device VertexWithUV *vertices
                                     [[buffer(0)]],
-                                    constant ViewportUniform &uniforms
+                                    const constant ViewportUniform &uniforms
                                     [[buffer(1)]],
                                     uint vertexID [[vertex_id]]) {
 
@@ -81,12 +88,32 @@ vertex VertexOutWithUV vertexMainUV(const device VertexWithUV *vertices
 }
 
 // ピクセルシェーダに該当するやつっぽい
-fragment float4 fragmentMain(VertexOut in [[stage_in]]) { return in.color; }
+fragment float4 fragmentMain(const VertexOut in [[stage_in]]) {
+  return in.color;
+}
 
-fragment float4 fragmentMainTex(VertexOutWithUV in [[stage_in]],
-                                texture2d<float> tex [[texture(0)]],
-                                sampler samp [[sampler(0)]]) {
+fragment float4 fragmentMainTex(const VertexOutWithUV in [[stage_in]],
+                                const texture2d<float> tex [[texture(0)]],
+                                const sampler samp [[sampler(0)]]) {
   // テクスチャサンプリング
   float4 out = tex.sample(samp, in.uv) * in.color;
+  return out;
+}
+
+fragment float4 fragmentMainOutline(const VertexOutWithUV in [[stage_in]],
+                                    const texture2d<float> tex [[texture(0)]],
+                                    const sampler samp [[sampler(0)]]) {
+  // 輪郭を取り出す
+  // このテクスチャは白黒だからそのまま float を返してきそうだが GPU
+  // の回路的に無理らしいので先頭要素を手動で取り出す
+  // 余分な G, B は 0.0f, A は 0.0f に補完されているらしい
+  float outline = tex.sample(samp, in.uv)[0];
+
+  // 頂点色を取得
+  float4 out = in.color;
+
+  // 頂点の透明度に輪郭をかけることで頂点の色を判定した輪郭ができる
+  out[3] *= outline;
+
   return out;
 }

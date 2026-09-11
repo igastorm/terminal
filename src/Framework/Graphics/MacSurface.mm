@@ -62,12 +62,13 @@ RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
   }
 }
 
-void RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
-                              id<MTLRenderPipelineState> pipeline_state,
-                              id<MTLRenderPipelineState> pipeline_state_tex,
-                              id<MTLSamplerState> sampler_state,
-                              float true_width, float true_height,
-                              RenderCallBack callback, void *data) {
+void RenderHelper::renderBase(
+    id<MTLRenderCommandEncoder> encoder,
+    id<MTLRenderPipelineState> pipeline_state,
+    id<MTLRenderPipelineState> pipeline_state_tex,
+    id<MTLRenderPipelineState> pipeline_state_tex_outline,
+    id<MTLSamplerState> sampler_state, float true_width, float true_height,
+    RenderCallBack callback, void *data) {
   if (encoder == nil || pipeline_state == nil || true_width == 0.0f ||
       true_height == 0.0f) {
     return;
@@ -83,7 +84,7 @@ void RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
 
   // ここでコールバック
   MacRenderPass pass(encoder, pipeline_state, pipeline_state_tex,
-                     sampler_state);
+                     pipeline_state_tex_outline, sampler_state);
   if (pass.isReady()) {
     [encoder retain];
     callback(&pass, data);
@@ -165,12 +166,17 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
 
     id<MTLRenderPipelineState> pipeline_state =
         device->getPlatformData().pipeline_state;
+
     id<MTLRenderPipelineState> pipeline_state_tex =
         device->getPlatformData().pipeline_state_tex;
+
+    id<MTLRenderPipelineState> pipeline_state_tex_outline =
+        device->getPlatformData().pipeline_state_tex_outline;
+
     id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
 
     if (pipeline_state == nil || pipeline_state_tex == nil ||
-        sampler_state == nil) {
+        pipeline_state_tex_outline == nil || sampler_state == nil) {
       return false;
     }
 
@@ -220,7 +226,8 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
 
     // 描画処理
     helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
-                      sampler_state, true_width, true_height, callback, data);
+                      pipeline_state_tex_outline, sampler_state, true_width,
+                      true_height, callback, data);
 
     // end
     [encoder endEncoding];
@@ -340,7 +347,7 @@ MacWindowSurface::createMacSurfaceFromWindow(ImpGraphicsDevice *device,
   return surface;
 }
 
-// テクスチャ専用デストラクタd
+// テクスチャ専用デストラクタ
 MacTextureSurface::~MacTextureSurface() {
   @autoreleasepool {
     if (this->data.texture != nullptr) {
@@ -411,18 +418,24 @@ bool ImpTextureSurface::render(RenderCallBack callback, void *data,
     }
 
     id<MTLTexture> mtl_texture = texture->getPlatformData().texture;
+
     id<MTLRenderPipelineState> pipeline_state =
         device->getPlatformData().pipeline_state;
+
     id<MTLRenderPipelineState> pipeline_state_tex =
         device->getPlatformData().pipeline_state_tex;
+
+    id<MTLRenderPipelineState> pipeline_state_tex_outline =
+        device->getPlatformData().pipeline_state_tex_outline;
+
     id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
 
     float true_width = texture->getPlatformData().width;
     float true_height = texture->getPlatformData().height;
 
     if (mtl_texture == nil || pipeline_state == nil ||
-        pipeline_state_tex == nil || true_width == 0 || true_height == 0 ||
-        sampler_state == nil) {
+        pipeline_state_tex_outline == nil || pipeline_state_tex == nil ||
+        true_width == 0 || true_height == 0 || sampler_state == nil) {
       return false;
     }
 
@@ -443,7 +456,8 @@ bool ImpTextureSurface::render(RenderCallBack callback, void *data,
     }
 
     helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
-                      sampler_state, true_width, true_height, callback, data);
+                      pipeline_state_tex_outline, sampler_state, true_width,
+                      true_height, callback, data);
 
     // end
     [encoder endEncoding];

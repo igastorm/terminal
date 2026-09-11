@@ -19,8 +19,8 @@
 //
 //  ========================================================
 
-MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
-    ImpApplication *appInstance) {
+MacGraphicsDevice *
+MacGraphicsDevice::createMacGraphicsDevice(ImpApplication *appInstance) {
   @autoreleasepool {
     MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(
         std::malloc(sizeof(MacGraphicsDevice)));
@@ -76,8 +76,11 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     id<MTLFunction> ps = [library newFunctionWithName:@"fragmentMain"];
     id<MTLFunction> vs_tex = [library newFunctionWithName:@"vertexMainUV"];
     id<MTLFunction> ps_tex = [library newFunctionWithName:@"fragmentMainTex"];
+    id<MTLFunction> ps_tex_outline =
+        [library newFunctionWithName:@"fragmentMainOutline"];
 
-    auto shaderRelease = [vs, ps, vs_tex, ps_tex]() -> void {
+    // 複数回記述箇所があるのでラムダ式でまとめる
+    auto shaderRelease = [vs, ps, vs_tex, ps_tex, ps_tex_outline]() -> void {
       if (vs != nil) {
         [vs release];
       }
@@ -90,12 +93,16 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
       if (ps_tex != nil) {
         [ps_tex release];
       }
+      if (ps_tex_outline != nil) {
+        [ps_tex_outline release];
+      }
     };
 
     // vs と ps (tex も) が参照カウントを増やすので release する
     [library release];
 
-    if (vs == nil || ps == nil || vs_tex == nil || ps_tex == nil) {
+    if (vs == nil || ps == nil || vs_tex == nil || ps_tex == nil ||
+        ps_tex_outline == nil) {
       std::cerr << "Failed to find vertex or fragment function" << std::endl;
       shaderRelease();
       device->release();
@@ -164,6 +171,12 @@ MacGraphicsDevice *MacGraphicsDevice::createMacGraphicsDevice(
     device->data.pipeline_state_tex =
         [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
+
+    pipeline_desc.fragmentFunction = ps_tex_outline;
+    device->data.pipeline_state_tex_outline =
+        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
+                                                            error:&error];
+
     [pipeline_desc release];
     shaderRelease();
     if (device->data.pipeline_state == nil ||
@@ -226,6 +239,10 @@ ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
       [this->data.sampler_state release];
       this->data.sampler_state = nil;
     }
+    if (this->data.pipeline_state_tex_outline != nil) {
+      [this->data.pipeline_state_tex_outline release];
+      this->data.pipeline_state_tex_outline = nil;
+    }
     if (this->data.pipeline_state_tex != nil) {
       [this->data.pipeline_state_tex release];
       this->data.pipeline_state_tex = nil;
@@ -256,26 +273,22 @@ template <> ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData() const {
 template <>
 ITexture *ImpGraphicsDevice::createTexture(int width, int height,
                                            TextureDesc texture_desc) {
-  return MacTexture::createMacTexture(this,
-                                      width, height, texture_desc);
+  return MacTexture::createMacTexture(this, width, height, texture_desc);
 }
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
-  return MacWindowSurface::createMacSurfaceFromWindow(
-      this, window);
+  return MacWindowSurface::createMacSurfaceFromWindow(this, window);
 }
 
 template <>
 ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
-  return MacTextureSurface::createMacSurfaceFromTexture(
-      this, texture);
+  return MacTextureSurface::createMacSurfaceFromTexture(this, texture);
 }
 
 template <>
 IGraphicsDevice *
 ImpApplicationTemplate<ImpApplicationData>::createGraphicsDevice() {
-  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(
-      this);
+  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
   return device;
 }

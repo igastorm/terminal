@@ -21,6 +21,13 @@
 
 MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {
+  // 対応可能 (pipeline_state の用意がめんどくさすぎる) だが現時点では,
+  // エラーにしておく
+  if (desc.drawable_flag == TextureDrawable::Enable &&
+      desc.format == TextureFormat::Mono) {
+    return nullptr;
+  }
+
   MacTexture *texture =
       static_cast<MacTexture *>(std::malloc(sizeof(MacTexture)));
   if (texture == nullptr) {
@@ -109,7 +116,7 @@ bool ImpTexture::upload(const void *pixels, size_t bytes,
   if (bytes / bytes_per_row != static_cast<size_t>(this->data.height)) {
     return false;
   }
-  
+
   @autoreleasepool {
     MTLRegion region =
         MTLRegionMake2D(0, 0, this->data.width, this->data.height);

@@ -11,6 +11,7 @@ public:
   [[nodiscard]] virtual ISurface *createSurfaceFromWindow(IWindow *) = 0;
   [[nodiscard]] virtual ISurface *createSurfaceFromTexture(ITexture *) = 0;
 
+  // ひとまず, 白黒かつレンダーターゲットはエラーにしておく
   virtual ITexture *createTexture(int, int,
                                   const TextureDesc = ITexture::DEFAULT_DESC) = 0;
 };

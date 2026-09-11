@@ -5,6 +5,8 @@
 // Enable にすると Render To Texture ができるが重くなるらしい
 enum class TextureDrawable { Enable, Disable };
 
+// 別に白黒でもカラーな描画先へ描画する時に色をつけることもできる
+// テクスチャの内部が白黒なだけ
 enum class TextureFormat {
   // 画像用 (カラー)
   Color,

@@ -21,12 +21,14 @@
 
 bool MacRenderPass::isReady() const { return this->data.is_ready; }
 
-MacRenderPass::MacRenderPass(id<MTLRenderCommandEncoder> encoder,
-                             id<MTLRenderPipelineState> pipeline_state,
-                             id<MTLRenderPipelineState> pipeline_state_tex,
-                             id<MTLSamplerState> sampler_state) {
+MacRenderPass::MacRenderPass(
+    id<MTLRenderCommandEncoder> encoder,
+    id<MTLRenderPipelineState> pipeline_state,
+    id<MTLRenderPipelineState> pipeline_state_tex,
+    id<MTLRenderPipelineState> pipeline_state_tex_outline,
+    id<MTLSamplerState> sampler_state) {
   if (encoder == nil || pipeline_state == nil || pipeline_state_tex == nil ||
-      sampler_state == nil) {
+      pipeline_state_tex_outline == nil || sampler_state == nil) {
     this->data.is_ready = false;
     return;
   }
@@ -39,6 +41,9 @@ MacRenderPass::MacRenderPass(id<MTLRenderCommandEncoder> encoder,
 
   this->data.pipeline_state_tex = pipeline_state_tex;
   [this->data.pipeline_state_tex retain];
+
+  this->data.pipeline_state_tex_outline = pipeline_state_tex_outline;
+  [this->data.pipeline_state_tex_outline retain];
 
   this->data.sampler_state = sampler_state;
   [this->data.sampler_state retain];
@@ -55,6 +60,9 @@ MacRenderPass::~MacRenderPass() {
   }
   if (this->data.pipeline_state_tex != nil) {
     [this->data.pipeline_state_tex release];
+  }
+  if (this->data.pipeline_state_tex_outline != nil) {
+    [this->data.pipeline_state_tex_outline release];
   }
   if (this->data.sampler_state != nil) {
     [this->data.sampler_state release];
@@ -94,23 +102,30 @@ bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 }
 
 template <>
-bool ImpRenderPass::drawVerticesTex(ITexture *texture,
+bool ImpRenderPass::drawVerticesTex(ITexture *itexture,
                                     const VertexTex *vertices,
                                     int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
   if (this->data.is_ready == false || vertices == nil || vertex_count <= 0 ||
-      texture == nullptr) {
+      itexture == nullptr) {
     return false;
   }
 
-  id<MTLTexture> mtl_texrure =
-      static_cast<MacTexture *>(texture)->getPlatformData().texture;
+  MacTexture *texture = static_cast<MacTexture *>(itexture);
+  id<MTLTexture> mtl_texrure = texture->getPlatformData().texture;
+  TextureFormat format = texture->getPlatformData().format;
+
   if (mtl_texrure == nil) {
     return false;
   }
 
-  [this->data.encoder setRenderPipelineState:this->data.pipeline_state_tex];
+  // テクスチャのフォーマットにより適切なパイプラインを自動選択
+  [this->data.encoder
+      setRenderPipelineState:format == TextureFormat::Color
+                                 ? this->data.pipeline_state_tex
+                                 : this->data.pipeline_state_tex_outline];
+  
   [this->data.encoder setFragmentSamplerState:this->data.sampler_state
                                       atIndex:0];
 
