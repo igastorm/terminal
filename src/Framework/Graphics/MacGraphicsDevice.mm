@@ -255,9 +255,9 @@ template <> ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData() const {
 
 template <>
 ITexture *ImpGraphicsDevice::createTexture(int width, int height,
-                                           TextureDrawable drawable_flag) {
+                                           TextureDesc texture_desc) {
   return MacTexture::createMacTexture(this,
-                                      width, height, drawable_flag);
+                                      width, height, texture_desc);
 }
 
 template <>

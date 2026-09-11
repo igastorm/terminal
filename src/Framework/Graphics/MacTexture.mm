@@ -20,8 +20,7 @@
 //  ========================================================
 
 MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
-                                         int height,
-                                         TextureDrawable drawable_flag) {
+                                         int height, const TextureDesc desc) {
   MacTexture *texture =
       static_cast<MacTexture *>(std::malloc(sizeof(MacTexture)));
   if (texture == nullptr) {
@@ -38,6 +37,8 @@ MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
   texture->data.width = width;
   texture->data.height = height;
 
+  texture->data.format = desc.format;
+
   @autoreleasepool {
     MTLTextureDescriptor *texture_desc = [[MTLTextureDescriptor alloc] init];
     if (texture_desc == nil) {
@@ -45,7 +46,9 @@ MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
       return nullptr;
     }
 
-    texture_desc.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    texture_desc.pixelFormat = desc.format == TextureFormat::Color
+                                   ? MTLPixelFormatBGRA8Unorm
+                                   : MTLPixelFormatR8Unorm;
     texture_desc.width = width;
     texture_desc.height = height;
     // 縮小した画像をあらかじめ生成する設定らしい
@@ -54,7 +57,7 @@ MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
 
     // texture_desc.storageMode
 
-    if (drawable_flag == TextureDrawable::Enable) {
+    if (desc.drawable_flag == TextureDrawable::Enable) {
       texture_desc.usage =
           MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
     } else {
@@ -90,17 +93,24 @@ template <> ImpTextureData ImpTexture::getPlatformData() const {
   return this->data;
 }
 
-template <> bool ImpTexture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
+template <>
+bool ImpTexture::upload(const void *pixels, size_t bytes,
+                        size_t bytes_per_row) {
   if (this->data.texture == nil || pixels == nullptr) {
     return false;
   }
+
+  // 与えられたデータが要件を満たしていなければ弾く
+  size_t bpp =
+      (this->data.format == TextureFormat::Mono) ? 1 : sizeof(std::uint32_t);
+  if (bytes_per_row / bpp != static_cast<size_t>(this->data.width)) {
+    return false;
+  }
+  if (bytes / bytes_per_row != static_cast<size_t>(this->data.height)) {
+    return false;
+  }
+  
   @autoreleasepool {
-    if (bytes_per_row / sizeof(std::uint32_t) != this->data.width) {
-      return false;
-    }
-    if (bytes / bytes_per_row != this->data.height) {
-      return false;
-    }
     MTLRegion region =
         MTLRegionMake2D(0, 0, this->data.width, this->data.height);
     [this->data.texture replaceRegion:region

@@ -24,12 +24,14 @@ private:
 
       device = appInstance->createGraphicsDevice();
       surface = device->createSurfaceFromWindow(this->window);
-      texture = device->createTexture(800, 600, TextureDrawable::Enable);
+      texture = device->createTexture(
+          800, 600, {TextureDrawable::Enable, TextureFormat::Color});
       uint32_t green_pixels[800 * 600];
       for (int i = 0; i < 800 * 600; ++i) {
         green_pixels[i] = 0xFF00FF00; // 不透明な黒
       }
-      texture->upload(green_pixels, sizeof(green_pixels), 800 * sizeof(uint32_t));
+      texture->upload(green_pixels, sizeof(green_pixels),
+                      800 * sizeof(uint32_t));
       texture_surface = device->createSurfaceFromTexture(texture);
     }
   }
@@ -153,7 +155,7 @@ public:
               float h = 300.0f;
 
               VertexTex quad[6] = {
-                  {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF}, // 左上
+                  {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},     // 左上
                   {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF}, // 右上
                   {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF}, // 左下
 

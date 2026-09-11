@@ -131,6 +131,7 @@ public:
 struct ImpTextureData {
   id<MTLTexture> texture = nil;
   MacGraphicsDevice *device = nullptr;
+  TextureFormat format = TextureFormat::Color;
   int width = 0;
   int height = 0;
 };
@@ -144,5 +145,5 @@ private:
 
 public:
   static MacTexture *createMacTexture(ImpGraphicsDevice *, int, int,
-                                      TextureDrawable);
+                                      const TextureDesc);
 };
