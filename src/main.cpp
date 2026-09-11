@@ -7,9 +7,10 @@ private:
   IWindow *window = nullptr;
   IPTY *pty = nullptr;
   IGraphicsDevice *device = nullptr;
-  ISurface *surface = nullptr;
+  ISurface *window_surface = nullptr;
   ITexture *texture = nullptr;
   ISurface *texture_surface = nullptr;
+  ITexture *smile = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -21,18 +22,42 @@ private:
       if (this->pty != nullptr) {
         pty->startShell("/bin/zsh");
       }
+    }
 
+    if (device == nullptr) {
       device = appInstance->createGraphicsDevice();
-      surface = device->createSurfaceFromWindow(this->window);
+    }
+    if (device != nullptr && window_surface == nullptr && window != nullptr) {
+      window_surface = device->createSurfaceFromWindow(window);
+    }
+    if (device != nullptr && texture == nullptr) {
       texture = device->createTexture(
           800, 600, {TextureDrawable::Enable, TextureFormat::Color});
-      uint32_t green_pixels[800 * 600];
+    }
+    if (device != nullptr && texture != nullptr) {
+      std::uint32_t green_pixels[800 * 600];
       for (int i = 0; i < 800 * 600; ++i) {
-        green_pixels[i] = 0xFF00FF00; // 不透明な黒
+        green_pixels[i] = 0xFF001F00;
       }
-      texture->upload(green_pixels, sizeof(green_pixels),
-                      800 * sizeof(uint32_t));
-      texture_surface = device->createSurfaceFromTexture(texture);
+      if (texture->upload(green_pixels, sizeof(green_pixels),
+                          800 * sizeof(uint32_t))) {
+        texture_surface = device->createSurfaceFromTexture(texture);
+      }
+    }
+    if (device != nullptr && smile == nullptr) {
+      smile = device->createTexture(
+          8, 8, {TextureDrawable::Disable, TextureFormat::Mono});
+    }
+    if (device != nullptr && smile != nullptr) {
+      // スマイルのドットデータ
+      const std::uint8_t smile_data[8 * 8] = {
+          0,   0,   255, 255, 255, 255, 0,   0,   0,   255, 0,   0,   0,
+          0,   255, 0,   255, 0,   255, 0,   0,   255, 0,   255, 255, 0,
+          0,   0,   0,   0,   0,   255, 255, 0,   255, 0,   0,   255, 0,
+          255, 255, 0,   0,   255, 255, 0,   0,   255, 0,   255, 0,   0,
+          0,   0,   255, 0,   0,   0,   255, 255, 255, 255, 0,   0,
+      };
+      smile->upload(smile_data, sizeof(smile_data), 8 * sizeof(std::uint8_t));
     }
   }
 
@@ -52,9 +77,9 @@ private:
       this->device = nullptr;
     }
 
-    if (this->surface != nullptr) {
-      this->surface->release();
-      this->surface = nullptr;
+    if (this->window_surface != nullptr) {
+      this->window_surface->release();
+      this->window_surface = nullptr;
     }
 
     if (this->texture != nullptr) {
@@ -65,6 +90,11 @@ private:
     if (this->texture_surface != nullptr) {
       this->texture_surface->release();
       this->texture_surface = nullptr;
+    }
+
+    if (this->smile != nullptr) {
+      this->smile->release();
+      this->smile = nullptr;
     }
   }
 
@@ -105,67 +135,96 @@ public:
     }
 
     if (event.type == EventType::WindowExpose) {
-      if (event.window == this->window) {
-        texture_surface->render(
-            [](IRenderPass *pass, void *arg) -> void {
-              float x = 50.0f;
-              float y = 50.0f;
-              float w = 300.0f;
-              float h = 200.0f;
+      if (event.window == window) {
+        if (texture_surface != nullptr) {
+          texture_surface->render(
+              [](IRenderPass *pass, void *arg) -> void {
+                // 半透明のものと重ねる
+                float x = 50.0f, y = 50.0f;
+                float w = 300.0f, h = 200.0f;
 
-              Vertex quad1[6] = {
-                  // 三角形 1
-                  {{x, y}, 0xFFFF0000},     // 左下 (赤)
-                  {{x + w, y}, 0xFF00FF00}, // 右下 (緑)
-                  {{x, y + h}, 0xFF0000FF}, // 左上 (青)
+                Vertex quad1[6] = {
+                    // 三角形 1
+                    {{x, y}, 0xFFFF0000},     // 左下
+                    {{x + w, y}, 0xFF00FF00}, // 右下
+                    {{x, y + h}, 0xFF0000FF}, // 左上
 
-                  // 三角形 2
-                  {{x, y + h}, 0xFF0000FF},     // 左上 (青)
-                  {{x + w, y}, 0xFF00FF00},     // 右下 (緑)
-                  {{x + w, y + h}, 0xFFFFFF00}, // 右上 (黄)
-              };
+                    // 三角形 2
+                    {{x, y + h}, 0xFF0000FF},     // 左上
+                    {{x + w, y}, 0xFF00FF00},     // 右下
+                    {{x + w, y + h}, 0xFFFFFF00}, // 右上
+                };
+                pass->drawVertices(quad1, 6);
 
-              x = 200.0f;
-              y = 100.0f;
-              w = 300.0f;
-              h = 200.0f;
+                x = 200.0f, y = 100.0f;
+                w = 300.0f, h = 200.0f;
 
-              Vertex quad2[6] = {
-                  // 三角形 1
-                  {{x, y}, 0x80FF0000},     // 左下 (赤)
-                  {{x + w, y}, 0x8000FF00}, // 右下 (緑)
-                  {{x, y + h}, 0x800000FF}, // 左上 (青)
+                Vertex quad2[6] = {
+                    // 三角形 1
+                    {{x, y}, 0x80FF0000},
+                    {{x + w, y}, 0x8000FF00},
+                    {{x, y + h}, 0x800000FF},
 
-                  // 三角形 2
-                  {{x, y + h}, 0x800000FF},     // 左上 (青)
-                  {{x + w, y}, 0x8000FF00},     // 右下 (緑)
-                  {{x + w, y + h}, 0x80FFFF00}, // 右上 (黄)
-              };
-              pass->drawVertices(quad1, 6);
-              pass->drawVertices(quad2, 6);
-            },
-            nullptr, {false, 0xFF1F1F1F, FrameDropping::Disable});
-        surface->render(
-            [](IRenderPass *pass, void *arg) -> void {
-              ITexture *tex = static_cast<ITexture *>(arg);
-              // 二分の一に縮小表示されることになる
-              float x = 50.0f;
-              float y = 50.0f;
-              float w = 400.0f;
-              float h = 300.0f;
+                    // 三角形 2
+                    {{x, y + h}, 0x800000FF},
+                    {{x + w, y}, 0x8000FF00},
+                    {{x + w, y + h}, 0x80FFFF00},
+                };
+                pass->drawVertices(quad2, 6);
 
-              VertexTex quad[6] = {
-                  {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},     // 左上
-                  {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF}, // 右上
-                  {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF}, // 左下
+                x = 230.0f, y = 140.0f;
+                w = 64.0f, h = 64.0f;
+                
+                VertexTex quad3[6] = {
+                    {{x, y}, {0.0f, 0.0f}, 0xAAFFFF00},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xAA00FF00},
+                    {{x, y + h}, {0.0f, 1.0f}, 0xAA0000FF},
 
-                  {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF},     // 左下
-                  {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF},     // 右上
-                  {{x + w, y + h}, {1.0f, 1.0f}, 0xFFFFFFFF}, // 右下
-              };
-              pass->drawVerticesTex(tex, quad, 6);
-            },
-            this->texture);
+                    {{x, y + h}, {0.0f, 1.0f}, 0xAA0000FF},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xAA00FF00},
+                    {{x + w, y + h}, {1.0f, 1.0f}, 0xAAFF0000},
+                };
+                pass->drawVerticesTex(static_cast<ITexture*>(arg), quad3, 6);
+
+                x = 60.0f, y = 60.0f;
+                w = 128.0f, h = 128.0f;
+                
+                VertexTex quad4[6] = {
+                    {{x, y}, {0.0f, 0.0f}, 0xFF000000},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFF000000},
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFF000000},
+
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFF000000},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFF000000},
+                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFF000000},
+                };
+                pass->drawVerticesTex(static_cast<ITexture*>(arg), quad4, 6);
+              },
+              smile, {false, 0xFF1F1F1F, FrameDropping::Disable});
+        }
+        if (window_surface != nullptr && smile != nullptr) {
+          window_surface->render(
+              [](IRenderPass *pass, void *arg) -> void {
+                // テクスチャを描画する
+                ITexture *tex = static_cast<ITexture *>(arg);
+
+                // 二分の一に縮小表示されることになる
+                float x = 50.0f, y = 50.0f;
+                float w = 400.0f, h = 300.0f;
+
+                VertexTex quad[6] = {
+                    {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},     // 左上
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF}, // 右上
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF}, // 左下
+
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF},     // 左下
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF},     // 右上
+                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFFFFFFFF}, // 右下
+                };
+                pass->drawVerticesTex(tex, quad, 6);
+              },
+              this->texture);
+        }
       }
     }
     return AppResult::Continue;
