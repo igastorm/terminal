@@ -7,11 +7,11 @@
 // 利用側で release とかするとまずいので IObject は private
 class IApplication : private IObject {
 public:
-  virtual IWindow *createWindow(int, int, const char *) = 0;
+  [[nodiscard]] virtual IWindow *createWindow(int, int, const char *) = 0;
   virtual bool run(IAppHandler *) = 0;
   virtual void terminate() = 0;
 
-  virtual IGraphicsDevice *createGraphicsDevice() = 0;
+  [[nodiscard]] virtual IGraphicsDevice *createGraphicsDevice() = 0;
 
   virtual void postEvent() = 0;
 

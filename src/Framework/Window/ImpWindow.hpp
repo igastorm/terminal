@@ -13,9 +13,7 @@ protected:
   bool hide() override;
 
 public:
-  static ImpWindowTemplate *createWindow(ImpApplication<PlatformApplicationData> *, int,
-                                 int, const char *);
-  PlatformData getPlatformData() const;
+  [[nodiscard]] PlatformData getPlatformData() const;
 
   ~ImpWindowTemplate() override;
 };

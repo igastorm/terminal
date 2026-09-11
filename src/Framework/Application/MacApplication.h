@@ -11,4 +11,4 @@ struct ImpApplicationData {
   AppDelegate *appDelegate;
 };
 
-using ImpMacApplicaton = ImpApplication<ImpApplicationData>;
+using MacApplication = ImpApplication<ImpApplicationData>;

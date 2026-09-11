@@ -28,13 +28,14 @@ VertexOut vertexConvert(float2 pos, uint4 col, ViewportUniform uniforms) {
   float ndc_y = (1.0 - (pos.y * uniforms.r_height)) * uniforms.width;
 
   VertexOut out;
-  out.position = float4(ndc_x, ndc_y, 0.0f, uniforms.width);
-
   // ARGB ↓配列のようにアクセスするとリトルエンディアンにより逆読みになる
   // BGRA ←リトルエンディアン
   // BGRA
   // CPU 側で設定したフォーマットに関わらず RGBA の順になる
   out.color = float4(col[2], col[1], col[0], col[3]) * uniforms.inv_255;
+  // 前の処理に依存する処理はパフォーマンス的に離れた場所に書いた方がいいのか
+  // (前の処理待つ間に別の処理を行う的な)
+  out.position = float4(ndc_x, ndc_y, 0.0f, uniforms.width);
   return out;
 }
 

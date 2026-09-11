@@ -13,7 +13,7 @@
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
-template <> bool ImpMacApplicaton::initPlatform() {
+template <> bool MacApplication::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
     [NSApplication sharedApplication];
@@ -49,7 +49,7 @@ template <> bool ImpMacApplicaton::initPlatform() {
   }
 }
 
-template <> void ImpMacApplicaton::terminate() {
+template <> void MacApplication::terminate() {
   @autoreleasepool {
     // ループが生きている間に実行しないとリークっぽくなる
     this->handler->onQuit(this);
@@ -81,7 +81,7 @@ template <> void ImpMacApplicaton::terminate() {
                    });
 }
 
-template <> void ImpMacApplicaton::dispatchEvent(const Event &event) {
+template <> void MacApplication::dispatchEvent(const Event &event) {
   if (this->handler != nullptr) {
     if (this->handler->onEvent(this, event) == AppResult::Continue) {
       return;
@@ -90,7 +90,7 @@ template <> void ImpMacApplicaton::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
+template <> bool MacApplication::run(IAppHandler *handler) {
   this->handler = handler;
   this->data.appDelegate.handler = handler;
   @autoreleasepool {
@@ -116,7 +116,7 @@ template <> bool ImpMacApplicaton::run(IAppHandler *handler) {
   return true;
 }
 
-template <> void ImpMacApplicaton::postEvent() {
+template <> void MacApplication::postEvent() {
   // もし, dispatch_async_f
   // が処理中に再度同じイベントをぶち込むと重複してイベントが発行されることになるのでフラグで判定が必要
   // (よっぽど重い時以外には問題にならないかもしれないが)
@@ -129,7 +129,7 @@ template <> void ImpMacApplicaton::postEvent() {
           @autoreleasepool {
             post_event_pending.store(false);
 
-            ImpMacApplicaton *app = static_cast<ImpMacApplicaton *>(context);
+            MacApplication *app = static_cast<MacApplication *>(context);
 
             // ★ メインスレッドで UserEvent を 1 回だけ発火
             Event event;
@@ -143,13 +143,13 @@ template <> void ImpMacApplicaton::postEvent() {
 // Common だがここで実装しないと Cocoa の初期化が呼べない気がする
 // あと startApp から呼ぶため
 CommonApplication *createPlatformApplication() {
-  ImpMacApplicaton *app =
-      static_cast<ImpMacApplicaton *>(std::malloc(sizeof(ImpMacApplicaton)));
+  MacApplication *app =
+      static_cast<MacApplication *>(std::malloc(sizeof(MacApplication)));
   if (app == nullptr) {
     std::perror("malloc failed (Application)");
     return nullptr;
   }
-  app = new (app) ImpMacApplicaton;
+  app = new (app) MacApplication;
 
   // この関数で生成するので ref_count を加算するだけ
   app->addRef();

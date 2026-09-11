@@ -19,6 +19,74 @@
 //
 //  ========================================================
 
+// Render() の補助
+RenderHelper::RenderHelper(MacGraphicsDevice *device) {
+  @autoreleasepool {
+    this->mtl_pass_desc = [[MTLRenderPassDescriptor alloc] init];
+  }
+}
+
+RenderHelper::~RenderHelper() {
+  @autoreleasepool {
+    if (this->mtl_pass_desc != nil) {
+      [this->mtl_pass_desc release];
+    }
+  }
+}
+
+MTLRenderPassDescriptor *
+RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
+                                         const RenderPassDesc *pass_desc) {
+  @autoreleasepool {
+    if (this->mtl_pass_desc == nil || mtl_texture == nil ||
+        pass_desc == nullptr) {
+      return nil;
+    }
+    // 描き込み先のテクスチャ
+    this->mtl_pass_desc.colorAttachments[0].texture = mtl_texture;
+    // 描画を開始時に前のフレームをどうするか
+    // Clear: 指定色でクリア, Load: 保持 (遅いらしい)
+    this->mtl_pass_desc.colorAttachments[0].loadAction =
+        pass_desc->clear ? MTLLoadActionClear : MTLLoadActionLoad;
+
+    // 描画が終わった後, 結果をテクスチャに保存するか
+    this->mtl_pass_desc.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+    // クリアに使う色
+    this->mtl_pass_desc.colorAttachments[0].clearColor =
+        MTLClearColorMake(((pass_desc->color >> 16) & 0xFF) * inv_255,
+                          ((pass_desc->color >> 8) & 0xFF) * inv_255,
+                          (pass_desc->color & 0xFF) * inv_255,
+                          ((pass_desc->color >> 24) & 0xFF) * inv_255);
+    return this->mtl_pass_desc;
+  }
+}
+
+void RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
+                              id<MTLRenderPipelineState> pipeline_state,
+                              float true_width, float true_height,
+                              RenderCallBack callback, void *data) {
+  if (encoder == nil || pipeline_state == nil || true_width == 0.0f ||
+      true_height == 0.0f) {
+    return;
+  }
+  [encoder setRenderPipelineState:pipeline_state];
+
+  struct {
+    float width;
+    float r_height;
+    float inv_255;
+  } viewport = {true_width, 2.0f / true_height, inv_255};
+
+  [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
+
+  // ここでコールバック
+  MacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
+  [encoder retain];
+  callback(&pass, data);
+  [encoder release];
+}
+
 // 共通デストラクタ
 template <class PlatformData>
 ImpSurfaceTemplate<PlatformData>::~ImpSurfaceTemplate<PlatformData>() {
@@ -50,7 +118,7 @@ MacWindowSurface::~MacWindowSurface() {
       this->data.metal_layer = nil;
     }
     if (this->data.window != nullptr) {
-      NSView *view = static_cast<ImpMacWindow *>(this->data.window)
+      NSView *view = static_cast<MacWindow *>(this->data.window)
                          ->getPlatformData()
                          .view;
       if (view != nil) {
@@ -77,7 +145,7 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    ImpMacWindow *window = static_cast<ImpMacWindow *>(this->data.window);
+    MacWindow *window = static_cast<MacWindow *>(this->data.window);
     MacGraphicsDevice *device = this->data.device;
     CAMetalLayer *metal_layer = this->data.metal_layer;
 
@@ -124,60 +192,28 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    constexpr float inv_255 = 1.0f / 255.0f;
-
-    MTLRenderPassDescriptor *desc = [[MTLRenderPassDescriptor alloc] init];
-    if (desc == nil) {
+    RenderHelper helper(device);
+    MTLRenderPassDescriptor *mtl_pass_desc =
+        helper.getMTLRenderPassDescripter(drawable.texture, &pass_desc);
+    if (mtl_pass_desc == nil) {
       return false;
     }
-
-    // 描き込み先のテクスチャ
-    desc.colorAttachments[0].texture = drawable.texture;
-
-    // 描画を開始時に前のフレームをどうするか
-    // Clear: 指定色でクリア, Load: 保持 (遅いらしい)
-    desc.colorAttachments[0].loadAction =
-        pass_desc.clear ? MTLLoadActionClear : MTLLoadActionLoad;
-
-    // 描画が終わった後, 結果をテクスチャに保存するか
-    desc.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-    // クリアに使う色
-    desc.colorAttachments[0].clearColor =
-        MTLClearColorMake(((pass_desc.color >> 16) & 0xFF) * inv_255,
-                          ((pass_desc.color >> 8) & 0xFF) * inv_255,
-                          (pass_desc.color & 0xFF) * inv_255,
-                          ((pass_desc.color >> 24) & 0xFF) * inv_255);
 
     // begin
     id<MTLCommandBuffer> cmd_buffer =
         [this->data.device->getPlatformData().command_queue commandBuffer];
     if (cmd_buffer == nil) {
-      [desc release];
       return false;
     }
     id<MTLRenderCommandEncoder> encoder =
-        [cmd_buffer renderCommandEncoderWithDescriptor:desc];
+        [cmd_buffer renderCommandEncoderWithDescriptor:mtl_pass_desc];
     if (encoder == nil) {
       return false;
     }
-    [desc release];
 
-    [encoder setRenderPipelineState:pipeline_state];
-
-    struct {
-      float width;
-      float r_height;
-      float inv_255;
-    } viewport = {true_width, 2.0f / true_height, inv_255};
-
-    [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
-
-    // ここでコールバック
-    MacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
-    [encoder retain];
-    callback(&pass, data);
-    [encoder release];
+    // 描画処理
+    helper.renderBase(encoder, pipeline_state, true_width, true_height,
+                      callback, data);
 
     // end
     [encoder endEncoding];
@@ -233,7 +269,7 @@ MacWindowSurface::createMacSurfaceFromWindow(MacGraphicsDevice *device,
 
   @autoreleasepool {
     // getter を IWindow に追加すればいいがそれだと内部が漏れる
-    WindowView *view = static_cast<ImpMacWindow *>(surface->data.window)
+    WindowView *view = static_cast<MacWindow *>(surface->data.window)
                            ->getPlatformData()
                            .view;
 
@@ -380,60 +416,24 @@ bool ImpTextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    constexpr float inv_255 = 1.0f / 255.0f;
-
-    MTLRenderPassDescriptor *desc = [[MTLRenderPassDescriptor alloc] init];
-    if (desc == nil) {
-      return false;
-    }
-
-    // 描き込み先のテクスチャ
-    desc.colorAttachments[0].texture = mtl_texture;
-
-    // 描画を開始時に前のフレームをどうするか
-    // Clear: 指定色でクリア, Load: 保持 (遅いらしい)
-    desc.colorAttachments[0].loadAction =
-        pass_desc.clear ? MTLLoadActionClear : MTLLoadActionLoad;
-
-    // 描画が終わった後, 結果をテクスチャに保存するか
-    desc.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-    // クリアに使う色
-    desc.colorAttachments[0].clearColor =
-        MTLClearColorMake(((pass_desc.color >> 16) & 0xFF) * inv_255,
-                          ((pass_desc.color >> 8) & 0xFF) * inv_255,
-                          (pass_desc.color & 0xFF) * inv_255,
-                          ((pass_desc.color >> 24) & 0xFF) * inv_255);
+    RenderHelper helper(device);
+    MTLRenderPassDescriptor *mtl_pass_desc =
+        helper.getMTLRenderPassDescripter(mtl_texture, &pass_desc);
 
     // begin
     id<MTLCommandBuffer> cmd_buffer =
         [this->data.device->getPlatformData().command_queue commandBuffer];
     if (cmd_buffer == nil) {
-      [desc release];
       return false;
     }
     id<MTLRenderCommandEncoder> encoder =
-        [cmd_buffer renderCommandEncoderWithDescriptor:desc];
+        [cmd_buffer renderCommandEncoderWithDescriptor:mtl_pass_desc];
     if (encoder == nil) {
       return false;
     }
-    [desc release];
 
-    [encoder setRenderPipelineState:pipeline_state];
-
-    struct {
-      float width;
-      float r_height;
-      float inv_255;
-    } viewport = {true_width, 2.0f / true_height, inv_255};
-
-    [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
-
-    // ここでコールバック
-    MacRenderPass pass(encoder /*, this->data.vertex_buffer*/);
-    [encoder retain];
-    callback(&pass, data);
-    [encoder release];
+    helper.renderBase(encoder, pipeline_state, true_width, true_height,
+                      callback, data);
 
     // end
     [encoder endEncoding];

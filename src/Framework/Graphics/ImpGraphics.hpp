@@ -31,7 +31,7 @@ protected:
 
 public:
   ~ImpTextureTemplate() override;
-  PlatformData getPlatformData() const;
+  [[nodiscard]] PlatformData getPlatformData() const;
 };
 
 //  ========================================================
@@ -46,7 +46,7 @@ protected:
   
   bool render(RenderCallBack, void *, const RenderPassDesc) override;
 public:
-  PlatformData getPlatformData() const;
+  [[nodiscard]] PlatformData getPlatformData() const;
   ~ImpSurfaceTemplate();
 };
 
@@ -69,5 +69,5 @@ protected:
 public:
   ~ImpGraphicsDeviceTemplate() override;
 
-  PlatformData getPlatformData() const;
+  [[nodiscard]] PlatformData getPlatformData() const;
 };

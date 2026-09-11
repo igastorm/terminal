@@ -40,9 +40,13 @@ struct ImpWindowData {
 
 using ImpWindow = ImpWindowTemplate<ImpWindowData, ImpApplicationData>;
 
-class ImpMacWindow : public ImpWindow {
+class MacWindow : public ImpWindow {
 public:
-  ImpMacWindow() = default;
-  ~ImpMacWindow() = default;
+  MacWindow() = default;
+  ~MacWindow() = default;
   void notifyResizing(bool);
+  template <class PlatformApplicationData>
+  [[nodiscard]] static MacWindow *
+  createWindow(ImpApplication<PlatformApplicationData> *, int, int,
+               const char *);
 };

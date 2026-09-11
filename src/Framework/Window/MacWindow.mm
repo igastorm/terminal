@@ -17,7 +17,7 @@
 //  具象クラス
 //  ----------------------------
 
-void ImpMacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
+void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
 template <> ImpWindow::~ImpWindowTemplate<ImpWindowData, ImpApplicationData>() {
   @autoreleasepool {
@@ -77,18 +77,18 @@ template <> bool ImpWindow::hide() {
 }
 
 template <>
-ImpWindow *
-ImpWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
+MacWindow *
+MacWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
                         int width, int height, const char *title) {
   @autoreleasepool {
-    ImpWindow *window =
-        static_cast<ImpWindow *>(std::malloc(sizeof(ImpWindow)));
+    MacWindow *window =
+        static_cast<MacWindow *>(std::malloc(sizeof(MacWindow)));
     if (window == nullptr) {
       std::perror("malloc failed (createWindow)");
       return nullptr;
     }
 
-    window = new (window) ImpMacWindow;
+    window = new (window) MacWindow;
     window->addRef();
 
     // appInstance を参照
@@ -142,7 +142,7 @@ ImpWindow::createWindow(ImpApplication<ImpApplicationData> *appInstance,
 template <>
 IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
                                                           const char *title) {
-  IWindow *window = ImpWindow::createWindow(this, width, height, title);
+  IWindow *window = MacWindow::createWindow(this, width, height, title);
   return window;
 }
 
@@ -430,12 +430,12 @@ IWindow *ImpApplication<ImpApplicationData>::createWindow(int width, int height,
 }
 
 - (void)windowWillStartLiveResize:(NSNotification *)notification {
-  ImpMacWindow *window = static_cast<ImpMacWindow *>(self.iwindow);
+  MacWindow *window = static_cast<MacWindow *>(self.iwindow);
   window->notifyResizing(true);
 }
 
 - (void)windowDidEndLiveResize:(NSNotification *)notification {
-  ImpMacWindow *window = static_cast<ImpMacWindow *>(self.iwindow);
+  MacWindow *window = static_cast<MacWindow *>(self.iwindow);
   window->notifyResizing(false);
 }
 @end

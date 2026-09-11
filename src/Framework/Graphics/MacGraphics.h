@@ -79,11 +79,25 @@ struct ImpWindowSurfaceData : public ImpSurfaceData {
 };
 
 struct ImpTextureSurfaceData : public ImpSurfaceData {
-  ITexture* texture = nullptr;
+  ITexture *texture = nullptr;
 };
 
 using ImpWindowSurface = ImpSurfaceTemplate<ImpWindowSurfaceData>;
 using ImpTextureSurface = ImpSurfaceTemplate<ImpTextureSurfaceData>;
+
+class RenderHelper {
+private:
+  static constexpr float inv_255 = 1.0f / 255.0f;
+  MTLRenderPassDescriptor *mtl_pass_desc = nil;
+
+public:
+  MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
+                                                      const RenderPassDesc *);
+  void renderBase(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
+                  float, float, RenderCallBack callback, void *data);
+  RenderHelper(MacGraphicsDevice *);
+  ~RenderHelper();
+};
 
 class MacWindowSurface : public ImpWindowSurface {
 public:
@@ -94,9 +108,9 @@ public:
 
 class MacTextureSurface : public ImpTextureSurface {
 public:
-~MacTextureSurface();
-static MacTextureSurface *createMacSurfaceFromTexture(MacGraphicsDevice *,
-                                                    ITexture *);
+  ~MacTextureSurface();
+  static MacTextureSurface *createMacSurfaceFromTexture(MacGraphicsDevice *,
+                                                        ITexture *);
 };
 
 //  ========================================================

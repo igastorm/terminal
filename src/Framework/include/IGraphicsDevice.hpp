@@ -8,8 +8,8 @@ class IGraphicsDevice : public IObject {
 public:
   virtual ~IGraphicsDevice() = default;
 
-  virtual ISurface *createSurfaceFromWindow(IWindow *) = 0;
-  virtual ISurface* createSurfaceFromTexture(ITexture*) = 0;
+  [[nodiscard]] virtual ISurface *createSurfaceFromWindow(IWindow *) = 0;
+  [[nodiscard]] virtual ISurface* createSurfaceFromTexture(ITexture*) = 0;
 
   virtual ITexture *
   createTexture(int, int, TextureDrawable = TextureDrawable::Disable) = 0;
