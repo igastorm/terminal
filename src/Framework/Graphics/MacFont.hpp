@@ -10,7 +10,7 @@ private:
   CTFontRef font = nullptr;
 
 public:
-  ITexture *createFontTextureBase(IGraphicsDevice *, char, int);
+  ITexture *createFontTextureBase(IGraphicsDevice *, const char*, int);
   MacFont() = default;
   ~MacFont();
 };

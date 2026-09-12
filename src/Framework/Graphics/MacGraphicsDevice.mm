@@ -278,7 +278,7 @@ ITexture *ImpGraphicsDevice::createTexture(int width, int height,
 }
 
 template <>
-ITexture *ImpGraphicsDevice::createFontTexture(char character, int size) {
+ITexture *ImpGraphicsDevice::createFontTexture(const char* character, int size) {
   MacFont factory;
   return factory.createFontTextureBase(this, character, size);
 }

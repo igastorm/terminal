@@ -45,7 +45,7 @@ private:
       }
     }
     if (device != nullptr && font_texture == nullptr) {
-      font_texture = device->createFontTexture('A', 128);
+      font_texture = device->createFontTexture("あ", 128);
     }
   }
 
@@ -163,7 +163,18 @@ public:
                 x = 230.0f, y = 140.0f;
                 w = 128.0f, h = 128.0f;
 
-                VertexTex quad3[6] = {
+                Vertex quad3[6] = {
+                    {{x, y}, 0xAA000000},
+                    {{x + w, y}, 0xAA000000},
+                    {{x, y + h},  0xAA000000},
+
+                    {{x, y + h},  0xAA000000},
+                    {{x + w, y},  0xAA000000},
+                    {{x + w, y + h},  0xAA000000},
+                };
+                pass->drawVertices(quad3, 6);
+
+                VertexTex quad4[6] = {
                     {{x, y}, {0.0f, 0.0f}, 0xFF00FF00},
                     {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
                     {{x, y + h}, {0.0f, 1.0f}, 0xFF00FF00},
@@ -172,7 +183,7 @@ public:
                     {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
                     {{x + w, y + h}, {1.0f, 1.0f}, 0xFF00FF00},
                 };
-                pass->drawVerticesTex(static_cast<ITexture *>(arg), quad3, 6);
+                pass->drawVerticesTex(static_cast<ITexture *>(arg), quad4, 6);
               },
               font_texture, {false, 0xFF1F1F1F, FrameDropping::Disable});
         }

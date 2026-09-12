@@ -15,5 +15,5 @@ public:
   [[nodiscard]] virtual ITexture *
   createTexture(int, int, const TextureDesc = ITexture::DEFAULT_DESC) = 0;
 
-  [[nodiscard]] virtual ITexture* createFontTexture(char, int) = 0;
+  [[nodiscard]] virtual ITexture* createFontTexture(const char*, int) = 0;
 };
