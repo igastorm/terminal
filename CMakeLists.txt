@@ -76,6 +76,7 @@ add_executable(terminal
   "${SRC_DIR}/Framework/Graphics/MacSurface.mm"
   "${SRC_DIR}/Framework/Graphics/MacTexture.mm"
   "${SRC_DIR}/Framework/Graphics/MacRenderPass.mm"
+  "${SRC_DIR}/Framework/Graphics/MacFont.cpp"
   "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"

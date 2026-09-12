@@ -69,6 +69,7 @@ protected:
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, const TextureDesc) override;
+  ITexture *createFontTexture(char, int) override;
 
 public:
   ~ImpGraphicsDeviceTemplate() override;

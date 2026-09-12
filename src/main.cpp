@@ -10,7 +10,7 @@ private:
   ISurface *window_surface = nullptr;
   ITexture *texture = nullptr;
   ISurface *texture_surface = nullptr;
-  ITexture *smile = nullptr;
+  ITexture *font_texture = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -44,20 +44,8 @@ private:
         texture_surface = device->createSurfaceFromTexture(texture);
       }
     }
-    if (device != nullptr && smile == nullptr) {
-      smile = device->createTexture(
-          8, 8, {TextureDrawable::Disable, TextureFormat::Mono});
-    }
-    if (device != nullptr && smile != nullptr) {
-      // スマイルのドットデータ
-      const std::uint8_t smile_data[8 * 8] = {
-          0,   0,   255, 255, 255, 255, 0,   0,   0,   255, 0,   0,   0,
-          0,   255, 0,   255, 0,   255, 0,   0,   255, 0,   255, 255, 0,
-          0,   0,   0,   0,   0,   255, 255, 0,   255, 0,   0,   255, 0,
-          255, 255, 0,   0,   255, 255, 0,   0,   255, 0,   255, 0,   0,
-          0,   0,   255, 0,   0,   0,   255, 255, 255, 255, 0,   0,
-      };
-      smile->upload(smile_data, sizeof(smile_data), 8 * sizeof(std::uint8_t));
+    if (device != nullptr && font_texture == nullptr) {
+      font_texture = device->createFontTexture('A', 128);
     }
   }
 
@@ -92,9 +80,9 @@ private:
       this->texture_surface = nullptr;
     }
 
-    if (this->smile != nullptr) {
-      this->smile->release();
-      this->smile = nullptr;
+    if (this->font_texture != nullptr) {
+      this->font_texture->release();
+      this->font_texture = nullptr;
     }
   }
 
@@ -173,36 +161,22 @@ public:
                 pass->drawVertices(quad2, 6);
 
                 x = 230.0f, y = 140.0f;
-                w = 64.0f, h = 64.0f;
-                
-                VertexTex quad3[6] = {
-                    {{x, y}, {0.0f, 0.0f}, 0xAAFFFF00},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xAA00FF00},
-                    {{x, y + h}, {0.0f, 1.0f}, 0xAA0000FF},
-
-                    {{x, y + h}, {0.0f, 1.0f}, 0xAA0000FF},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xAA00FF00},
-                    {{x + w, y + h}, {1.0f, 1.0f}, 0xAAFF0000},
-                };
-                pass->drawVerticesTex(static_cast<ITexture*>(arg), quad3, 6);
-
-                x = 60.0f, y = 60.0f;
                 w = 128.0f, h = 128.0f;
-                
-                VertexTex quad4[6] = {
-                    {{x, y}, {0.0f, 0.0f}, 0xFF000000},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFF000000},
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFF000000},
 
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFF000000},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFF000000},
-                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFF000000},
+                VertexTex quad3[6] = {
+                    {{x, y}, {0.0f, 0.0f}, 0xFF00FF00},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFF00FF00},
+
+                    {{x, y + h}, {0.0f, 1.0f}, 0xFF00FF00},
+                    {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
+                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFF00FF00},
                 };
-                pass->drawVerticesTex(static_cast<ITexture*>(arg), quad4, 6);
+                pass->drawVerticesTex(static_cast<ITexture *>(arg), quad3, 6);
               },
-              smile, {false, 0xFF1F1F1F, FrameDropping::Disable});
+              font_texture, {false, 0xFF1F1F1F, FrameDropping::Disable});
         }
-        if (window_surface != nullptr && smile != nullptr) {
+        if (window_surface != nullptr) {
           window_surface->render(
               [](IRenderPass *pass, void *arg) -> void {
                 // テクスチャを描画する

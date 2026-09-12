@@ -112,7 +112,10 @@ fragment float4 fragmentMainOutline(const VertexOutWithUV in [[stage_in]],
   // 頂点色を取得
   float4 out = in.color;
 
-  // 頂点の透明度に輪郭をかけることで頂点の色を判定した輪郭ができる
+  // 頂点の不透明度に輪郭をかけることで頂点の色を判定した輪郭ができる
+  // 　黒の場合は 0 が掛け算されるので自動的に不透明度が 0 になり, 透明になる
+  // フォントのビットマップに灰色とかが含まれたら無駄に半透明になりそう
+  // (むしろこっちの方が正しいアンチエイリアスらしいので問題なし)
   out[3] *= outline;
 
   return out;

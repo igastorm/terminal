@@ -12,6 +12,8 @@ public:
   [[nodiscard]] virtual ISurface *createSurfaceFromTexture(ITexture *) = 0;
 
   // ひとまず, 白黒かつレンダーターゲットはエラーにしておく
-  virtual ITexture *createTexture(int, int,
-                                  const TextureDesc = ITexture::DEFAULT_DESC) = 0;
+  [[nodiscard]] virtual ITexture *
+  createTexture(int, int, const TextureDesc = ITexture::DEFAULT_DESC) = 0;
+
+  [[nodiscard]] virtual ITexture* createFontTexture(char, int) = 0;
 };

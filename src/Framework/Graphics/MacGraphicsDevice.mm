@@ -4,6 +4,7 @@
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
+#include "MacFont.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -132,14 +133,14 @@ MacGraphicsDevice::createMacGraphicsDevice(ImpApplication *appInstance) {
     // RGB のブレンドでは単一の図形の半透明にするやつで Alpha
     // のブレンドは二つの図形を重ねた時に
     // (特に両方とも半透明)
-    // だった時に重なった部分の透明度がどうなるかだと思われる
-    // 例: 透明度 50% の赤と透明度 50% の青
+    // だった時に重なった部分の不透明度がどうなるかだと思われる
+    // 例: 不透明度 50% の赤と不透明度 50% の青
     // 色自体はブレンドされて紫
-    // 重なりあった部分の透明度→Alpha のブレンドによって決まる
+    // 重なりあった部分の不透明度→Alpha のブレンドによって決まる
     // RGB のブレンド式と Alpha のブレンド式は独立しており, 別物
 
     // RGB をどう混ぜるか
-    // Source の係数 (SourceAlpha の値) 与えられた透明度をそのまま使う
+    // Source の係数 (SourceAlpha の値) 与えられた不透明度をそのまま使う
     pipeline_desc.colorAttachments[0].sourceRGBBlendFactor =
         MTLBlendFactorSourceAlpha;
     // Dest の係数: 1 - sourceAlpha
@@ -150,7 +151,7 @@ MacGraphicsDevice::createMacGraphicsDevice(ImpApplication *appInstance) {
 
     // A をどう混ぜるか
     // Alpha = Source * Factor + Dest * (1 - Factor)
-    // Alpha (透明度) 自体の計算式
+    // Alpha (不透明度) 自体の計算式
     // Source の係数: 係数は1でそのまま使うので MTLBlendFactorOne
     pipeline_desc.colorAttachments[0].sourceAlphaBlendFactor =
         MTLBlendFactorOne;
@@ -274,6 +275,12 @@ template <>
 ITexture *ImpGraphicsDevice::createTexture(int width, int height,
                                            TextureDesc texture_desc) {
   return MacTexture::createMacTexture(this, width, height, texture_desc);
+}
+
+template <>
+ITexture *ImpGraphicsDevice::createFontTexture(char character, int size) {
+  MacFont factory;
+  return factory.createFontTextureBase(this, character, size);
 }
 
 template <>
