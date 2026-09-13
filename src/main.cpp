@@ -133,14 +133,14 @@ public:
 
                 Vertex quad1[6] = {
                     // 三角形 1
-                    {{x, y}, 0xFFFF0000},     // 左下
-                    {{x + w, y}, 0xFF00FF00}, // 右下
-                    {{x, y + h}, 0xFF0000FF}, // 左上
+                    {{x, y}, 0xFFFF0000},     // 左上
+                    {{x + w, y}, 0xFF00FF00}, // 右上
+                    {{x, y + h}, 0xFF0000FF}, // 左下
 
                     // 三角形 2
-                    {{x, y + h}, 0xFF0000FF},     // 左上
-                    {{x + w, y}, 0xFF00FF00},     // 右下
-                    {{x + w, y + h}, 0xFFFFFF00}, // 右上
+                    {{x, y + h}, 0xFF0000FF},     // 左下
+                    {{x + w, y}, 0xFF00FF00},     // 右上
+                    {{x + w, y + h}, 0xFFFFFF00}, // 右下
                 };
                 pass->drawVertices(quad1, 6);
 
