@@ -7,9 +7,11 @@
 // 以下をもとに実装
 // https://ja.wikipedia.org/wiki/UTF-8
 // https://ja.wikipedia.org/wiki/UTF-16
+// https://ja.wikipedia.org/wiki/Unicode#サロゲートペア
 // dst_cap は文字数単位
-size_t cvtUTF8ToUTF16BMP(const uint8_t *src, size_t src_len, uint16_t *dst,
-                         size_t dst_cap) {
+// サイズは要素単位
+size_t cvtUTF8ToUTF16(const uint8_t *src, size_t src_len, uint16_t *dst,
+                      size_t dst_cap) {
   // 継続バイトかの判定
   // 文字の先頭ではなく, 前のバイトの続きであることを示す値
   // 2バイト目以降の下限から上限の範囲内か
@@ -71,14 +73,16 @@ size_t cvtUTF8ToUTF16BMP(const uint8_t *src, size_t src_len, uint16_t *dst,
         return 0;
       }
 
-      // 0xE0 0x80 ~ 0x9F は本来1バイトの文字を3バイトで表してるから不正らしい
-      if (b0 == 0xE0 && 0x80 <= b1 && b1 <= 0x9F) {
+      // UTF-16 で16ビットをはみ出す (サロゲートというらしい) 部分
+      // UTF-32 への変換だとしてもそのまま UTF-8 にみられる場合は不正らしい
+      // 0x10000 ~ 0x10FFFF の範囲である必要がある
+      // 0xED 0xA0 ~
+      if (b0 == 0xED && 0xA0 <= b1) {
         return 0;
       }
 
-      // UTF-16 で16ビットをはみ出す (サロゲートというらしい) 部分を拒否
-      // 0xED 0xA0 ~
-      if (b0 == 0xED && 0xA0 <= b1) {
+      // 0xE0 0x80 ~ 0x9F は本来1バイトの文字を3バイトで表してるから不正らしい
+      if (b0 == 0xE0 && 0x80 <= b1 && b1 <= 0x9F) {
         return 0;
       }
 
@@ -90,23 +94,58 @@ size_t cvtUTF8ToUTF16BMP(const uint8_t *src, size_t src_len, uint16_t *dst,
     } else if (b0 >= 0xF0 && b0 <= 0xF4) {
       // 3バイトの UTF-8 (1バイト目はすでに b0 に入ってる)
       // 11110000 ~ 11110100
-      // Wiki によると有効バイトが 21bit なので明らかにサロゲート領域
-      return 0;
+      uint8_t b1 = 0, b2 = 0, b3 = 0;
+      if (i + 3 >= src_len) {
+        // 続きがないならエラー
+        return 0;
+      }
+
+      b1 = src[i + 1];
+      b2 = src[i + 2];
+      b3 = src[i + 3];
+      if (!isContinuationByte(b1) || !isContinuationByte(b2) ||
+          !isContinuationByte(b3)) {
+        // 2バイト目以降なのに前のバイトの続きじゃなかったらおかしい
+        // 2バイト目以降に入るべき値の範囲外
+        return 0;
+      }
+
+      // 0xF0 0x80 ~ 0x8F は不正らしい
+      if (b0 == 0xF0 && 0x80 <= b1 && b1 <= 0x8F) {
+        return 0;
+      }
+
+      // 0xF4 0x90 ~ は不正らしい
+      if (b0 == 0xF4 && 0x90 <= b1) {
+        return 0;
+      }
+
+      // 識別ビットを削除して繋げる
+      code_point = static_cast<uint32_t>(b0 & 0x07) << 18 |
+                   static_cast<uint32_t>(b1 & 0x3F) << 12 |
+                   static_cast<uint32_t>(b2 & 0x3F) << 6 |
+                   static_cast<uint32_t>(b3 & 0x3F);
+      i += 4;
     } else {
       // その他は不正
       return 0;
     }
-    // 最終チェック
-    // この範囲はサロゲートらしい
-    if (0x10000 <= code_point && code_point <= 0x10FFFF) {
-      return 0;
+    if (code_point <= 0xFFFF && out < dst_cap) {
+      // サロゲートでない
+      dst[out] = static_cast<uint16_t>(code_point);
+      out++;
+    } else if (0x10000 <= code_point && code_point <= 0x10FFFF &&
+               out + 1 < dst_cap) {
+      // 10000000000000000 ~ 100001111111111111111
+      // サロゲート
+      uint32_t tmp = code_point - 0x10000;
+      uint16_t high = (tmp >> 10) + 0xD800; // 0x400 で割って 0xD800 を足す
+      uint16_t low =
+          (tmp & 0x3FF) + 0xDC00; // 0x400 で割った余りに 0xDC00 を足す
+      dst[out] = high;
+      dst[out + 1] = low;
+      out += 2;
     }
-    if (out >= dst_cap) {
-      return 0;
-    }
-    // BMP の範囲内はコードポイントがそのまま入るらしい
-    dst[out] = static_cast<uint16_t>(code_point);
-    out++;
   }
   return out;
 }
@@ -188,9 +227,8 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   // UTF-16 にしてやる必要がある
   UniChar unichar_c = 0;
 
-  if (cvtUTF8ToUTF16BMP(reinterpret_cast<const uint8_t *>(chracter),
-                        std::strlen(chracter), &unichar_c,
-                        1) != 1) {
+  if (cvtUTF8ToUTF16(reinterpret_cast<const uint8_t *>(chracter),
+                     std::strlen(chracter), &unichar_c, 1) != 1) {
     return nullptr;
   }
 
@@ -198,7 +236,8 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   CGGlyph glyph = 0;
 
   // 文字コードからグリフ番号を得る (複数の文字もできるらしい)
-  if (!CTFontGetGlyphsForCharacters(font, &unichar_c, &glyph, 1)) {
+  if (!CTFontGetGlyphsForCharacters(
+          font, reinterpret_cast<UniChar *>(&unichar_c), &glyph, 2)) {
     return nullptr;
   }
 
