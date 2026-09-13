@@ -45,7 +45,7 @@ private:
       }
     }
     if (device != nullptr && font_texture == nullptr) {
-      font_texture = device->createFontTexture("あ", 128);
+      font_texture = device->createFontTexture("𩿗", 128);
     }
   }
 

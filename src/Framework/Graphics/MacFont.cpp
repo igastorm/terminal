@@ -225,10 +225,16 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   }
 
   // UTF-16 にしてやる必要がある
-  UniChar unichar_c = 0;
+  UniChar unichar_c[2] = {};
 
-  if (cvtUTF8ToUTF16(reinterpret_cast<const uint8_t *>(chracter),
-                     std::strlen(chracter), &unichar_c, 1) != 1) {
+  size_t len = cvtUTF8ToUTF16(reinterpret_cast<const uint8_t *>(chracter),
+                              std::strlen(chracter), unichar_c, 2);
+
+  if (len == 0) {
+    return nullptr;
+  }
+
+  if (unichar_c[0] <= 0xD800 && unichar_c[1]) {
     return nullptr;
   }
 
@@ -236,8 +242,9 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   CGGlyph glyph = 0;
 
   // 文字コードからグリフ番号を得る (複数の文字もできるらしい)
+  // フォントが対応してない文字だとエラー
   if (!CTFontGetGlyphsForCharacters(
-          font, reinterpret_cast<UniChar *>(&unichar_c), &glyph, 2)) {
+          font, reinterpret_cast<UniChar *>(unichar_c), &glyph, len)) {
     return nullptr;
   }
 
