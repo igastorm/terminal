@@ -106,7 +106,7 @@ fragment float4 fragmentMainOutline(const VertexOutWithUV in [[stage_in]],
   // 輪郭を取り出す
   // このテクスチャは白黒だからそのまま float を返してきそうだが GPU
   // の回路的に無理らしいので先頭要素を手動で取り出す
-  // 余分な G, B は 0.0f, A は 0.0f に補完されているらしい
+  // 足りない分 G, B は 0.0f, A は 1.0f に補完されているらしい
   float outline = tex.sample(samp, in.uv)[0];
 
   // 頂点色を取得
