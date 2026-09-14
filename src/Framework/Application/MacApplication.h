@@ -8,7 +8,8 @@
 @class AppDelegate;
 
 struct ImpApplicationData {
-  AppDelegate *appDelegate;
+  AppDelegate *appDelegate = nil;
+  NSMenuItem* quit_item = nil;
 };
 
 using ImpApplication = ImpApplicationTemplate<ImpApplicationData>;

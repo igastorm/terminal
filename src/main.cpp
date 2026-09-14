@@ -223,6 +223,6 @@ public:
 
 int appMain(int argc, char **argv, IApplication *appInstance) {
   TerminalApp app;
-  appInstance->run(&app);
+  appInstance->run("Terminal", &app);
   return 0;
 }

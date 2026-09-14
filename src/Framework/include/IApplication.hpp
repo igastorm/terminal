@@ -8,7 +8,7 @@
 class IApplication : private IObject {
 public:
   [[nodiscard]] virtual IWindow *createWindow(int, int, const char *) = 0;
-  virtual bool run(IAppHandler *) = 0;
+  virtual bool run(const char *, IAppHandler *) = 0;
   virtual void terminate() = 0;
 
   [[nodiscard]] virtual IGraphicsDevice *createGraphicsDevice() = 0;

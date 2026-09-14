@@ -34,12 +34,12 @@ bool MacApplication::initPlatform() {
     [main_menu addItem:menu_item];
 
     NSMenu *menu = [[[NSMenu alloc] init] autorelease];
-    NSMenuItem *quit_item =
-        [[[NSMenuItem alloc] initWithTitle:@"Quit"
-                                    action:@selector(terminate:)
-                             keyEquivalent:@"q"] autorelease];
+    this->data.quit_item =
+        [[NSMenuItem alloc] initWithTitle:@"Quit"
+                                   action:@selector(terminate:)
+                            keyEquivalent:@"q"];
 
-    [menu addItem:quit_item];
+    [menu addItem:this->data.quit_item];
     [menu_item setSubmenu:menu];
 
     // 最終的に NSApp が所有する
@@ -90,10 +90,29 @@ template <> void ImpApplication::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-template <> bool ImpApplication::run(IAppHandler *handler) {
+template <>
+bool ImpApplication::run(const char *appName, IAppHandler *handler) {
   this->handler = handler;
   this->data.appDelegate.handler = handler;
   @autoreleasepool {
+    NSString *ns_appNAME = [[NSString alloc] initWithUTF8String:appName];
+
+    if (this->data.quit_item == nil || ns_appNAME == nil) {
+      return false;
+    }
+
+    NSString *quit_menu_string = [@"Quit " stringByAppendingString:ns_appNAME];
+
+    if (quit_menu_string == nil) {
+      return false;
+    }
+
+    [this->data.quit_item setTitle:quit_menu_string];
+    [ns_appNAME release];
+    ns_appNAME = nil;
+    [this->data.quit_item release];
+    this->data.quit_item = nil;
+
     [NSApp run];
   }
   // Cmd+Q だとここには戻らずに applicationShouldTerminate へ飛ぶ
