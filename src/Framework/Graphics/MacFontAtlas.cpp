@@ -1,4 +1,4 @@
-#include "MacFont.hpp"
+#include "MacFontAtlas.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 #include <cstdlib>

@@ -4,7 +4,7 @@
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
 #include "ImpGraphics.hpp"
-#include "MacFont.hpp"
+#include "MacFontAtlas.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
