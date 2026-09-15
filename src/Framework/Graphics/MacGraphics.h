@@ -32,7 +32,6 @@ struct RenderPassData {
 using RenderPass = RenderPassTemplate<RenderPassData>;
 
 class MacRenderPass : public RenderPass {
-private:
 public:
   MacRenderPass(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
                 id<MTLRenderPipelineState>, id<MTLRenderPipelineState>,
@@ -64,7 +63,6 @@ using GraphicsDevice =
     GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>;
 
 class MacGraphicsDevice : public GraphicsDevice {
-private:
 public:
   static MacGraphicsDevice *createMacGraphicsDevice(Application *);
 };
@@ -80,16 +78,14 @@ GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;
 
 struct SurfaceData {
   dispatch_semaphore_t in_flight_semaphore = nil;
-  MacGraphicsDevice *device = nullptr;
 };
 
 struct WindowSurfaceData : public SurfaceData {
-  IWindow *window = nullptr;
   CAMetalLayer *metal_layer = nil;
 };
 
 struct TextureSurfaceData : public SurfaceData {
-  ITexture *texture = nullptr;
+  // 今のところ空
 };
 
 using WindowSurface = SurfaceTemplate<WindowSurfaceData>;
@@ -114,14 +110,14 @@ public:
 class MacWindowSurface : public WindowSurface {
 public:
   ~MacWindowSurface();
-  static MacWindowSurface *createMacSurfaceFromWindow(GraphicsDevice *,
+  static MacWindowSurface *createMacSurfaceFromWindow(IGraphicsDevice *,
                                                       IWindow *);
 };
 
 class MacTextureSurface : public TextureSurface {
 public:
   ~MacTextureSurface();
-  static MacTextureSurface *createMacSurfaceFromTexture(GraphicsDevice *,
+  static MacTextureSurface *createMacSurfaceFromTexture(IGraphicsDevice *,
                                                         ITexture *);
 };
 
@@ -133,10 +129,6 @@ public:
 
 struct TextureData {
   id<MTLTexture> texture = nil;
-  MacGraphicsDevice *device = nullptr;
-  TextureFormat format = TextureFormat::Color;
-  int width = 0;
-  int height = 0;
 };
 
 using Texture = TextureTemplate<TextureData>;
@@ -147,6 +139,6 @@ private:
   // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:
-  static MacTexture *createMacTexture(GraphicsDevice *, int, int,
+  static MacTexture *createMacTexture(IGraphicsDevice *, int, int,
                                       const TextureDesc);
 };

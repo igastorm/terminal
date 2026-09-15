@@ -1,9 +1,9 @@
 #include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
+#include "GraphicsTemplate.hpp"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -100,10 +100,10 @@ SurfaceTemplate<PlatformData>::~SurfaceTemplate<PlatformData>() {
       dispatch_release(this->data.in_flight_semaphore);
       this->data.in_flight_semaphore = nil;
     }
-    if (this->data.device != nullptr) {
+    if (this->device != nullptr) {
       // 参照カウントを減らす
-      this->data.device->release();
-      this->data.device = nullptr;
+      this->device->release();
+      this->device = nullptr;
     }
   }
 }
@@ -122,21 +122,21 @@ MacWindowSurface::~MacWindowSurface() {
       [this->data.metal_layer release];
       this->data.metal_layer = nil;
     }
-    if (this->data.window != nullptr) {
+    if (this->window != nullptr) {
       NSView *view =
-          static_cast<MacWindow *>(this->data.window)->getPlatformData().view;
+          static_cast<MacWindow *>(this->window)->getPlatformData().view;
       if (view != nil) {
         view.wantsLayer = NO;
       }
-      this->data.window->release();
-      this->data.window = nullptr;
+      this->window->release();
+      this->window = nullptr;
     }
   }
 }
 
 template <>
 bool WindowSurface::render(RenderCallBack callback, void *data,
-                              const RenderPassDesc pass_desc) {
+                           const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
@@ -149,8 +149,8 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    MacWindow *window = static_cast<MacWindow *>(this->data.window);
-    MacGraphicsDevice *device = this->data.device;
+    MacWindow *window = static_cast<MacWindow *>(this->window);
+    MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(this->device);
     CAMetalLayer *metal_layer = this->data.metal_layer;
 
     if (callback == nullptr || window == nullptr || device == nullptr ||
@@ -214,7 +214,7 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
 
     // begin
     id<MTLCommandBuffer> cmd_buffer =
-        [this->data.device->getPlatformData().command_queue commandBuffer];
+        [device->getPlatformData().command_queue commandBuffer];
     if (cmd_buffer == nil) {
       return false;
     }
@@ -254,9 +254,9 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
 }
 
 MacWindowSurface *
-MacWindowSurface::createMacSurfaceFromWindow(GraphicsDevice *device,
+MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
                                              IWindow *window) {
-  if (window == nullptr) {
+  if (window == nullptr || device == nullptr) {
     return nullptr;
   }
   MacWindowSurface *surface =
@@ -273,18 +273,18 @@ MacWindowSurface::createMacSurfaceFromWindow(GraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = static_cast<MacGraphicsDevice *>(device);
+  surface->device = static_cast<MacGraphicsDevice *>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
-  surface->data.device->addRef();
+  surface->device->addRef();
 
   // 参照カウントを増やす
-  surface->data.window = window;
+  surface->window = window;
   window->addRef();
 
   @autoreleasepool {
     // getter を IWindow に追加すればいいがそれだと内部が漏れる
     WindowView *view =
-        static_cast<MacWindow *>(surface->data.window)->getPlatformData().view;
+        static_cast<MacWindow *>(surface->window)->getPlatformData().view;
 
     // view はポインタなので view に変更を加えると window
     // 側にも反映される
@@ -295,8 +295,10 @@ MacWindowSurface::createMacSurfaceFromWindow(GraphicsDevice *device,
     }
 
     CAMetalLayer *layer = [[CAMetalLayer alloc] init];
-    // createMacSurface ですでに device の参照カウントを増やしてある
-    layer.device = surface->data.device->getPlatformData().device;
+    // surface->addRef(); の直後ですでに device の参照カウントを増やしてある
+    layer.device = static_cast<MacGraphicsDevice *>(surface->device)
+                       ->getPlatformData()
+                       .device;
     layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     // NO にすると CPU で読み取りができるってことか
     // しかし重たくなると思われる
@@ -350,14 +352,14 @@ MacWindowSurface::createMacSurfaceFromWindow(GraphicsDevice *device,
 // テクスチャ専用デストラクタ
 MacTextureSurface::~MacTextureSurface() {
   @autoreleasepool {
-    if (this->data.texture != nullptr) {
-      this->data.texture->release();
+    if (this->texture != nullptr) {
+      this->texture->release();
     }
   }
 }
 
 MacTextureSurface *
-MacTextureSurface::createMacSurfaceFromTexture(GraphicsDevice *device,
+MacTextureSurface::createMacSurfaceFromTexture(IGraphicsDevice *device,
                                                ITexture *texture) {
   if (texture == nullptr) {
     return nullptr;
@@ -376,12 +378,12 @@ MacTextureSurface::createMacSurfaceFromTexture(GraphicsDevice *device,
   // autoreleasepool はいらん
   // device を参照 (直接 MTLDevice を代入するのでなく MacGraphicsDevice
   // だからプールはいらん)
-  surface->data.device = static_cast<MacGraphicsDevice *>(device);
+  surface->device = static_cast<MacGraphicsDevice *>(device);
   // こいつの参照が 0 にならないと appInstance は解放できない仕様
-  surface->data.device->addRef();
+  surface->device->addRef();
 
   // 参照カウントを増やす
-  surface->data.texture = texture;
+  surface->texture = texture;
   texture->addRef();
 
   @autoreleasepool {
@@ -397,7 +399,7 @@ MacTextureSurface::createMacSurfaceFromTexture(GraphicsDevice *device,
 
 template <>
 bool TextureSurface::render(RenderCallBack callback, void *data,
-                               const RenderPassDesc pass_desc) {
+                            const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
@@ -410,9 +412,9 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    MacTexture *texture = static_cast<MacTexture *>(this->data.texture);
+    MacTexture *texture = static_cast<MacTexture *>(this->texture);
     MacGraphicsDevice *device =
-        static_cast<MacGraphicsDevice *>(this->data.device);
+        static_cast<MacGraphicsDevice *>(this->device);
     if (texture == nullptr || device == nullptr) {
       return false;
     }
@@ -430,8 +432,8 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
 
     id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
 
-    float true_width = texture->getPlatformData().width;
-    float true_height = texture->getPlatformData().height;
+    float true_width = texture->getWidth();
+    float true_height = texture->getHeight();
 
     if (mtl_texture == nil || pipeline_state == nil ||
         pipeline_state_tex_outline == nil || pipeline_state_tex == nil ||
@@ -445,7 +447,7 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
 
     // begin
     id<MTLCommandBuffer> cmd_buffer =
-        [this->data.device->getPlatformData().command_queue commandBuffer];
+        [device->getPlatformData().command_queue commandBuffer];
     if (cmd_buffer == nil) {
       return false;
     }

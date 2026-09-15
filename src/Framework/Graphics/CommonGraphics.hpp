@@ -37,9 +37,21 @@ class CommonTexture : public ITexture {
 private:
   int ref_count = 0;
 
+protected:
+  IGraphicsDevice *device = nullptr;
+  TextureFormat format = TextureFormat::Color;
+  int width = 0;
+  int height = 0;
+
 public:
   int addRef() override;
   int release() override;
+
+  TextureFormat getFormat() override;
+
+  int getWidth() override;
+  int getHeight() override;
+  
   virtual ~CommonTexture() = default;
 };
 
@@ -54,7 +66,12 @@ private:
   int ref_count = 0;
 
 protected:
-  BindObject bind_flag = BindObject::none;
+  IGraphicsDevice *device = nullptr;
+  union {
+    // Window 用と Texture 用で実装が分かれるので共用体で OK
+    IWindow *window = nullptr;
+    ITexture *texture;
+  };
 
 public:
   int addRef() override;

@@ -1,9 +1,9 @@
 #include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
+#include "GraphicsTemplate.hpp"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -19,12 +19,16 @@
 //
 //  ========================================================
 
-MacTexture *MacTexture::createMacTexture(GraphicsDevice *device, int width,
+MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {
   // 対応可能 (pipeline_state の用意がめんどくさすぎる) だが現時点では,
   // エラーにしておく
   if (desc.drawable_flag == TextureDrawable::Enable &&
       desc.format == TextureFormat::Mono) {
+    return nullptr;
+  }
+
+  if (device == nullptr) {
     return nullptr;
   }
 
@@ -38,13 +42,13 @@ MacTexture *MacTexture::createMacTexture(GraphicsDevice *device, int width,
   texture = new (texture) MacTexture;
   texture->addRef();
 
-  texture->data.device = static_cast<MacGraphicsDevice *>(device);
+  texture->device = device;
   device->addRef();
 
-  texture->data.width = width;
-  texture->data.height = height;
+  texture->width = width;
+  texture->height = height;
 
-  texture->data.format = desc.format;
+  texture->format = desc.format;
 
   @autoreleasepool {
     MTLTextureDescriptor *texture_desc = [[MTLTextureDescriptor alloc] init];
@@ -71,8 +75,9 @@ MacTexture *MacTexture::createMacTexture(GraphicsDevice *device, int width,
       texture_desc.usage = MTLTextureUsageShaderRead;
     }
 
-    texture->data.texture = [device->getPlatformData().device
-        newTextureWithDescriptor:texture_desc];
+    texture->data.texture =
+        [static_cast<MacGraphicsDevice *>(device)->getPlatformData().device
+            newTextureWithDescriptor:texture_desc];
     [texture_desc release];
     if (texture->data.texture == nil) {
       texture->release();
@@ -89,37 +94,34 @@ template <> Texture::~TextureTemplate<TextureData>() {
       [this->data.texture release];
       this->data.texture = nil;
     }
-    if (this->data.device != nullptr) {
-      this->data.device->release();
-      this->data.device = nullptr;
+    if (this->device != nullptr) {
+      this->device->release();
+      this->device = nullptr;
     }
   }
 }
 
-template <> TextureData Texture::getPlatformData() const {
-  return this->data;
-}
+template <> TextureData Texture::getPlatformData() const { return this->data; }
 
 template <>
-bool Texture::upload(const void *pixels, size_t bytes,
-                        size_t bytes_per_row) {
+bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
   if (this->data.texture == nil || pixels == nullptr) {
     return false;
   }
 
   // 与えられたデータが要件を満たしていなければ弾く
   size_t bpp =
-      (this->data.format == TextureFormat::Mono) ? 1 : sizeof(std::uint32_t);
-  if (bytes_per_row / bpp != static_cast<size_t>(this->data.width)) {
+      (this->format == TextureFormat::Mono) ? 1 : sizeof(std::uint32_t);
+  if (bytes_per_row / bpp != static_cast<size_t>(this->width)) {
     return false;
   }
-  if (bytes / bytes_per_row != static_cast<size_t>(this->data.height)) {
+  if (bytes / bytes_per_row != static_cast<size_t>(this->height)) {
     return false;
   }
 
   @autoreleasepool {
     MTLRegion region =
-        MTLRegionMake2D(0, 0, this->data.width, this->data.height);
+        MTLRegionMake2D(0, 0, this->width, this->height);
     [this->data.texture replaceRegion:region
                           mipmapLevel:0
                             withBytes:pixels

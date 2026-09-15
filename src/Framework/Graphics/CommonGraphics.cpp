@@ -35,6 +35,12 @@ int CommonTexture::release() {
   return this->ref_count;
 }
 
+TextureFormat CommonTexture::getFormat() { return this->format; }
+
+int CommonTexture::getWidth() { return this->width; }
+
+int CommonTexture::getHeight() { return this->height; }
+
 //  ========================================================
 //
 //  Surface

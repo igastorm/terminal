@@ -26,5 +26,10 @@ public:
 
   virtual bool upload(const void *, size_t, size_t) = 0;
 
+  virtual TextureFormat getFormat() = 0;
+
+  virtual int getWidth() = 0;
+  virtual int getHeight() = 0;
+
   static inline constexpr TextureDesc DEFAULT_DESC;
 };
