@@ -4,8 +4,8 @@
 #   cmake -DINPUT=<in> -DOUTPUT=<out.h> -DVARNAME=<ident> -P bin2hpp.cmake
 #
 # 生成物:
-#   static const unsigned char <VARNAME>[]     … 中身
-#   static const unsigned long <VARNAME>_size  … バイト数
+#   inline constexpr unsigned char <VARNAME>[]     … 中身
+#   inline constexpr unsigned long <VARNAME>_size  … バイト数
 #
 # ---------------------------------------------------------------------------
 
