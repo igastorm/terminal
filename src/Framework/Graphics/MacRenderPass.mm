@@ -1,9 +1,9 @@
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "ImpGraphics.hpp"
+#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -71,7 +71,7 @@ MacRenderPass::~MacRenderPass() {
 }
 
 template <>
-bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
+bool RenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
   if (this->data.is_ready == false || vertices == nil || vertex_count <= 0) {
@@ -102,7 +102,7 @@ bool ImpRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 }
 
 template <>
-bool ImpRenderPass::drawVerticesTex(ITexture *itexture,
+bool RenderPass::drawVerticesTex(ITexture *itexture,
                                     const VertexTex *vertices,
                                     int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる

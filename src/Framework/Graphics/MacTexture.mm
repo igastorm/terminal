@@ -1,9 +1,9 @@
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "ImpGraphics.hpp"
+#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -19,7 +19,7 @@
 //
 //  ========================================================
 
-MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
+MacTexture *MacTexture::createMacTexture(GraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {
   // 対応可能 (pipeline_state の用意がめんどくさすぎる) だが現時点では,
   // エラーにしておく
@@ -83,7 +83,7 @@ MacTexture *MacTexture::createMacTexture(ImpGraphicsDevice *device, int width,
   return texture;
 }
 
-template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
+template <> Texture::~TextureTemplate<TextureData>() {
   @autoreleasepool {
     if (this->data.texture != nil) {
       [this->data.texture release];
@@ -96,12 +96,12 @@ template <> ImpTexture::~ImpTextureTemplate<ImpTextureData>() {
   }
 }
 
-template <> ImpTextureData ImpTexture::getPlatformData() const {
+template <> TextureData Texture::getPlatformData() const {
   return this->data;
 }
 
 template <>
-bool ImpTexture::upload(const void *pixels, size_t bytes,
+bool Texture::upload(const void *pixels, size_t bytes,
                         size_t bytes_per_row) {
   if (this->data.texture == nil || pixels == nullptr) {
     return false;

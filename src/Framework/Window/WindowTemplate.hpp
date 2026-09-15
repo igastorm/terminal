@@ -1,12 +1,12 @@
 #pragma once
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "CommonWindow.hpp"
 
 template <class PlatformData, class PlatformApplicationData>
-class ImpWindowTemplate : public CommonWindow {
+class WindowTemplate : public CommonWindow {
 protected:
   PlatformData data;
-  ImpApplicationTemplate<PlatformApplicationData> *appInstance;
+  ApplicationTemplate<PlatformApplicationData> *appInstance;
 
   bool setTitle(const char *) override;
   bool show() override;
@@ -15,5 +15,5 @@ protected:
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
 
-  ~ImpWindowTemplate() override;
+  ~WindowTemplate() override;
 };

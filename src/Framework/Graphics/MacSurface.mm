@@ -1,9 +1,9 @@
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "ImpGraphics.hpp"
+#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -94,7 +94,7 @@ void RenderHelper::renderBase(
 
 // 共通デストラクタ
 template <class PlatformData>
-ImpSurfaceTemplate<PlatformData>::~ImpSurfaceTemplate<PlatformData>() {
+SurfaceTemplate<PlatformData>::~SurfaceTemplate<PlatformData>() {
   @autoreleasepool {
     if (this->data.in_flight_semaphore != nil) {
       dispatch_release(this->data.in_flight_semaphore);
@@ -110,7 +110,7 @@ ImpSurfaceTemplate<PlatformData>::~ImpSurfaceTemplate<PlatformData>() {
 
 // 共通ゲッター
 template <class PlatformData>
-PlatformData ImpSurfaceTemplate<PlatformData>::getPlatformData() const {
+PlatformData SurfaceTemplate<PlatformData>::getPlatformData() const {
   return this->data;
 }
 
@@ -135,7 +135,7 @@ MacWindowSurface::~MacWindowSurface() {
 }
 
 template <>
-bool ImpWindowSurface::render(RenderCallBack callback, void *data,
+bool WindowSurface::render(RenderCallBack callback, void *data,
                               const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費
@@ -254,7 +254,7 @@ bool ImpWindowSurface::render(RenderCallBack callback, void *data,
 }
 
 MacWindowSurface *
-MacWindowSurface::createMacSurfaceFromWindow(ImpGraphicsDevice *device,
+MacWindowSurface::createMacSurfaceFromWindow(GraphicsDevice *device,
                                              IWindow *window) {
   if (window == nullptr) {
     return nullptr;
@@ -357,7 +357,7 @@ MacTextureSurface::~MacTextureSurface() {
 }
 
 MacTextureSurface *
-MacTextureSurface::createMacSurfaceFromTexture(ImpGraphicsDevice *device,
+MacTextureSurface::createMacSurfaceFromTexture(GraphicsDevice *device,
                                                ITexture *texture) {
   if (texture == nullptr) {
     return nullptr;
@@ -396,7 +396,7 @@ MacTextureSurface::createMacSurfaceFromTexture(ImpGraphicsDevice *device,
 }
 
 template <>
-bool ImpTextureSurface::render(RenderCallBack callback, void *data,
+bool TextureSurface::render(RenderCallBack callback, void *data,
                                const RenderPassDesc pass_desc) {
   @autoreleasepool {
     // チケットを消費

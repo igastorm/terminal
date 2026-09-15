@@ -1,20 +1,20 @@
 #pragma once
 #include "IApplication.hpp"
-#include "ImpApplication.hpp"
+#include "ApplicationTemplate.hpp"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 
 @class AppDelegate;
 
-struct ImpApplicationData {
+struct ApplicationData {
   AppDelegate *appDelegate = nil;
   NSMenuItem* quit_item = nil;
 };
 
-using ImpApplication = ImpApplicationTemplate<ImpApplicationData>;
+using Application = ApplicationTemplate<ApplicationData>;
 
-class MacApplication : public ImpApplication {
+class MacApplication : public Application {
 public:
   bool initPlatform();
 };

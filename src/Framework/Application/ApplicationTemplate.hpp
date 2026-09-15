@@ -2,7 +2,7 @@
 #include "CommonApplication.hpp"
 
 template <class PlatformData>
-class ImpApplicationTemplate : public CommonApplication {
+class ApplicationTemplate : public CommonApplication {
 protected:
   PlatformData data;
 

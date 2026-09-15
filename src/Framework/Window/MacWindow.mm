@@ -1,8 +1,8 @@
 #include "MacWindow.h"
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "IWindow.hpp"
-#include "ImpWindow.hpp"
+#include "WindowTemplate.hpp"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -19,7 +19,7 @@
 
 void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
-template <> ImpWindow::~ImpWindowTemplate<ImpWindowData, ImpApplicationData>() {
+template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
   @autoreleasepool {
     if (this->data.window != nil) {
       [this->data.window setDelegate:nil];
@@ -49,11 +49,11 @@ template <> ImpWindow::~ImpWindowTemplate<ImpWindowData, ImpApplicationData>() {
   }
 }
 
-template <> ImpWindowData ImpWindow::getPlatformData() const {
+template <> WindowData Window::getPlatformData() const {
   return this->data;
 }
 
-template <> bool ImpWindow::setTitle(const char *title) {
+template <> bool Window::setTitle(const char *title) {
   @autoreleasepool {
     NSString *ns_title = [NSString stringWithUTF8String:title];
     [this->data.window setTitle:ns_title];
@@ -61,7 +61,7 @@ template <> bool ImpWindow::setTitle(const char *title) {
   }
 }
 
-template <> bool ImpWindow::show() {
+template <> bool Window::show() {
   @autoreleasepool {
     [this->data.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
@@ -69,7 +69,7 @@ template <> bool ImpWindow::show() {
   }
 }
 
-template <> bool ImpWindow::hide() {
+template <> bool Window::hide() {
   @autoreleasepool {
     [this->data.window orderOut:nil];
     return true;
@@ -77,7 +77,7 @@ template <> bool ImpWindow::hide() {
 }
 
 MacWindow *
-MacWindow::createWindow(ImpApplication *appInstance,
+MacWindow::createWindow(Application *appInstance,
                         int width, int height, const char *title) {
   @autoreleasepool {
     MacWindow *window =
@@ -141,7 +141,7 @@ MacWindow::createWindow(ImpApplication *appInstance,
 
 template <>
 IWindow *
-ImpApplicationTemplate<ImpApplicationData>::createWindow(int width, int height,
+ApplicationTemplate<ApplicationData>::createWindow(int width, int height,
                                                          const char *title) {
   IWindow *window = MacWindow::createWindow(this, width, height, title);
   return window;

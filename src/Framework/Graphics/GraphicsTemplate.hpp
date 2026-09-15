@@ -1,5 +1,5 @@
 #pragma once
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "CommonGraphics.hpp"
 
 //  ========================================================
@@ -9,7 +9,7 @@
 //  ========================================================
 
 template <class PlatformData>
-class ImpRenderPassTemplate : public CommonRenderPass {
+class RenderPassTemplate : public CommonRenderPass {
 protected:
   PlatformData data;
 
@@ -18,7 +18,7 @@ protected:
                        int vertex_count) override;
 
 public:
-  ~ImpRenderPassTemplate() override = default;
+  ~RenderPassTemplate() override = default;
 };
 
 //  ========================================================
@@ -27,12 +27,12 @@ public:
 //
 //  ========================================================
 
-template <class PlatformData> class ImpTextureTemplate : public CommonTexture {
+template <class PlatformData> class TextureTemplate : public CommonTexture {
 protected:
   PlatformData data;
 
 public:
-  ~ImpTextureTemplate() override;
+  ~TextureTemplate() override;
   [[nodiscard]] PlatformData getPlatformData() const;
   bool upload(const void *, size_t, size_t) override;
 };
@@ -43,7 +43,7 @@ public:
 //
 //  ========================================================
 
-template <class PlatformData> class ImpSurfaceTemplate : public CommonSurface {
+template <class PlatformData> class SurfaceTemplate : public CommonSurface {
 protected:
   PlatformData data;
 
@@ -51,7 +51,7 @@ protected:
 
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
-  ~ImpSurfaceTemplate();
+  ~SurfaceTemplate();
 };
 
 //  ========================================================
@@ -61,10 +61,10 @@ public:
 //  ========================================================
 
 template <class PlatformData, class PlatformApplicationData>
-class ImpGraphicsDeviceTemplate : public CommonGraphicsDevice {
+class GraphicsDeviceTemplate : public CommonGraphicsDevice {
 protected:
   PlatformData data;
-  ImpApplicationTemplate<PlatformApplicationData> *appInstance;
+  ApplicationTemplate<PlatformApplicationData> *appInstance;
 
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
@@ -72,7 +72,7 @@ protected:
   ITexture *createFontTexture(const char*, int) override;
 
 public:
-  ~ImpGraphicsDeviceTemplate() override;
+  ~GraphicsDeviceTemplate() override;
 
   [[nodiscard]] PlatformData getPlatformData() const;
 };

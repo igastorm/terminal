@@ -1,9 +1,9 @@
 #pragma once
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "ImpGraphics.hpp"
+#include "GraphicsTemplate.hpp"
 #include "shaders_metallib.hpp"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -19,7 +19,7 @@
 //
 //  ========================================================
 
-struct ImpRenderPassData {
+struct RenderPassData {
   id<MTLRenderCommandEncoder> encoder = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
   id<MTLRenderPipelineState> pipeline_state_tex = nil;
@@ -29,9 +29,9 @@ struct ImpRenderPassData {
   // id<MTLBuffer> vertex_buffer = nil;
 };
 
-using ImpRenderPass = ImpRenderPassTemplate<ImpRenderPassData>;
+using RenderPass = RenderPassTemplate<RenderPassData>;
 
-class MacRenderPass : public ImpRenderPass {
+class MacRenderPass : public RenderPass {
 private:
 public:
   MacRenderPass(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
@@ -47,7 +47,7 @@ public:
 //
 //  ========================================================
 
-struct ImpGraphicsDeviceData {
+struct GraphicsDeviceData {
   id<MTLDevice> device = nil;
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
@@ -60,17 +60,17 @@ struct ImpGraphicsDeviceData {
   // dispatch_semaphore_t in_flight_semaphore = nil;
 };
 
-using ImpGraphicsDevice =
-    ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData, ImpApplicationData>;
+using GraphicsDevice =
+    GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>;
 
-class MacGraphicsDevice : public ImpGraphicsDevice {
+class MacGraphicsDevice : public GraphicsDevice {
 private:
 public:
-  static MacGraphicsDevice *createMacGraphicsDevice(ImpApplication *);
+  static MacGraphicsDevice *createMacGraphicsDevice(Application *);
 };
 
 template <>
-ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
+GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;
 
 //  ========================================================
 //
@@ -78,22 +78,22 @@ ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData(void) const;
 //
 //  ========================================================
 
-struct ImpSurfaceData {
+struct SurfaceData {
   dispatch_semaphore_t in_flight_semaphore = nil;
   MacGraphicsDevice *device = nullptr;
 };
 
-struct ImpWindowSurfaceData : public ImpSurfaceData {
+struct WindowSurfaceData : public SurfaceData {
   IWindow *window = nullptr;
   CAMetalLayer *metal_layer = nil;
 };
 
-struct ImpTextureSurfaceData : public ImpSurfaceData {
+struct TextureSurfaceData : public SurfaceData {
   ITexture *texture = nullptr;
 };
 
-using ImpWindowSurface = ImpSurfaceTemplate<ImpWindowSurfaceData>;
-using ImpTextureSurface = ImpSurfaceTemplate<ImpTextureSurfaceData>;
+using WindowSurface = SurfaceTemplate<WindowSurfaceData>;
+using TextureSurface = SurfaceTemplate<TextureSurfaceData>;
 
 class RenderHelper {
 private:
@@ -111,17 +111,17 @@ public:
   ~RenderHelper();
 };
 
-class MacWindowSurface : public ImpWindowSurface {
+class MacWindowSurface : public WindowSurface {
 public:
   ~MacWindowSurface();
-  static MacWindowSurface *createMacSurfaceFromWindow(ImpGraphicsDevice *,
+  static MacWindowSurface *createMacSurfaceFromWindow(GraphicsDevice *,
                                                       IWindow *);
 };
 
-class MacTextureSurface : public ImpTextureSurface {
+class MacTextureSurface : public TextureSurface {
 public:
   ~MacTextureSurface();
-  static MacTextureSurface *createMacSurfaceFromTexture(ImpGraphicsDevice *,
+  static MacTextureSurface *createMacSurfaceFromTexture(GraphicsDevice *,
                                                         ITexture *);
 };
 
@@ -131,7 +131,7 @@ public:
 //
 //  ========================================================
 
-struct ImpTextureData {
+struct TextureData {
   id<MTLTexture> texture = nil;
   MacGraphicsDevice *device = nullptr;
   TextureFormat format = TextureFormat::Color;
@@ -139,14 +139,14 @@ struct ImpTextureData {
   int height = 0;
 };
 
-using ImpTexture = ImpTextureTemplate<ImpTextureData>;
+using Texture = TextureTemplate<TextureData>;
 
-class MacTexture : public ImpTexture {
+class MacTexture : public Texture {
 private:
   MacTexture() = default;
   // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:
-  static MacTexture *createMacTexture(ImpGraphicsDevice *, int, int,
+  static MacTexture *createMacTexture(GraphicsDevice *, int, int,
                                       const TextureDesc);
 };

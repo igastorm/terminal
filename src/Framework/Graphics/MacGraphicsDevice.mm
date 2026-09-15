@@ -1,9 +1,9 @@
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "ImpGraphics.hpp"
+#include "GraphicsTemplate.hpp"
 #include "MacFontAtlas.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
@@ -21,7 +21,7 @@
 //  ========================================================
 
 MacGraphicsDevice *
-MacGraphicsDevice::createMacGraphicsDevice(ImpApplication *appInstance) {
+MacGraphicsDevice::createMacGraphicsDevice(Application *appInstance) {
   @autoreleasepool {
     MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(
         std::malloc(sizeof(MacGraphicsDevice)));
@@ -229,8 +229,8 @@ MacGraphicsDevice::createMacGraphicsDevice(ImpApplication *appInstance) {
 }
 
 template <>
-ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
-                                              ImpApplicationData>() {
+GraphicsDevice::~GraphicsDeviceTemplate<GraphicsDeviceData,
+                                              ApplicationData>() {
   @autoreleasepool {
     // if (this->data.vertex_buffer != nil) {
     //   [this->data.vertex_buffer release];
@@ -267,35 +267,35 @@ ImpGraphicsDevice::~ImpGraphicsDeviceTemplate<ImpGraphicsDeviceData,
   }
 }
 
-template <> ImpGraphicsDeviceData ImpGraphicsDevice::getPlatformData() const {
+template <> GraphicsDeviceData GraphicsDevice::getPlatformData() const {
   return this->data;
 }
 
 template <>
-ITexture *ImpGraphicsDevice::createTexture(int width, int height,
+ITexture *GraphicsDevice::createTexture(int width, int height,
                                            TextureDesc texture_desc) {
   return MacTexture::createMacTexture(this, width, height, texture_desc);
 }
 
 template <>
-ITexture *ImpGraphicsDevice::createFontTexture(const char* character, int size) {
+ITexture *GraphicsDevice::createFontTexture(const char* character, int size) {
   MacFont factory;
   return factory.createFontTextureBase(this, character, size);
 }
 
 template <>
-ISurface *ImpGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
+ISurface *GraphicsDevice::createSurfaceFromWindow(IWindow *window) {
   return MacWindowSurface::createMacSurfaceFromWindow(this, window);
 }
 
 template <>
-ISurface *ImpGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
+ISurface *GraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
   return MacTextureSurface::createMacSurfaceFromTexture(this, texture);
 }
 
 template <>
 IGraphicsDevice *
-ImpApplicationTemplate<ImpApplicationData>::createGraphicsDevice() {
+ApplicationTemplate<ApplicationData>::createGraphicsDevice() {
   IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
   return device;
 }

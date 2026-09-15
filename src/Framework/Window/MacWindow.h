@@ -1,8 +1,8 @@
 #pragma once
-#include "../Application/ImpApplication.hpp"
+#include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "IWindow.hpp"
-#include "ImpWindow.hpp"
+#include "WindowTemplate.hpp"
 #import <AppKit/AppKit.h>
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
@@ -31,21 +31,21 @@
 @interface CocoaWindow : NSWindow
 @end
 
-struct ImpWindowData {
+struct WindowData {
   CocoaWindow *window = nil;
   WindowDelegate *delegate = nil;
   WindowView *view = nil;
   bool resizing = false;
 };
 
-using ImpWindow = ImpWindowTemplate<ImpWindowData, ImpApplicationData>;
+using Window = WindowTemplate<WindowData, ApplicationData>;
 
-class MacWindow : public ImpWindow {
+class MacWindow : public Window {
 public:
   MacWindow() = default;
   ~MacWindow() = default;
   void notifyResizing(bool);
   [[nodiscard]] static MacWindow *
-  createWindow(ImpApplication *, int, int,
+  createWindow(Application *, int, int,
                const char *);
 };
