@@ -1,9 +1,9 @@
 #include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
 #include "../Window/MacWindow.h"
+#include "GraphicsTemplate.hpp"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "GraphicsTemplate.hpp"
 #include "MacGraphics.h"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -21,12 +21,27 @@
 
 bool MacRenderPass::isReady() const { return this->data.is_ready; }
 
-MacRenderPass::MacRenderPass(
-    id<MTLRenderCommandEncoder> encoder,
-    id<MTLRenderPipelineState> pipeline_state,
-    id<MTLRenderPipelineState> pipeline_state_tex,
-    id<MTLRenderPipelineState> pipeline_state_tex_outline,
-    id<MTLSamplerState> sampler_state) {
+MacRenderPass::MacRenderPass(IGraphicsDevice *device,
+                             id<MTLRenderCommandEncoder> encoder) {
+  if (encoder == nil || device == nullptr) {
+    this->data.is_ready = false;
+    return;
+  }
+
+  this->data.device = device;
+  this->data.device->addRef();
+
+  MacGraphicsDevice *mac_device = static_cast<MacGraphicsDevice *>(device);
+
+  id<MTLRenderPipelineState> pipeline_state =
+      mac_device->getPlatformData().pipeline_state;
+  id<MTLRenderPipelineState> pipeline_state_tex =
+      mac_device->getPlatformData().pipeline_state_tex;
+  id<MTLRenderPipelineState> pipeline_state_tex_outline =
+      mac_device->getPlatformData().pipeline_state_tex_outline;
+  id<MTLSamplerState> sampler_state =
+      mac_device->getPlatformData().sampler_state;
+
   if (encoder == nil || pipeline_state == nil || pipeline_state_tex == nil ||
       pipeline_state_tex_outline == nil || sampler_state == nil) {
     this->data.is_ready = false;
@@ -35,37 +50,17 @@ MacRenderPass::MacRenderPass(
 
   this->data.encoder = encoder;
   [encoder retain];
-
-  this->data.pipeline_state = pipeline_state;
-  [this->data.pipeline_state retain];
-
-  this->data.pipeline_state_tex = pipeline_state_tex;
-  [this->data.pipeline_state_tex retain];
-
-  this->data.pipeline_state_tex_outline = pipeline_state_tex_outline;
-  [this->data.pipeline_state_tex_outline retain];
-
-  this->data.sampler_state = sampler_state;
-  [this->data.sampler_state retain];
   // this->data.vertex_buffer = vertex_buf;
   this->data.is_ready = true;
 }
 
 MacRenderPass::~MacRenderPass() {
+  if (this->data.device != nullptr) {
+    this->data.device->release();
+    this->data.device = nullptr;
+  }
   if (this->data.encoder != nil) {
     [this->data.encoder release];
-  }
-  if (this->data.pipeline_state != nil) {
-    [this->data.pipeline_state release];
-  }
-  if (this->data.pipeline_state_tex != nil) {
-    [this->data.pipeline_state_tex release];
-  }
-  if (this->data.pipeline_state_tex_outline != nil) {
-    [this->data.pipeline_state_tex_outline release];
-  }
-  if (this->data.sampler_state != nil) {
-    [this->data.sampler_state release];
   }
   this->data.is_ready = false;
 }
@@ -78,7 +73,11 @@ bool RenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
     return false;
   }
 
-  [this->data.encoder setRenderPipelineState:this->data.pipeline_state];
+  MacGraphicsDevice *mac_device =
+      static_cast<MacGraphicsDevice *>(this->data.device);
+
+  [this->data.encoder
+      setRenderPipelineState:mac_device->getPlatformData().pipeline_state];
 
   // void *ptr = [this->data.vertex_buffer contents];
   // std::memcpy(ptr, vertices, sizeof(Vertex) * vertex_count);
@@ -102,9 +101,8 @@ bool RenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
 }
 
 template <>
-bool RenderPass::drawVerticesTex(ITexture *itexture,
-                                    const VertexTex *vertices,
-                                    int vertex_count) {
+bool RenderPass::drawVerticesTex(ITexture *itexture, const VertexTex *vertices,
+                                 int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
   if (this->data.is_ready == false || vertices == nil || vertex_count <= 0 ||
@@ -120,14 +118,20 @@ bool RenderPass::drawVerticesTex(ITexture *itexture,
     return false;
   }
 
+  MacGraphicsDevice *mac_device =
+      static_cast<MacGraphicsDevice *>(this->data.device);
+
   // テクスチャのフォーマットにより適切なパイプラインを自動選択
   [this->data.encoder
       setRenderPipelineState:format == TextureFormat::Color
-                                 ? this->data.pipeline_state_tex
-                                 : this->data.pipeline_state_tex_outline];
-  
-  [this->data.encoder setFragmentSamplerState:this->data.sampler_state
-                                      atIndex:0];
+                                 ? mac_device->getPlatformData()
+                                       .pipeline_state_tex
+                                 : mac_device->getPlatformData()
+                                       .pipeline_state_tex_outline];
+
+  [this->data.encoder
+      setFragmentSamplerState:mac_device->getPlatformData().sampler_state
+                      atIndex:0];
 
   // void *ptr = [this->data.vertex_buffer contents];
   // std::memcpy(ptr, vertices, sizeof(Vertex) * vertex_count);

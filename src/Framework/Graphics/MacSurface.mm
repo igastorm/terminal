@@ -112,8 +112,7 @@ bool RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
   [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
 
   // ここでコールバック
-  MacRenderPass pass(encoder, pipeline_state, pipeline_state_tex,
-                     pipeline_state_tex_outline, sampler_state);
+  MacRenderPass pass(device, encoder);
   if (pass.isReady()) {
     [encoder retain];
     callback(&pass, data);
