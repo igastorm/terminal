@@ -44,12 +44,12 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     // device->appInstance = appInstance;
     // static_cast<MacApplication *>(device->appInstance)->addRef();
 
-    if ((device->data.device = MTLCreateSystemDefaultDevice()) == nil) {
+    if ((device->data.mtl_device = MTLCreateSystemDefaultDevice()) == nil) {
       device->release();
       return nullptr;
     }
 
-    if ((device->data.command_queue = [device->data.device newCommandQueue]) ==
+    if ((device->data.command_queue = [device->data.mtl_device newCommandQueue]) ==
         nil) {
       device->release();
       return nullptr;
@@ -65,7 +65,7 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     }
 
     NSError *error = nil;
-    id<MTLLibrary> library = [device->data.device newLibraryWithData:shader_data
+    id<MTLLibrary> library = [device->data.mtl_device newLibraryWithData:shader_data
                                                                error:&error];
 
     // library が参照カウントを増やすので release する
@@ -170,19 +170,19 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
         MTLBlendOperationAdd;
 
     device->data.pipeline_state =
-        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
+        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
     pipeline_desc.vertexFunction = vs_tex;
     pipeline_desc.fragmentFunction = ps_tex;
 
     device->data.pipeline_state_tex =
-        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
+        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
     pipeline_desc.fragmentFunction = ps_tex_outline;
     device->data.pipeline_state_tex_outline =
-        [device->data.device newRenderPipelineStateWithDescriptor:pipeline_desc
+        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
                                                             error:&error];
 
     [pipeline_desc release];
@@ -211,7 +211,7 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     sampler_desc.tAddressMode = MTLSamplerAddressModeClampToEdge;
 
     device->data.sampler_state =
-        [device->data.device newSamplerStateWithDescriptor:sampler_desc];
+        [device->data.mtl_device newSamplerStateWithDescriptor:sampler_desc];
 
     // 参照カウントが増えるので release しておく
     [sampler_desc release];
@@ -224,7 +224,7 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     // 頂点 1024 個分くらいのメモリをあらかじめ確保しておく
     // size_t buffer_size = sizeof(Vertex) * 1024;
     // device->data.vertex_buffer =
-    //     [device->data.device newBufferWithLength:buffer_size
+    //     [device->data.mtl_device newBufferWithLength:buffer_size
     //                                      options:MTLResourceStorageModeShared];
     // if (device->data.vertex_buffer == nil) {
     //   device->release();
@@ -262,9 +262,9 @@ GraphicsDevice::~GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>() {
       [this->data.command_queue release];
       this->data.command_queue = nil;
     }
-    if (this->data.device != nil) {
-      [this->data.device release];
-      this->data.device = nil;
+    if (this->data.mtl_device != nil) {
+      [this->data.mtl_device release];
+      this->data.mtl_device = nil;
     }
     // 親デストラクタに任せる
     // if (this->appInstance != nullptr) {

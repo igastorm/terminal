@@ -62,17 +62,29 @@ RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
   }
 }
 
-void RenderHelper::renderBase(
-    id<MTLRenderCommandEncoder> encoder,
-    id<MTLRenderPipelineState> pipeline_state,
-    id<MTLRenderPipelineState> pipeline_state_tex,
-    id<MTLRenderPipelineState> pipeline_state_tex_outline,
-    id<MTLSamplerState> sampler_state, float true_width, float true_height,
-    RenderCallBack callback, void *data) {
-  if (encoder == nil || pipeline_state == nil || true_width == 0.0f ||
+bool RenderHelper::renderBase(IGraphicsDevice *device,
+                              id<MTLRenderCommandEncoder> encoder,
+                              float true_width, float true_height,
+                              RenderCallBack callback, void *data) {
+  if (encoder == nil || device == nil || true_height == 0.0f ||
       true_height == 0.0f) {
-    return;
+    return false;
   }
+
+  MacGraphicsDevice *mac_device = static_cast<MacGraphicsDevice *>(device);
+  id<MTLRenderPipelineState> pipeline_state =
+      mac_device->getPlatformData().pipeline_state;
+  id<MTLRenderPipelineState> pipeline_state_tex =
+      mac_device->getPlatformData().pipeline_state_tex;
+  id<MTLRenderPipelineState> pipeline_state_tex_outline =
+      mac_device->getPlatformData().pipeline_state_tex_outline;
+  id<MTLSamplerState> sampler_state =
+      mac_device->getPlatformData().sampler_state;
+
+  if (pipeline_state == nil || pipeline_state_tex == nil ||
+      pipeline_state_tex_outline == nil || sampler_state == nil) {
+    return false;
+  } 
 
   struct {
     float width;
@@ -90,6 +102,7 @@ void RenderHelper::renderBase(
     callback(&pass, data);
     [encoder release];
   }
+  return true;
 }
 
 //  ========================================================

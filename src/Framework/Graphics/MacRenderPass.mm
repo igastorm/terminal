@@ -113,7 +113,7 @@ bool RenderPass::drawVerticesTex(ITexture *itexture,
   }
 
   MacTexture *texture = static_cast<MacTexture *>(itexture);
-  id<MTLTexture> mtl_texrure = texture->getPlatformData().texture;
+  id<MTLTexture> mtl_texrure = texture->getPlatformData().mtl_texture;
   TextureFormat format = texture->getFormat();
 
   if (mtl_texrure == nil) {

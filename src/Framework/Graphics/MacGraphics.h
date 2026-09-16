@@ -47,7 +47,7 @@ public:
 //  ========================================================
 
 struct GraphicsDeviceData {
-  id<MTLDevice> device = nil;
+  id<MTLDevice> mtl_device = nil;
   id<MTLCommandQueue> command_queue = nil;
   id<MTLRenderPipelineState> pipeline_state = nil;
   id<MTLRenderPipelineState> pipeline_state_tex = nil;
@@ -65,7 +65,7 @@ using GraphicsDevice =
 class MacGraphicsDevice : public GraphicsDevice {
 public:
   static MacGraphicsDevice *createMacGraphicsDevice(IApplication *);
-  MacGraphicsDevice(IApplication*);
+  MacGraphicsDevice(IApplication *);
 };
 
 template <> GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;
@@ -95,14 +95,14 @@ class RenderHelper {
 private:
   static constexpr float inv_255 = 1.0f / 255.0f;
   MTLRenderPassDescriptor *mtl_pass_desc = nil;
+  IGraphicsDevice* device = nullptr;
 
 public:
   MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
                                                       const RenderPassDesc *);
-  void renderBase(id<MTLRenderCommandEncoder>, id<MTLRenderPipelineState>,
-                  id<MTLRenderPipelineState>, id<MTLRenderPipelineState>,
-                  id<MTLSamplerState>, float, float, RenderCallBack callback,
-                  void *data);
+  [[nodiscard]] bool renderBase(IGraphicsDevice *device,
+                                id<MTLRenderCommandEncoder>, float, float,
+                                RenderCallBack callback, void *data);
   RenderHelper(MacGraphicsDevice *);
   ~RenderHelper();
 };
@@ -136,7 +136,7 @@ public:
 //  ========================================================
 
 struct TextureData {
-  id<MTLTexture> texture = nil;
+  id<MTLTexture> mtl_texture = nil;
 };
 
 using Texture = TextureTemplate<TextureData>;

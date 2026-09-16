@@ -80,11 +80,11 @@ MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
       texture_desc.usage = MTLTextureUsageShaderRead;
     }
 
-    texture->data.texture =
-        [static_cast<MacGraphicsDevice *>(device)->getPlatformData().device
+    texture->data.mtl_texture =
+        [static_cast<MacGraphicsDevice *>(device)->getPlatformData().mtl_device
             newTextureWithDescriptor:texture_desc];
     [texture_desc release];
-    if (texture->data.texture == nil) {
+    if (texture->data.mtl_texture == nil) {
       texture->release();
       return nullptr;
     }
@@ -95,9 +95,9 @@ MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
 
 template <> Texture::~TextureTemplate<TextureData>() {
   @autoreleasepool {
-    if (this->data.texture != nil) {
-      [this->data.texture release];
-      this->data.texture = nil;
+    if (this->data.mtl_texture != nil) {
+      [this->data.mtl_texture release];
+      this->data.mtl_texture = nil;
     }
     // デストラクタに任せるようにした
     // if (this->device != nullptr) {
@@ -111,7 +111,7 @@ template <> TextureData Texture::getPlatformData() const { return this->data; }
 
 template <>
 bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
-  if (this->data.texture == nil || pixels == nullptr) {
+  if (this->data.mtl_texture == nil || pixels == nullptr) {
     return false;
   }
 
@@ -127,7 +127,7 @@ bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
 
   @autoreleasepool {
     MTLRegion region = MTLRegionMake2D(0, 0, this->width, this->height);
-    [this->data.texture replaceRegion:region
+    [this->data.mtl_texture replaceRegion:region
                           mipmapLevel:0
                             withBytes:pixels
                           bytesPerRow:bytes_per_row];

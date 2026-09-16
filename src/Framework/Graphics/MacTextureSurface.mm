@@ -81,6 +81,7 @@ MacTextureSurface::createMacSurfaceFromTexture(IGraphicsDevice *device,
 template <>
 bool TextureSurface::render(RenderCallBack callback, void *data,
                             const RenderPassDesc pass_desc) {
+  bool result = false;
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
@@ -99,7 +100,7 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    id<MTLTexture> mtl_texture = texture->getPlatformData().texture;
+    id<MTLTexture> mtl_texture = texture->getPlatformData().mtl_texture;
 
     id<MTLRenderPipelineState> pipeline_state =
         device->getPlatformData().pipeline_state;
@@ -137,9 +138,8 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
-                      pipeline_state_tex_outline, sampler_state, true_width,
-                      true_height, callback, data);
+    result = helper.renderBase(device, encoder, true_width, true_height,
+                               callback, data);
 
     // end
     [encoder endEncoding];
@@ -153,6 +153,6 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
 
     [cmd_buffer commit];
 
-    return true;
+    return result;
   }
 }

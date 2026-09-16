@@ -89,7 +89,7 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
     // surface->addRef(); の直後ですでに device の参照カウントを増やしてある
     layer.device = static_cast<MacGraphicsDevice *>(surface->device)
                        ->getPlatformData()
-                       .device;
+                       .mtl_device;
     layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     // NO にすると CPU で読み取りができるってことか
     // しかし重たくなると思われる
@@ -149,6 +149,7 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
 template <>
 bool WindowSurface::render(RenderCallBack callback, void *data,
                            const RenderPassDesc pass_desc) {
+  bool result = false;
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
@@ -237,8 +238,7 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
     }
 
     // 描画処理
-    helper.renderBase(encoder, pipeline_state, pipeline_state_tex,
-                      pipeline_state_tex_outline, sampler_state, true_width,
+    result = helper.renderBase(device, encoder, true_width,
                       true_height, callback, data);
 
     // end
@@ -261,6 +261,6 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
       [cmd_buffer waitUntilScheduled];
     }
 
-    return true;
+    return result;
   }
 }
