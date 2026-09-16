@@ -102,29 +102,23 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
 
     id<MTLTexture> mtl_texture = texture->getPlatformData().mtl_texture;
 
-    id<MTLRenderPipelineState> pipeline_state =
-        device->getPlatformData().pipeline_state;
-
-    id<MTLRenderPipelineState> pipeline_state_tex =
-        device->getPlatformData().pipeline_state_tex;
-
-    id<MTLRenderPipelineState> pipeline_state_tex_outline =
-        device->getPlatformData().pipeline_state_tex_outline;
-
-    id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
-
     float true_width = texture->getWidth();
     float true_height = texture->getHeight();
 
-    if (mtl_texture == nil || pipeline_state == nil ||
-        pipeline_state_tex_outline == nil || pipeline_state_tex == nil ||
-        true_width == 0 || true_height == 0 || sampler_state == nil) {
+    if (mtl_texture == nil || true_width == 0 || true_height == 0) {
       return false;
     }
 
     RenderHelper helper(device);
+    if (!helper.isReady()) {
+      return false;
+    }
+
     MTLRenderPassDescriptor *mtl_pass_desc =
         helper.getMTLRenderPassDescripter(mtl_texture, &pass_desc);
+    if (mtl_pass_desc == nil) {
+      return false;
+    }
 
     // begin
     id<MTLCommandBuffer> cmd_buffer =
@@ -138,8 +132,8 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    result = helper.renderBase(device, encoder, true_width, true_height,
-                               callback, data);
+    result =
+        helper.renderBase(encoder, true_width, true_height, callback, data);
 
     // end
     [encoder endEncoding];

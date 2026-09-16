@@ -177,22 +177,6 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    id<MTLRenderPipelineState> pipeline_state =
-        device->getPlatformData().pipeline_state;
-
-    id<MTLRenderPipelineState> pipeline_state_tex =
-        device->getPlatformData().pipeline_state_tex;
-
-    id<MTLRenderPipelineState> pipeline_state_tex_outline =
-        device->getPlatformData().pipeline_state_tex_outline;
-
-    id<MTLSamplerState> sampler_state = device->getPlatformData().sampler_state;
-
-    if (pipeline_state == nil || pipeline_state_tex == nil ||
-        pipeline_state_tex_outline == nil || sampler_state == nil) {
-      return false;
-    }
-
     // 解像度を設定 (drawaableSize だけ手動でサイズ変更が必要)
     CGSize size = metal_layer.bounds.size;
     CGFloat scale = metal_layer.contentsScale;
@@ -219,6 +203,10 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
     }
 
     RenderHelper helper(device);
+    if (!helper.isReady()) {
+      return false;
+    }
+
     MTLRenderPassDescriptor *mtl_pass_desc =
         helper.getMTLRenderPassDescripter(drawable.texture, &pass_desc);
     if (mtl_pass_desc == nil) {
@@ -238,8 +226,8 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
     }
 
     // 描画処理
-    result = helper.renderBase(device, encoder, true_width,
-                      true_height, callback, data);
+    result =
+        helper.renderBase(encoder, true_width, true_height, callback, data);
 
     // end
     [encoder endEncoding];

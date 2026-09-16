@@ -20,19 +20,36 @@
 //  ========================================================
 
 // Render() の補助
-RenderHelper::RenderHelper(MacGraphicsDevice *device) {
+RenderHelper::RenderHelper(IGraphicsDevice *device) {
+  if (device == nullptr) {
+    this->is_ready = false;
+    return;
+  }
+  this->device = device;
+  this->device->addRef();
   @autoreleasepool {
     this->mtl_pass_desc = [[MTLRenderPassDescriptor alloc] init];
+    if (this->mtl_pass_desc == nil) {
+      this->is_ready = false;
+    }
   }
+  this->is_ready = true;
 }
 
 RenderHelper::~RenderHelper() {
   @autoreleasepool {
+    if (this->device != nullptr) {
+      this->device->release();
+      this->device = nullptr;
+    }
     if (this->mtl_pass_desc != nil) {
       [this->mtl_pass_desc release];
     }
   }
+  this->is_ready = false;
 }
+
+bool RenderHelper::isReady() const { return this->is_ready; }
 
 MTLRenderPassDescriptor *
 RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
@@ -62,8 +79,7 @@ RenderHelper::getMTLRenderPassDescripter(id<MTLTexture> mtl_texture,
   }
 }
 
-bool RenderHelper::renderBase(IGraphicsDevice *device,
-                              id<MTLRenderCommandEncoder> encoder,
+bool RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
                               float true_width, float true_height,
                               RenderCallBack callback, void *data) {
   if (encoder == nil || device == nil || true_height == 0.0f ||
@@ -71,7 +87,8 @@ bool RenderHelper::renderBase(IGraphicsDevice *device,
     return false;
   }
 
-  MacGraphicsDevice *mac_device = static_cast<MacGraphicsDevice *>(device);
+  MacGraphicsDevice *mac_device =
+      static_cast<MacGraphicsDevice *>(this->device);
   id<MTLRenderPipelineState> pipeline_state =
       mac_device->getPlatformData().pipeline_state;
   id<MTLRenderPipelineState> pipeline_state_tex =
@@ -84,7 +101,7 @@ bool RenderHelper::renderBase(IGraphicsDevice *device,
   if (pipeline_state == nil || pipeline_state_tex == nil ||
       pipeline_state_tex_outline == nil || sampler_state == nil) {
     return false;
-  } 
+  }
 
   struct {
     float width;

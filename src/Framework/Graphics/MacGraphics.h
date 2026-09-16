@@ -95,15 +95,16 @@ class RenderHelper {
 private:
   static constexpr float inv_255 = 1.0f / 255.0f;
   MTLRenderPassDescriptor *mtl_pass_desc = nil;
-  IGraphicsDevice* device = nullptr;
+  IGraphicsDevice *device = nullptr;
+  bool is_ready = false;
 
 public:
   MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
                                                       const RenderPassDesc *);
-  [[nodiscard]] bool renderBase(IGraphicsDevice *device,
-                                id<MTLRenderCommandEncoder>, float, float,
+  [[nodiscard]] bool renderBase(id<MTLRenderCommandEncoder>, float, float,
                                 RenderCallBack callback, void *data);
-  RenderHelper(MacGraphicsDevice *);
+  bool isReady() const;
+  RenderHelper(IGraphicsDevice *);
   ~RenderHelper();
 };
 
