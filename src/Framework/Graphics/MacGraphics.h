@@ -1,9 +1,9 @@
 #pragma once
 #include "../Application/ApplicationTemplate.hpp"
 #include "../Application/MacApplication.h"
+#include "GraphicsTemplate.hpp"
 #include "IRenderPass.hpp"
 #include "ISurface.hpp"
-#include "GraphicsTemplate.hpp"
 #include "shaders_metallib.hpp"
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
@@ -67,8 +67,7 @@ public:
   static MacGraphicsDevice *createMacGraphicsDevice(Application *);
 };
 
-template <>
-GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;
+template <> GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;
 
 //  ========================================================
 //
@@ -108,14 +107,22 @@ public:
 };
 
 class MacWindowSurface : public WindowSurface {
+private:
+  MacWindowSurface(IGraphicsDevice *, IWindow *);
+
 public:
+  MacWindowSurface() = delete;
   ~MacWindowSurface();
   static MacWindowSurface *createMacSurfaceFromWindow(IGraphicsDevice *,
                                                       IWindow *);
 };
 
 class MacTextureSurface : public TextureSurface {
+private:
+  MacTextureSurface(IGraphicsDevice *, ITexture *);
+
 public:
+  MacTextureSurface() = delete;
   ~MacTextureSurface();
   static MacTextureSurface *createMacSurfaceFromTexture(IGraphicsDevice *,
                                                         ITexture *);
@@ -135,7 +142,7 @@ using Texture = TextureTemplate<TextureData>;
 
 class MacTexture : public Texture {
 private:
-  MacTexture() = default;
+  MacTexture(IGraphicsDevice *, int, int, TextureFormat);
   // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:

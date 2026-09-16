@@ -43,6 +43,8 @@ protected:
   int width = 0;
   int height = 0;
 
+  CommonTexture(IGraphicsDevice *, int, int, TextureFormat);
+
 public:
   int addRef() override;
   int release() override;
@@ -51,8 +53,8 @@ public:
 
   int getWidth() override;
   int getHeight() override;
-  
-  virtual ~CommonTexture() = default;
+
+  virtual ~CommonTexture();
 };
 
 //  ========================================================
@@ -68,15 +70,18 @@ private:
 protected:
   IGraphicsDevice *device = nullptr;
   union {
+    IObject *window_or_texture = nullptr;
     // Window 用と Texture 用で実装が分かれるので共用体で OK
-    IWindow *window = nullptr;
+    IWindow *window;
     ITexture *texture;
   };
+
+  CommonSurface(IGraphicsDevice *, IObject *);
 
 public:
   int addRef() override;
   int release() override;
-  virtual ~CommonSurface() = default;
+  virtual ~CommonSurface();
 };
 
 //  ========================================================

@@ -31,6 +31,9 @@ template <class PlatformData> class TextureTemplate : public CommonTexture {
 protected:
   PlatformData data;
 
+  TextureTemplate(IGraphicsDevice *device, int w, int h, TextureFormat format)
+      : CommonTexture(device, w, h, format) {};
+
 public:
   ~TextureTemplate() override;
   [[nodiscard]] PlatformData getPlatformData() const;
@@ -48,6 +51,9 @@ protected:
   PlatformData data;
 
   bool render(RenderCallBack, void *, const RenderPassDesc) override;
+
+  SurfaceTemplate(IGraphicsDevice *device, IObject *window_or_texture)
+      : CommonSurface(device, window_or_texture) {}
 
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
@@ -69,7 +75,7 @@ protected:
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, const TextureDesc) override;
-  ITexture *createFontTexture(const char*, int) override;
+  ITexture *createFontTexture(const char *, int) override;
 
 public:
   ~GraphicsDeviceTemplate() override;

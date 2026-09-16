@@ -19,6 +19,10 @@
 //
 //  ========================================================
 
+MacTexture::MacTexture(IGraphicsDevice *device, int w, int h,
+                       TextureFormat format)
+    : Texture(device, w, h, format) {}
+
 MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {
   // 対応可能 (pipeline_state の用意がめんどくさすぎる) だが現時点では,
@@ -39,16 +43,17 @@ MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
     return nullptr;
   }
 
-  texture = new (texture) MacTexture;
-  texture->addRef();
+  texture = new (texture) MacTexture(device, width, height, desc.format);
+  // コンストラクタに任せるようにした
+  // texture->addRef();
 
-  texture->device = device;
-  device->addRef();
+  // texture->device = device;
+  // device->addRef();
 
-  texture->width = width;
-  texture->height = height;
+  // texture->width = width;
+  // texture->height = height;
 
-  texture->format = desc.format;
+  // texture->format = desc.format;
 
   @autoreleasepool {
     MTLTextureDescriptor *texture_desc = [[MTLTextureDescriptor alloc] init];
@@ -94,10 +99,11 @@ template <> Texture::~TextureTemplate<TextureData>() {
       [this->data.texture release];
       this->data.texture = nil;
     }
-    if (this->device != nullptr) {
-      this->device->release();
-      this->device = nullptr;
-    }
+    // デストラクタに任せるようにした
+    // if (this->device != nullptr) {
+    //   this->device->release();
+    //   this->device = nullptr;
+    // }
   }
 }
 
@@ -120,8 +126,7 @@ bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
   }
 
   @autoreleasepool {
-    MTLRegion region =
-        MTLRegionMake2D(0, 0, this->width, this->height);
+    MTLRegion region = MTLRegionMake2D(0, 0, this->width, this->height);
     [this->data.texture replaceRegion:region
                           mipmapLevel:0
                             withBytes:pixels
