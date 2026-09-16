@@ -1,5 +1,4 @@
 #pragma once
-#include "../Application/ApplicationTemplate.hpp"
 #include "CommonGraphics.hpp"
 
 //  ========================================================
@@ -70,7 +69,6 @@ template <class PlatformData, class PlatformApplicationData>
 class GraphicsDeviceTemplate : public CommonGraphicsDevice {
 protected:
   PlatformData data;
-  ApplicationTemplate<PlatformApplicationData> *appInstance;
 
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;

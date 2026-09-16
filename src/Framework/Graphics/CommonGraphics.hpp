@@ -1,9 +1,8 @@
 #pragma once
+#include "IApplication.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
-
-enum class BindObject { none, window, texture };
 
 //  ========================================================
 //
@@ -93,6 +92,11 @@ public:
 class CommonGraphicsDevice : public IGraphicsDevice {
 private:
   int ref_count = 0;
+
+protected:
+  // 共通だが IApplication は IObject を pivate
+  // 継承するので直接参照カウントを操作できない
+  IApplication *appInstance = nullptr;
 
 public:
   int addRef() override;

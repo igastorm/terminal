@@ -64,7 +64,7 @@ using GraphicsDevice =
 
 class MacGraphicsDevice : public GraphicsDevice {
 public:
-  static MacGraphicsDevice *createMacGraphicsDevice(Application *);
+  static MacGraphicsDevice *createMacGraphicsDevice(IApplication *);
 };
 
 template <> GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;

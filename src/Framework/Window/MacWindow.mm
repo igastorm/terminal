@@ -42,16 +42,14 @@ template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
       this->data.delegate = nil;
     }
     if (this->appInstance != nullptr) {
-      this->appInstance->release();
+      static_cast<MacApplication *>(this->appInstance)->release();
       this->appInstance = nullptr;
     }
     this->data.resizing = false;
   }
 }
 
-template <> WindowData Window::getPlatformData() const {
-  return this->data;
-}
+template <> WindowData Window::getPlatformData() const { return this->data; }
 
 template <> bool Window::setTitle(const char *title) {
   @autoreleasepool {
@@ -76,9 +74,8 @@ template <> bool Window::hide() {
   }
 }
 
-MacWindow *
-MacWindow::createWindow(Application *appInstance,
-                        int width, int height, const char *title) {
+MacWindow *MacWindow::createWindow(Application *appInstance, int width,
+                                   int height, const char *title) {
   @autoreleasepool {
     MacWindow *window =
         static_cast<MacWindow *>(std::malloc(sizeof(MacWindow)));
@@ -92,7 +89,7 @@ MacWindow::createWindow(Application *appInstance,
 
     // appInstance を参照
     window->appInstance = appInstance;
-    window->appInstance->addRef();
+    static_cast<MacApplication *>(window->appInstance)->addRef();
 
     // ウィンドウを生成
     NSRect frame = NSMakeRect(0, 0, width, height);
@@ -140,9 +137,9 @@ MacWindow::createWindow(Application *appInstance,
 //} // namespace
 
 template <>
-IWindow *
-ApplicationTemplate<ApplicationData>::createWindow(int width, int height,
-                                                         const char *title) {
+IWindow *ApplicationTemplate<ApplicationData>::createWindow(int width,
+                                                            int height,
+                                                            const char *title) {
   IWindow *window = MacWindow::createWindow(this, width, height, title);
   return window;
 }

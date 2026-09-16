@@ -1,4 +1,5 @@
 #pragma once
+#include "IApplication.hpp"
 #include "IWindow.hpp"
 
 class CommonWindow : public IWindow {
@@ -8,6 +9,9 @@ private:
 protected:
   int addRef() override;
   int release() override;
+  // 共通だが IApplication は IObject を pivate
+  // 継承するので直接参照カウントを操作できない
+  IApplication *appInstance = nullptr;
 
 public:
   inline static const char *fkeys[] = {
