@@ -94,12 +94,11 @@ private:
   int ref_count = 0;
 
 protected:
-  // 共通だが IApplication は IObject を pivate
-  // 継承するので直接参照カウントを操作できない
   IApplication *appInstance = nullptr;
 
 public:
   int addRef() override;
   int release() override;
-  virtual ~CommonGraphicsDevice() = default;
+  CommonGraphicsDevice(IApplication*);
+  virtual ~CommonGraphicsDevice();
 };

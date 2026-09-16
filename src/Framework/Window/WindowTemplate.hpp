@@ -10,6 +10,8 @@ protected:
   bool show() override;
   bool hide() override;
 
+  WindowTemplate(IApplication *appInstance) : CommonWindow(appInstance) {}
+
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
 

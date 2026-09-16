@@ -34,6 +34,7 @@ protected:
       : CommonTexture(device, w, h, format) {};
 
 public:
+  TextureTemplate() = delete;
   ~TextureTemplate() override;
   [[nodiscard]] PlatformData getPlatformData() const;
   bool upload(const void *, size_t, size_t) override;
@@ -56,7 +57,8 @@ protected:
 
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
-  ~SurfaceTemplate();
+  SurfaceTemplate() = delete;
+  ~SurfaceTemplate() override;
 };
 
 //  ========================================================
@@ -74,6 +76,9 @@ protected:
   ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, const TextureDesc) override;
   ITexture *createFontTexture(const char *, int) override;
+
+  GraphicsDeviceTemplate(IApplication *appInstance)
+      : CommonGraphicsDevice(appInstance) {}
 
 public:
   ~GraphicsDeviceTemplate() override;

@@ -9,9 +9,10 @@ private:
 protected:
   int addRef() override;
   int release() override;
-  // 共通だが IApplication は IObject を pivate
-  // 継承するので直接参照カウントを操作できない
+  
   IApplication *appInstance = nullptr;
+
+  CommonWindow(IApplication*);
 
 public:
   inline static const char *fkeys[] = {
@@ -28,5 +29,5 @@ public:
       "\033[23~", // F11
       "\033[24~", // F12
   };
-  virtual ~CommonWindow() = default;
+  virtual ~CommonWindow();
 };

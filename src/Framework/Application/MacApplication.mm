@@ -170,8 +170,8 @@ CommonApplication *createPlatformApplication() {
   }
   app = new (app) MacApplication;
 
-  // この関数で生成するので ref_count を加算するだけ
-  app->addRef();
+  // コンストラクタに任せる
+  // app->addRef();
 
   // プラットフォーム依存部分の初期化
   if (!app->initPlatform()) {

@@ -13,6 +13,8 @@ int CommonApplication::release() {
   return this->ref_count;
 }
 
+CommonApplication::CommonApplication() { this->addRef(); }
+
 int CommonApplication::startApp(int argc, char **argv) {
   CommonApplication *appInstance = createPlatformApplication();
   if (appInstance == nullptr) {
@@ -24,4 +26,6 @@ int CommonApplication::startApp(int argc, char **argv) {
   return ret;
 }
 
-int main(int argc, char **argv) { return CommonApplication::startApp(argc, argv); }
+int main(int argc, char **argv) {
+  return CommonApplication::startApp(argc, argv);
+}

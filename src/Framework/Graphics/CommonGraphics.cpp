@@ -1,5 +1,7 @@
 #include "CommonGraphics.hpp"
+#include "../Application/CommonApplication.hpp"
 #include <cstdlib>
+
 //  ========================================================
 //
 //  Render Pass
@@ -120,4 +122,18 @@ int CommonGraphicsDevice::release() {
     return 0;
   }
   return this->ref_count;
+}
+
+CommonGraphicsDevice::CommonGraphicsDevice(IApplication *appInstance) {
+  this->addRef();
+  if (appInstance != nullptr) {
+    this->appInstance = appInstance;
+    static_cast<CommonApplication *>(this->appInstance)->addRef();
+  }
+}
+
+CommonGraphicsDevice::~CommonGraphicsDevice() {
+  if (this->appInstance != nullptr) {
+    static_cast<CommonApplication *>(this->appInstance)->release();
+  }
 }

@@ -17,8 +17,6 @@
 //  具象クラス
 //  ----------------------------
 
-void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
-
 template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
   @autoreleasepool {
     if (this->data.window != nil) {
@@ -41,10 +39,11 @@ template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
       [this->data.delegate release];
       this->data.delegate = nil;
     }
-    if (this->appInstance != nullptr) {
-      static_cast<MacApplication *>(this->appInstance)->release();
-      this->appInstance = nullptr;
-    }
+    // 親デストラクタに任せる
+    // if (this->appInstance != nullptr) {
+    //   static_cast<MacApplication *>(this->appInstance)->release();
+    //   this->appInstance = nullptr;
+    // }
     this->data.resizing = false;
   }
 }
@@ -74,6 +73,10 @@ template <> bool Window::hide() {
   }
 }
 
+MacWindow::MacWindow(IApplication *appInstance) : Window(appInstance) {}
+
+void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
+
 MacWindow *MacWindow::createWindow(Application *appInstance, int width,
                                    int height, const char *title) {
   @autoreleasepool {
@@ -84,12 +87,13 @@ MacWindow *MacWindow::createWindow(Application *appInstance, int width,
       return nullptr;
     }
 
-    window = new (window) MacWindow;
-    window->addRef();
+    window = new (window) MacWindow(appInstance);
+    // コンストラクタに任せる
+    // window->addRef();
 
     // appInstance を参照
-    window->appInstance = appInstance;
-    static_cast<MacApplication *>(window->appInstance)->addRef();
+    // window->appInstance = appInstance;
+    // static_cast<MacApplication *>(window->appInstance)->addRef();
 
     // ウィンドウを生成
     NSRect frame = NSMakeRect(0, 0, width, height);

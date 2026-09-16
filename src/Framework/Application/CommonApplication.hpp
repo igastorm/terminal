@@ -8,12 +8,14 @@ private:
 protected:
   IAppHandler *handler = nullptr;
 
-  virtual ~CommonApplication() = default;
+  CommonApplication();
   friend CommonApplication *createPlatformApplication();
 
 public:
   int addRef() override;
   int release() override;
+
+  virtual ~CommonApplication() = default;
 
   static int startApp(int, char **);
 };

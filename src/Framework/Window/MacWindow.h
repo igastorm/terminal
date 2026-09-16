@@ -42,7 +42,7 @@ using Window = WindowTemplate<WindowData, ApplicationData>;
 
 class MacWindow : public Window {
 public:
-  MacWindow() = default;
+  MacWindow(IApplication*);
   ~MacWindow() = default;
   void notifyResizing(bool);
   [[nodiscard]] static MacWindow *

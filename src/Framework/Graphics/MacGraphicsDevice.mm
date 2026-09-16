@@ -20,8 +20,14 @@
 //
 //  ========================================================
 
+MacGraphicsDevice::MacGraphicsDevice(IApplication *appInstance)
+    : GraphicsDevice(appInstance) {}
+
 MacGraphicsDevice *
 MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
+  if (appInstance == nullptr) {
+    return nullptr;
+  }
   @autoreleasepool {
     MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(
         std::malloc(sizeof(MacGraphicsDevice)));
@@ -30,12 +36,13 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
       return nullptr;
     }
 
-    device = new (device) MacGraphicsDevice;
-    device->addRef();
+    device = new (device) MacGraphicsDevice(appInstance);
+    // コンストラクタに任せる
+    // device->addRef();
 
     // appInstance を参照
-    device->appInstance = appInstance;
-    static_cast<MacApplication *>(device->appInstance)->addRef();
+    // device->appInstance = appInstance;
+    // static_cast<MacApplication *>(device->appInstance)->addRef();
 
     if ((device->data.device = MTLCreateSystemDefaultDevice()) == nil) {
       device->release();
@@ -259,10 +266,11 @@ GraphicsDevice::~GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>() {
       [this->data.device release];
       this->data.device = nil;
     }
-    if (this->appInstance != nullptr) {
-      static_cast<MacApplication *>(this->appInstance)->release();
-      this->appInstance = nullptr;
-    }
+    // 親デストラクタに任せる
+    // if (this->appInstance != nullptr) {
+    //   static_cast<MacApplication *>(this->appInstance)->release();
+    //   this->appInstance = nullptr;
+    // }
   }
 }
 
