@@ -1,9 +1,7 @@
 #pragma once
 #include "IApplication.hpp"
-#include "ApplicationTemplate.hpp"
+#include "../ApplicationTemplate.hpp"
 #import <AppKit/AppKit.h>
-#import <Cocoa/Cocoa.h>
-#import <Foundation/Foundation.h>
 
 @class AppDelegate;
 

@@ -1,6 +1,5 @@
 #pragma once
-
-#include "TextureTemplate.hpp"
+#include "../TextureTemplate.hpp"
 #import "Metal/Metal.h"
 
 //  ========================================================

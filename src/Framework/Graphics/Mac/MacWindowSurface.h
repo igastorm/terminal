@@ -1,5 +1,4 @@
 #pragma once
-
 #include "MacSurface.h"
 #import <QuartzCore/QuartzCore.h>
 

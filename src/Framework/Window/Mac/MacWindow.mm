@@ -1,15 +1,5 @@
 #include "MacWindow.h"
-#include "../Application/ApplicationTemplate.hpp"
-#include "../Application/MacApplication.h"
-#include "IWindow.hpp"
-#include "WindowTemplate.hpp"
-#import <AppKit/AppKit.h>
-#import <Cocoa/Cocoa.h>
-#import <Foundation/Foundation.h>
-#import <QuartzCore/QuartzCore.h>
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <new>
 

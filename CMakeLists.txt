@@ -43,7 +43,7 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 # ----------------------------
 find_program(XCRUN xcrun REQUIRED)
 
-set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Shaders.metal")
+set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Mac/Shaders.metal")
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/shaders.air")
 set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/shaders.metallib")
@@ -73,16 +73,16 @@ add_custom_command(
 # ----------------------------
 add_executable(terminal
   "${SRC_DIR}/Framework/Application/CommonApplication.cpp"
-  "${SRC_DIR}/Framework/Application/MacApplication.mm"
-  "${SRC_DIR}/Framework/Window/MacWindow.mm"
+  "${SRC_DIR}/Framework/Application/Mac/MacApplication.mm"
+  "${SRC_DIR}/Framework/Window/Mac/MacWindow.mm"
   "${SRC_DIR}/Framework/Window/CommonWindow.cpp"
-  "${SRC_DIR}/Framework/Graphics/MacGraphicsDevice.mm"
-  "${SRC_DIR}/Framework/Graphics/MacSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/MacWindowSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/MacTextureSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/MacTexture.mm"
-  "${SRC_DIR}/Framework/Graphics/MacRenderPass.mm"
-  "${SRC_DIR}/Framework/Graphics/MacFontAtlas.cpp"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacGraphicsDevice.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacSurface.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacWindowSurface.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacTextureSurface.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacTexture.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacRenderPass.mm"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacFontAtlas.cpp"
   "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
   "${SRC_DIR}/main.cpp"
   "${SRC_DIR}/PTY/PTY.cpp"

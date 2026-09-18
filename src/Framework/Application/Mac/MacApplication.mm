@@ -1,10 +1,6 @@
 #include "MacApplication.h"
-#include "ApplicationTemplate.hpp"
-#import <AppKit/AppKit.h>
-#import <Cocoa/Cocoa.h>
-#import <Foundation/Foundation.h>
 #include <atomic>
-#include <cstdio>
+#include <iostream>
 #include <cstdlib>
 #include <new>
 

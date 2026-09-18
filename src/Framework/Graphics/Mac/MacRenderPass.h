@@ -1,6 +1,5 @@
 #pragma once
-
-#include "RenderPassTemplate.hpp"
+#include "../RenderPassTemplate.hpp"
 #import <Metal/Metal.h>
 
 //  ========================================================

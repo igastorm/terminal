@@ -1,6 +1,5 @@
 #pragma once
-
-#include "SurfaceTemplate.hpp"
+#include "../SurfaceTemplate.hpp"
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
 

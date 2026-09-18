@@ -1,7 +1,6 @@
 #pragma once
-
-#include "../Application/MacApplication.h"
-#include "GraphicsDeviceTemplate.hpp"
+#include "../Application/Mac/MacApplication.h"
+#include "../GraphicsDeviceTemplate.hpp"
 #import <Metal/Metal.h>
 
 //  ========================================================

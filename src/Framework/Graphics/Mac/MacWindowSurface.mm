@@ -1,6 +1,7 @@
 #include "MacWindowSurface.h"
-#include "../Window/MacWindow.h"
+#include "../../Window/Mac/MacWindow.h"
 #include "MacGraphicsDevice.h"
+#include <iostream>
 #include <new>
 
 //  ========================================================
