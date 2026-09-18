@@ -21,7 +21,7 @@ protected:
       : CommonGraphicsDevice(appInstance) {}
 
 public:
-  ~GraphicsDeviceTemplate() override;
+  ~GraphicsDeviceTemplate() = default;
 
-  [[nodiscard]] PlatformData getPlatformData() const;
+  [[nodiscard]] PlatformData getPlatformData() const { return this->data; }
 };

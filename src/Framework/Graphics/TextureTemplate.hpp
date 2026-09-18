@@ -16,7 +16,7 @@ protected:
 
 public:
   TextureTemplate() = delete;
-  ~TextureTemplate() override;
-  [[nodiscard]] PlatformData getPlatformData() const;
+  ~TextureTemplate() = default;
+  [[nodiscard]] PlatformData getPlatformData() const { return this->data; }
   bool upload(const void *, size_t, size_t) override;
 };

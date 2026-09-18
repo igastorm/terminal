@@ -230,8 +230,7 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
   }
 }
 
-template <>
-GraphicsDevice::~GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>() {
+MacGraphicsDevice::~MacGraphicsDevice() {
   @autoreleasepool {
     // if (this->data.vertex_buffer != nil) {
     //   [this->data.vertex_buffer release];
@@ -267,10 +266,6 @@ GraphicsDevice::~GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>() {
     //   this->appInstance = nullptr;
     // }
   }
-}
-
-template <> GraphicsDeviceData GraphicsDevice::getPlatformData() const {
-  return this->data;
 }
 
 template <>

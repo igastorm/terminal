@@ -17,9 +17,10 @@ using Texture = TextureTemplate<TextureData>;
 class MacTexture : public Texture {
 private:
   MacTexture(IGraphicsDevice *, int, int, TextureFormat);
-  // MacTexture(ImpGraphicsDevice *, int, int);
 
 public:
+  ~MacTexture();
+  MacTexture() = delete;
   static MacTexture *createMacTexture(IGraphicsDevice *, int, int,
                                       const TextureDesc);
 };

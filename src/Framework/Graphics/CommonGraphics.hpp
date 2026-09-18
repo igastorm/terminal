@@ -1,5 +1,6 @@
 #pragma once
 #include "IApplication.hpp"
+#include "IFontAtlas.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
@@ -23,7 +24,28 @@ public:
       "Should be used as a temporary object on the stack within `render()`")]]
   int release() override;
 
-  virtual ~CommonRenderPass() = default;
+  ~CommonRenderPass() = default;
+};
+
+//  ========================================================
+//
+//  Font Atals
+//
+//  ========================================================
+
+class CommonFontAtlas : public IFontAtlas {
+private:
+  int ref_count = 0;
+
+protected:
+  IGraphicsDevice *device;
+
+  CommonFontAtlas(IGraphicsDevice *);
+
+public:
+  int addRef() override;
+  int release() override;
+  ~CommonFontAtlas();
 };
 
 //  ========================================================
@@ -53,7 +75,7 @@ public:
   int getWidth() override;
   int getHeight() override;
 
-  virtual ~CommonTexture();
+  ~CommonTexture();
 };
 
 //  ========================================================
@@ -80,7 +102,7 @@ protected:
 public:
   int addRef() override;
   int release() override;
-  virtual ~CommonSurface();
+  ~CommonSurface();
 };
 
 //  ========================================================
@@ -99,6 +121,6 @@ protected:
 public:
   int addRef() override;
   int release() override;
-  CommonGraphicsDevice(IApplication*);
-  virtual ~CommonGraphicsDevice();
+  CommonGraphicsDevice(IApplication *);
+  ~CommonGraphicsDevice();
 };

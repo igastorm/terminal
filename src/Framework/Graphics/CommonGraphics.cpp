@@ -21,6 +21,37 @@ int CommonRenderPass::release() {
 
 //  ========================================================
 //
+//  Font Atlas
+//
+//  ========================================================
+
+int CommonFontAtlas::addRef() { return ++this->ref_count; }
+
+int CommonFontAtlas::release() {
+  if (--this->ref_count == 0) {
+    this->~CommonFontAtlas();
+    free(this);
+    return 0;
+  }
+  return this->ref_count;
+}
+
+CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {
+  if (device != nullptr) {
+    this->device = device;
+    this->device->addRef();
+  }
+}
+
+CommonFontAtlas::~CommonFontAtlas() {
+  if (this->device != nullptr) {
+    this->device->release();
+    this->device = nullptr;
+  }
+}
+
+//  ========================================================
+//
 //  Texture
 //
 //  ========================================================

@@ -19,5 +19,5 @@ protected:
 public:
   [[nodiscard]] PlatformData getPlatformData() const;
   SurfaceTemplate() = delete;
-  ~SurfaceTemplate() override;
+  ~SurfaceTemplate();
 };

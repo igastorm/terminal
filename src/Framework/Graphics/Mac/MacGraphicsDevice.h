@@ -26,9 +26,11 @@ using GraphicsDevice =
     GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>;
 
 class MacGraphicsDevice : public GraphicsDevice {
+private:
+  MacGraphicsDevice(IApplication *);
+
 public:
   static MacGraphicsDevice *createMacGraphicsDevice(IApplication *);
-  MacGraphicsDevice(IApplication *);
+  MacGraphicsDevice() = delete;
+  ~MacGraphicsDevice();
 };
-
-template <> GraphicsDeviceData GraphicsDevice::getPlatformData(void) const;

@@ -84,7 +84,7 @@ MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
   return texture;
 }
 
-template <> Texture::~TextureTemplate<TextureData>() {
+MacTexture::~MacTexture() {
   @autoreleasepool {
     if (this->data.mtl_texture != nil) {
       [this->data.mtl_texture release];
@@ -97,8 +97,6 @@ template <> Texture::~TextureTemplate<TextureData>() {
     // }
   }
 }
-
-template <> TextureData Texture::getPlatformData() const { return this->data; }
 
 template <>
 bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {

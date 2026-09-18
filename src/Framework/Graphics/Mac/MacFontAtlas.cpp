@@ -282,3 +282,13 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   device->release();
   return texture;
 }
+
+//  ========================================================
+//
+//  FontAtlas
+//
+//  ========================================================
+
+MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
+
+template <> FontAtlas::~FontAtlasTemplate() {}

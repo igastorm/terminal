@@ -17,5 +17,5 @@ protected:
                        int vertex_count) override;
 
 public:
-  ~RenderPassTemplate() override = default;
+  ~RenderPassTemplate() = default;
 };
