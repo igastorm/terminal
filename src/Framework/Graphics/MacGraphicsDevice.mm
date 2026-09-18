@@ -1,14 +1,9 @@
-#include "../Application/ApplicationTemplate.hpp"
-#include "../Application/MacApplication.h"
-#include "../Window/MacWindow.h"
-#include "GraphicsTemplate.hpp"
-#include "IRenderPass.hpp"
-#include "ISurface.hpp"
+#include "MacGraphicsDevice.h"
 #include "MacFontAtlas.hpp"
-#include "MacGraphics.h"
-#import <Cocoa/Cocoa.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/QuartzCore.h>
+#include "MacTexture.h"
+#include "MacTextureSurface.h"
+#include "MacWindowSurface.h"
+#include "shaders_metallib.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -49,8 +44,8 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
       return nullptr;
     }
 
-    if ((device->data.command_queue = [device->data.mtl_device newCommandQueue]) ==
-        nil) {
+    if ((device->data.command_queue =
+             [device->data.mtl_device newCommandQueue]) == nil) {
       device->release();
       return nullptr;
     }
@@ -65,8 +60,8 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     }
 
     NSError *error = nil;
-    id<MTLLibrary> library = [device->data.mtl_device newLibraryWithData:shader_data
-                                                               error:&error];
+    id<MTLLibrary> library =
+        [device->data.mtl_device newLibraryWithData:shader_data error:&error];
 
     // library が参照カウントを増やすので release する
     dispatch_release(shader_data);
@@ -169,21 +164,21 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     pipeline_desc.colorAttachments[0].alphaBlendOperation =
         MTLBlendOperationAdd;
 
-    device->data.pipeline_state =
-        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
-                                                            error:&error];
+    device->data.pipeline_state = [device->data.mtl_device
+        newRenderPipelineStateWithDescriptor:pipeline_desc
+                                       error:&error];
 
     pipeline_desc.vertexFunction = vs_tex;
     pipeline_desc.fragmentFunction = ps_tex;
 
-    device->data.pipeline_state_tex =
-        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
-                                                            error:&error];
+    device->data.pipeline_state_tex = [device->data.mtl_device
+        newRenderPipelineStateWithDescriptor:pipeline_desc
+                                       error:&error];
 
     pipeline_desc.fragmentFunction = ps_tex_outline;
-    device->data.pipeline_state_tex_outline =
-        [device->data.mtl_device newRenderPipelineStateWithDescriptor:pipeline_desc
-                                                            error:&error];
+    device->data.pipeline_state_tex_outline = [device->data.mtl_device
+        newRenderPipelineStateWithDescriptor:pipeline_desc
+                                       error:&error];
 
     [pipeline_desc release];
     shaderRelease();

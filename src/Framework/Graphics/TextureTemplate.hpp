@@ -1,0 +1,22 @@
+#pragma once
+#include "CommonGraphics.hpp"
+
+//  ========================================================
+//
+//  Texture
+//
+//  ========================================================
+
+template <class PlatformData> class TextureTemplate : public CommonTexture {
+protected:
+  PlatformData data;
+
+  TextureTemplate(IGraphicsDevice *device, int w, int h, TextureFormat format)
+      : CommonTexture(device, w, h, format) {};
+
+public:
+  TextureTemplate() = delete;
+  ~TextureTemplate() override;
+  [[nodiscard]] PlatformData getPlatformData() const;
+  bool upload(const void *, size_t, size_t) override;
+};

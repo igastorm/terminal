@@ -1,14 +1,5 @@
-#include "../Application/ApplicationTemplate.hpp"
-#include "../Application/MacApplication.h"
-#include "../Window/MacWindow.h"
-#include "GraphicsTemplate.hpp"
-#include "IRenderPass.hpp"
-#include "ISurface.hpp"
-#include "MacGraphics.h"
-#import <Cocoa/Cocoa.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/QuartzCore.h>
-#include <cstdio>
+#include "MacTexture.h"
+#include "MacGraphicsDevice.h"
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -128,9 +119,9 @@ bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
   @autoreleasepool {
     MTLRegion region = MTLRegionMake2D(0, 0, this->width, this->height);
     [this->data.mtl_texture replaceRegion:region
-                          mipmapLevel:0
-                            withBytes:pixels
-                          bytesPerRow:bytes_per_row];
+                              mipmapLevel:0
+                                withBytes:pixels
+                              bytesPerRow:bytes_per_row];
     return true;
   }
 }

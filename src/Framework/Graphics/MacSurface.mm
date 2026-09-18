@@ -1,17 +1,8 @@
-#include "../Application/ApplicationTemplate.hpp"
-#include "../Application/MacApplication.h"
-#include "../Window/MacWindow.h"
-#include "GraphicsTemplate.hpp"
-#include "IRenderPass.hpp"
-#include "ISurface.hpp"
-#include "MacGraphics.h"
-#import <Cocoa/Cocoa.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/QuartzCore.h>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <new>
+#include "MacSurface.h"
+#include "MacGraphicsDevice.h"
+#include "MacRenderPass.h"
+#include "MacTextureSurface.h"
+#include "MacWindowSurface.h"
 
 //  ========================================================
 //
