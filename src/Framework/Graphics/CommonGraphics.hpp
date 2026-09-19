@@ -33,12 +33,22 @@ public:
 //
 //  ========================================================
 
+struct GlyphUV {
+  float u_min = 0.0f, v_min = 0.0f;
+  float u_max = 0.0f, v_max = 0.0f;
+};
+
 class CommonFontAtlas : public IFontAtlas {
 private:
   int ref_count = 0;
 
 protected:
-  IGraphicsDevice *device;
+  GlyphUV glyph_table[95] = {};
+  float cell_width = 0.0f;
+  float cell_height = 0.0f;
+  
+  IGraphicsDevice *device = nullptr;
+  ITexture *texture = nullptr;
 
   CommonFontAtlas(IGraphicsDevice *);
 

@@ -99,23 +99,36 @@ MacTexture::~MacTexture() {
 }
 
 template <>
-bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row) {
+bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row,
+                     TextureDataRegion rect) {
+  // 与えられたデータが要件を満たしていなければ弾く
   if (this->data.mtl_texture == nil || pixels == nullptr) {
     return false;
   }
 
-  // 与えられたデータが要件を満たしていなければ弾く
-  size_t bpp =
-      (this->format == TextureFormat::Mono) ? 1 : sizeof(std::uint32_t);
-  if (bytes_per_row / bpp != static_cast<size_t>(this->width)) {
+  if (rect.x < 0 || rect.y < 0 || rect.width < 0 || rect.height < 0) {
     return false;
   }
-  if (bytes / bytes_per_row != static_cast<size_t>(this->height)) {
+
+  if (rect.width + rect.x <= 0 || this->width < rect.width + rect.x) {
+    return false;
+  }
+
+  if (rect.height + rect.y <= 0 || this->height < rect.height + rect.y) {
+    return false;
+  }
+
+  size_t bpp = (this->format == TextureFormat::Mono) ? sizeof(std::uint8_t)
+                                                     : sizeof(std::uint32_t);
+  if (bytes_per_row / bpp != static_cast<size_t>(rect.width)) {
+    return false;
+  }
+  if (bytes / bytes_per_row != static_cast<size_t>(rect.height)) {
     return false;
   }
 
   @autoreleasepool {
-    MTLRegion region = MTLRegionMake2D(0, 0, this->width, this->height);
+    MTLRegion region = MTLRegionMake2D(rect.x, rect.y, rect.width, rect.height);
     [this->data.mtl_texture replaceRegion:region
                               mipmapLevel:0
                                 withBytes:pixels

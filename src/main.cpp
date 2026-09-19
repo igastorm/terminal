@@ -40,7 +40,7 @@ private:
         green_pixels[i] = 0xFF001F00;
       }
       if (texture->upload(green_pixels, sizeof(green_pixels),
-                          800 * sizeof(uint32_t))) {
+                          800 * sizeof(uint32_t), {0, 0, 800, 600})) {
         texture_surface = device->createSurfaceFromTexture(texture);
       }
     }
@@ -164,13 +164,11 @@ public:
                 w = 128.0f, h = 128.0f;
 
                 Vertex quad3[6] = {
-                    {{x, y}, 0xAA000000},
-                    {{x + w, y}, 0xAA000000},
-                    {{x, y + h},  0xAA000000},
+                    {{x, y}, 0xAA000000},         {{x + w, y}, 0xAA000000},
+                    {{x, y + h}, 0xAA000000},
 
-                    {{x, y + h},  0xAA000000},
-                    {{x + w, y},  0xAA000000},
-                    {{x + w, y + h},  0xAA000000},
+                    {{x, y + h}, 0xAA000000},     {{x + w, y}, 0xAA000000},
+                    {{x + w, y + h}, 0xAA000000},
                 };
                 pass->drawVertices(quad3, 6);
 

@@ -20,11 +20,18 @@ struct TextureDesc {
   TextureFormat format = TextureFormat::Color;
 };
 
+struct TextureDataRegion {
+  int x = 0;
+  int y = 0;
+  int width = 0;
+  int height = 0;
+};
+
 class ITexture : public IObject {
 public:
   virtual ~ITexture() = default;
 
-  virtual bool upload(const void *, size_t, size_t) = 0;
+  virtual bool upload(const void *, size_t, size_t, const TextureDataRegion) = 0;
 
   virtual TextureFormat getFormat() = 0;
 

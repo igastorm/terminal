@@ -18,5 +18,5 @@ public:
   TextureTemplate() = delete;
   ~TextureTemplate() = default;
   [[nodiscard]] PlatformData getPlatformData() const { return this->data; }
-  bool upload(const void *, size_t, size_t) override;
+  bool upload(const void *, size_t, size_t, const TextureDataRegion) override;
 };

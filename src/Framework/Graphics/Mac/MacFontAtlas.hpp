@@ -21,23 +21,36 @@ public:
 //
 //  ========================================================
 
-struct GlyphUV {
-  float u_min = 0.0f, v_min = 0.0f;
-  float u_max = 0.0f, v_max = 0.0f;
-};
-
-struct HashEntry {
-  uint32_t codepoint = 0;
-  GlyphUV glyph_uv = {};
-};
-
-struct FontAtlasData {
+class MacFontAtlasHelper {
+private:
+  CFStringRef cf_font_name = nullptr;
+  CTFontRef font = nullptr;
+  CGContextRef ctx = nullptr;
+  float descent = 0.0f;
   float cell_width = 0.0f;
   float cell_height = 0.0f;
+  bool is_ready = false;
+  int atlas_width = 0;
+  int atlas_height = 0;
+  int cols_per_row = 0;
+  std::uint8_t* bitmap = nullptr;
 
-  GlyphUV glyph_table[95] = {};
-  ITexture* texture = nullptr;
+  bool getCellSize();
+
+public:
+  bool isReady() const { return this->is_ready; }
+  float getCellWidth() const {return this->cell_width;}
+  float getCellHeight() const {return this->cell_height;}
+  const CTFontRef getFont() const { return this->font; }
+  int getColsPerRow() const {return this->cols_per_row;}
+  const float getDescent() const { return this->descent; }
+  bool initCTX();
+  bool drawBitmap(char, GlyphUV*, int ,int);
+  MacFontAtlasHelper(const char *, size_t, float, int,int);
+  ~MacFontAtlasHelper();
 };
+
+struct FontAtlasData {};
 
 using FontAtlas = FontAtlasTemplate<FontAtlasData>;
 
@@ -48,6 +61,6 @@ private:
 public:
   MacFontAtlas() = delete;
   ~MacFontAtlas();
-  static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *, size_t,
-                                          float);
+  static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *,
+                                          size_t, float);
 };

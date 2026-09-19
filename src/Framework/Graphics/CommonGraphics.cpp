@@ -44,6 +44,10 @@ CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {
 }
 
 CommonFontAtlas::~CommonFontAtlas() {
+  if (this->texture != nullptr) {
+    this->texture->release();
+    this->texture = nullptr;
+  }
   if (this->device != nullptr) {
     this->device->release();
     this->device = nullptr;
