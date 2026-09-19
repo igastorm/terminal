@@ -293,13 +293,12 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
 //
 //  ========================================================
 
-MacFontAtlasHelper::MacFontAtlasHelper(const char *font_name,
-                                       size_t font_name_length, float font_size,
+MacFontAtlasHelper::MacFontAtlasHelper(const char *font_name, float font_size,
                                        int atlas_width, int atlas_height)
     : atlas_width(atlas_width), atlas_height(atlas_height) {
   this->is_ready = false;
-  if (font_name_length == 0 || font_name[font_name_length - 1] != '\0' ||
-      this->atlas_width == 0 || this->atlas_height == 0) {
+  if (std::strlen(font_name) == 0 || this->atlas_width == 0 ||
+      this->atlas_height == 0) {
     return;
   }
 
@@ -329,9 +328,9 @@ MacFontAtlasHelper::~MacFontAtlasHelper() {
     CGContextRelease(this->ctx);
     this->ctx = nullptr;
   }
-  if (this->bitmap != nullptr) {
-    std::free(this->bitmap);
-    this->bitmap = nullptr;
+  if (this->bitmap_data != nullptr) {
+    std::free(this->bitmap_data);
+    this->bitmap_data = nullptr;
   }
 }
 
@@ -378,15 +377,15 @@ bool MacFontAtlasHelper::initCTX() {
 
   this->cols_per_row = atlas_width / static_cast<int>(this->cell_width);
   size_t total_bytes = atlas_width * atlas_height;
-  std::uint8_t *bitmap_data = static_cast<std::uint8_t *>(
+  this->bitmap_data = static_cast<std::uint8_t *>(
       std::calloc(total_bytes, sizeof(std::uint8_t)));
-  if (bitmap_data == nullptr) {
+  if (this->bitmap_data == nullptr) {
     return false;
   }
 
-  this->ctx = CGBitmapContextCreate(bitmap_data, atlas_width, atlas_height,
-                                    8 * sizeof(std::uint8_t), cols_per_row,
-                                    color_space, kCGImageAlphaNone);
+  this->ctx = CGBitmapContextCreate(
+      this->bitmap_data, atlas_width, atlas_height, 8 * sizeof(std::uint8_t),
+      atlas_width * sizeof(std::uint8_t), color_space, kCGImageAlphaNone);
   CGColorSpaceRelease(color_space);
   if (ctx == nullptr) {
     return false;
@@ -450,9 +449,8 @@ MacFontAtlas::~MacFontAtlas() {
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
                                                const char *font_name,
-                                               size_t font_name_length,
                                                float font_size) {
-  if (font_name_length == 0 || font_name[font_name_length - 1] != '\0') {
+  if (std::strlen(font_name) == 0) {
     return nullptr;
   }
 
@@ -470,8 +468,7 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   constexpr int atlas_width = 512;
   constexpr int atlas_height = 512;
 
-  MacFontAtlasHelper helper(font_name, font_name_length, font_size, atlas_width,
-                            atlas_height);
+  MacFontAtlasHelper helper(font_name, font_size, atlas_width, atlas_height);
   if (!helper.isReady()) {
     font_atlas->release();
   }
@@ -480,7 +477,7 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   // サイズは小数点以下切り上げ済み
   font_atlas->cell_width = helper.getCellWidth();
   font_atlas->cell_height = helper.getCellHeight();
-  int cols_per_row = helper.getColsPerRow();
+  int cols_per_row = atlas_width / static_cast<int>(font_atlas->cell_width);
 
   // アトラステクスチャは一次元的にしたいところがだが GPU の回路上, 縦,
   // 横の大きさに上限があるらしく二次元的に作る必要がある
@@ -505,8 +502,9 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     return nullptr;
   }
 
-  // font_atlas->texture->upload(bitmap_data, atlas_width * atlas_height,
-  // atlas_width);
+  font_atlas->texture->upload(helper.getBitmap(), atlas_width * atlas_height,
+                              atlas_width * sizeof(std::uint8_t),
+                              {0, 0, atlas_width, atlas_height});
 
   return font_atlas;
 }

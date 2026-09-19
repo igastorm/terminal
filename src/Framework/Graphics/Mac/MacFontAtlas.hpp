@@ -33,20 +33,18 @@ private:
   int atlas_width = 0;
   int atlas_height = 0;
   int cols_per_row = 0;
-  std::uint8_t* bitmap = nullptr;
+  std::uint8_t *bitmap_data = nullptr;
 
   bool getCellSize();
+  bool initCTX();
 
 public:
   bool isReady() const { return this->is_ready; }
-  float getCellWidth() const {return this->cell_width;}
-  float getCellHeight() const {return this->cell_height;}
-  const CTFontRef getFont() const { return this->font; }
-  int getColsPerRow() const {return this->cols_per_row;}
-  const float getDescent() const { return this->descent; }
-  bool initCTX();
-  bool drawBitmap(char, GlyphUV*, int ,int);
-  MacFontAtlasHelper(const char *, size_t, float, int,int);
+  float getCellWidth() const { return this->cell_width; }
+  float getCellHeight() const { return this->cell_height; }
+  bool drawBitmap(char, GlyphUV *, int, int);
+  std::uint8_t *getBitmap() const { return this->bitmap_data; }
+  MacFontAtlasHelper(const char *, float, int, int);
   ~MacFontAtlasHelper();
 };
 
@@ -62,5 +60,5 @@ public:
   MacFontAtlas() = delete;
   ~MacFontAtlas();
   static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *,
-                                          size_t, float);
+                                          float);
 };

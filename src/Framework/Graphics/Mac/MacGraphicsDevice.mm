@@ -290,6 +290,12 @@ ISurface *GraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
 }
 
 template <>
+IFontAtlas *GraphicsDevice::createFontAtlas(const char *font_name,
+                                            float font_size) {
+  return MacFontAtlas::createMacFontAtlas(this, font_name, font_size);
+}
+
+template <>
 IGraphicsDevice *ApplicationTemplate<ApplicationData>::createGraphicsDevice() {
   IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
   return device;

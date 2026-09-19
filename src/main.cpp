@@ -1,5 +1,6 @@
 #include "IApplication.hpp"
 #include "PTY/IPTY.hpp"
+#include <cstring>
 #include <iostream>
 
 class TerminalApp : public IAppHandler {
@@ -11,6 +12,7 @@ private:
   ITexture *texture = nullptr;
   ISurface *texture_surface = nullptr;
   ITexture *font_texture = nullptr;
+  IFontAtlas *font_atlas = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -47,6 +49,9 @@ private:
     if (device != nullptr && font_texture == nullptr) {
       font_texture = device->createFontTexture("𩿗", 128);
     }
+    if (device != nullptr && font_atlas == nullptr) {
+      font_atlas = device->createFontAtlas("BIZ UDGothic", 32);
+    }
   }
 
   void destroyTerminalWindow() {
@@ -82,6 +87,11 @@ private:
 
     if (this->font_texture != nullptr) {
       this->font_texture->release();
+      this->font_texture = nullptr;
+    }
+
+    if (this->font_atlas != nullptr) {
+      this->font_atlas->release();
       this->font_texture = nullptr;
     }
   }
