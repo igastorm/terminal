@@ -198,8 +198,9 @@ public:
         if (window_surface != nullptr) {
           window_surface->render(
               [](IRenderPass *pass, void *arg) -> void {
+                TerminalApp* app = static_cast<TerminalApp*>(arg);
                 // テクスチャを描画する
-                ITexture *tex = static_cast<ITexture *>(arg);
+                ITexture *tex = app->texture;
 
                 // 二分の一に縮小表示されることになる
                 float x = 50.0f, y = 50.0f;
@@ -215,8 +216,10 @@ public:
                     {{x + w, y + h}, {1.0f, 1.0f}, 0xFFFFFFFF}, // 右下
                 };
                 pass->drawVerticesTex(tex, quad, 6);
+                app->font_atlas->drawText(pass, "Hello World!!", 100, 500, 0xFFFFFFFF);
               },
-              this->texture);
+              this);
+
         }
       }
     }

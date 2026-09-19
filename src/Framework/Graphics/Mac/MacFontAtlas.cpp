@@ -302,6 +302,12 @@ MacFontAtlasHelper::MacFontAtlasHelper(const char *font_name, float font_size,
     return;
   }
 
+  this->cf_font_name = CFStringCreateWithCString(kCFAllocatorDefault, font_name,
+                                                 kCFStringEncodingUTF8);
+  if (this->cf_font_name == nullptr) {
+    return;
+  }
+
   // 第三引数は斜体とかを作りたい時に使うらしい
   this->font = CTFontCreateWithName(cf_font_name, font_size, nullptr);
   if (this->font == nullptr) {
@@ -352,14 +358,17 @@ bool MacFontAtlasHelper::getCellSize() {
   CGFloat ascent = CTFontGetAscent(font);
 
   // ベースラインから下に必要な高さ
-  CGFloat descent = CTFontGetDescent(font);
+  // こいつはメンバ変数
+  descent = CTFontGetDescent(font);
 
   // 推奨される行間の間隔
   CGFloat leading = CTFontGetLeading(font);
 
   // 小数点以下を切り上げておく
   this->cell_width = std::ceill(advance_M.width);
-  this->cell_height = std::ceill(advance_M.height + ascent + descent + leading);
+  // ascent + descent + leading の中に実質 advance_M.height
+  // が含まれているようなもの
+  this->cell_height = std::ceill(ascent + descent + leading);
 
   if (this->cell_width > 0.0f && this->cell_height > 0.0f) {
     return true;
@@ -425,9 +434,11 @@ bool MacFontAtlasHelper::drawBitmap(char c, GlyphUV *uv, int col, int row) {
   // ビットマップ上の位置
   int x = col * this->cell_width;
   int y = row * this->cell_height;
+  // CoreGraphics は左下が原点なので変換が必要
+  int cg_y = this->atlas_height - (row + 1) * this->cell_height;
 
   // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
-  CGPoint pos = CGPointMake(x, y + descent);
+  CGPoint pos = CGPointMake(x, cg_y + descent);
   CTFontDrawGlyphs(font, &glyph, &pos, 1, this->ctx);
 
   // UV 座標の記録
@@ -471,6 +482,7 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   MacFontAtlasHelper helper(font_name, font_size, atlas_width, atlas_height);
   if (!helper.isReady()) {
     font_atlas->release();
+    return nullptr;
   }
 
   // セルサイズを得る
@@ -507,4 +519,44 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
                               {0, 0, atlas_width, atlas_height});
 
   return font_atlas;
+}
+
+template <>
+bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
+                         float start_y, std::uint32_t color) {
+  // 文字から UV 座標を取得
+  auto getGlyphUV = [this](char c) -> GlyphUV {
+    if (c >= 32 && c <= 126) {
+      return this->glyph_table[c - 32];
+    }
+    return this->glyph_table[0]; // 範囲外はスペース
+  };
+
+  float cw = this->cell_width;
+  float ch = this->cell_height;
+
+  size_t len = std::strlen(str);
+
+  for (int i = 0; i < len; i++) {
+    char c = str[i];
+    GlyphUV uv = getGlyphUV(c);
+
+    float x = start_x + i * cw;
+    float y = start_y;
+
+    // 1文字分の四角形
+    VertexTex quad[6] = {
+        {{x, y}, {uv.u_min, uv.v_min}, color},
+        {{x + cw, y}, {uv.u_max, uv.v_min}, color},
+        {{x, y + ch}, {uv.u_min, uv.v_max}, color},
+
+        {{x, y + ch}, {uv.u_min, uv.v_max}, color},
+        {{x + cw, y}, {uv.u_max, uv.v_min}, color},
+        {{x + cw, y + ch}, {uv.u_max, uv.v_max}, color},
+    };
+
+    pass->drawVerticesTex(this->texture, quad, 6);
+    }
+
+  return true;
 }
