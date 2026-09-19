@@ -37,6 +37,7 @@ int CommonFontAtlas::release() {
 }
 
 CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {
+  this->addRef();
   if (device != nullptr) {
     this->device = device;
     this->device->addRef();
@@ -51,6 +52,10 @@ CommonFontAtlas::~CommonFontAtlas() {
   if (this->device != nullptr) {
     this->device->release();
     this->device = nullptr;
+  }
+  if (this->on_demand_bitmap_data != nullptr) {
+    std::free(this->on_demand_bitmap_data);
+    this->on_demand_bitmap_data = nullptr;
   }
 }
 

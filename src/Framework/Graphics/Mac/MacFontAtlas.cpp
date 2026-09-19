@@ -456,6 +456,7 @@ MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
 
 MacFontAtlas::~MacFontAtlas() {
   // device と texture は親のデストラクタで参照カウントを減らしている
+  // on_demand_bitmap_data は親のデストラクタで free している
 }
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
@@ -490,6 +491,19 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   font_atlas->cell_width = helper.getCellWidth();
   font_atlas->cell_height = helper.getCellHeight();
   int cols_per_row = atlas_width / static_cast<int>(font_atlas->cell_width);
+
+  int cell_width_int = static_cast<int>(font_atlas->cell_width);
+  int cell_height_int = static_cast<int>(font_atlas->cell_height);
+
+  // オンデマンドキャッシュ用の一文字分の領域を確保
+  // (全角文字用に幅を2倍にしている) 後々,
+  // ユニファイドメモリに最適化するので不要になる予定
+  font_atlas->on_demand_bitmap_data = static_cast<std::uint8_t *>(std::calloc(
+      (cell_width_int * 2) * cell_height_int, sizeof(std::uint8_t)));
+  if (font_atlas->on_demand_bitmap_data == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
 
   // アトラステクスチャは一次元的にしたいところがだが GPU の回路上, 縦,
   // 横の大きさに上限があるらしく二次元的に作る必要がある
@@ -556,7 +570,7 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
     };
 
     pass->drawVerticesTex(this->texture, quad, 6);
-    }
+  }
 
   return true;
 }

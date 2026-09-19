@@ -43,6 +43,7 @@ private:
   int ref_count = 0;
 
 protected:
+  std::uint8_t* on_demand_bitmap_data = nullptr;
   GlyphUV glyph_table[95] = {};
   float cell_width = 0.0f;
   float cell_height = 0.0f;
