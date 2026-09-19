@@ -1,8 +1,11 @@
 #include "MacFontAtlas.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <new> // IWYU pragma: keep
 
 // 以下をもとに実装
 // https://ja.wikipedia.org/wiki/UTF-8
@@ -291,4 +294,179 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
 
 MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
 
-template <> FontAtlas::~FontAtlasTemplate() {}
+MacFontAtlas::~MacFontAtlas() {
+  // device は親のデストラクタで参照カウントを減らしている
+  if (this->data.texture != nullptr) {
+    this->data.texture->release();
+    this->data.texture = nullptr;
+  }
+}
+
+MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
+                                               const char *font_name,
+                                               size_t font_name_length,
+                                               float font_size) {
+  if (font_name_length == 0 || font_name[font_name_length - 1] != '\0') {
+    return nullptr;
+  }
+
+  MacFontAtlas *font_atlas =
+      static_cast<MacFontAtlas *>(std::malloc(sizeof(MacFontAtlas)));
+  if (font_atlas == nullptr) {
+    std::perror("malloc failed (createFontAtlas)");
+    return nullptr;
+  }
+
+  // device はコンストラクタで参照カウントを増やしてある
+  font_atlas = new (font_atlas) MacFontAtlas(device);
+
+  // 第一引数はよくわからん
+  CFStringRef cf_font_name = CFStringCreateWithCString(
+      kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
+  if (cf_font_name == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
+
+  // 第三引数は斜体とかを作りたい時に使うらしい
+  CTFontRef font = CTFontCreateWithName(cf_font_name, font_size, nullptr);
+  CFRelease(cf_font_name);
+  if (font == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
+
+  // 大文字の M のグリフを取得する
+  // 等幅の場合, これに合わせるとちょうどいいらしい
+  UniChar char_M = 'M';
+  CGGlyph glyph_M = 0;
+  CTFontGetGlyphsForCharacters(font, &char_M, &glyph_M, 1);
+
+  // 次の文字に進むとどれだけ位置が進むかを取得
+  // kCTFontOrientationHorizontal なので横方向
+  // まとめると文字のセルに必要な横幅を取得している
+  CGSize advance_M = {};
+  CTFontGetAdvancesForGlyphs(font, kCTFontOrientationHorizontal, &glyph_M,
+                             &advance_M, 1);
+
+  // ベースラインから上に必要な高さ
+  CGFloat ascent = CTFontGetAscent(font);
+
+  // ベースラインから下に必要な高さ
+  CGFloat descent = CTFontGetDescent(font);
+
+  // 推奨される行間の間隔
+  CGFloat leading = CTFontGetLeading(font);
+
+  // 小数点以下を切り上げておく
+  font_atlas->data.cell_width = std::ceill(advance_M.width);
+  font_atlas->data.cell_height =
+      std::ceill(advance_M.height + ascent + descent + leading);
+
+  // とりあえず 512 x 512 = 約 256KB 分
+  constexpr int atlas_width = 512;
+  constexpr int atlas_height = 512;
+  const int cols_per_row =
+      atlas_width / static_cast<int>(font_atlas->data.cell_width);
+
+  size_t total_bytes = atlas_width * atlas_height;
+  std::uint8_t *bitmap_data = static_cast<std::uint8_t *>(
+      std::calloc(total_bytes, sizeof(std::uint8_t)));
+  if (bitmap_data == nullptr) {
+    CFRelease(font);
+    font_atlas->release();
+    return nullptr;
+  }
+
+  // 白黒フォーマットで作成
+  CGColorSpaceRef color_space = CGColorSpaceCreateDeviceGray();
+
+  if (color_space == nullptr) {
+    std::free(bitmap_data);
+    CFRelease(font);
+    font_atlas->release();
+    return nullptr;
+  }
+
+  CGContextRef ctx = CGBitmapContextCreate(
+      bitmap_data, atlas_width, atlas_height, 8 * sizeof(std::uint8_t),
+      cols_per_row, color_space, kCGImageAlphaNone);
+  CGColorSpaceRelease(color_space);
+  if (ctx == nullptr) {
+    std::free(bitmap_data);
+    CFRelease(font);
+    font_atlas->release();
+    return nullptr;
+  }
+
+  // 初期の塗りつぶし色ではなくペン (バケツのインクの色 ) の色のようなもの
+  // 塗りつぶすと黒になる
+  CGContextSetGrayFillColor(ctx, 0.0f, 1.0f);
+
+  // 先ほど設定した黒で背景をクリア
+  CGContextFillRect(ctx, CGRectMake(0, 0, atlas_width, atlas_height));
+
+  // 文字は白で描画すべきなのでバケツを白に切り替え
+  CGContextSetGrayFillColor(ctx, 1.0f, 1.0f);
+
+  // アンチエイリアスを有効 (境界をなめらかにするらしい)
+  CGContextSetShouldAntialias(ctx, true);
+
+  // 文字をなめらかにするらしい
+  CGContextSetAllowsFontSmoothing(ctx, true);
+  CGContextSetShouldSmoothFonts(ctx, true);
+
+  // アトラステクスチャは一次元的にしたいところがだが GPU の回路上, 縦,
+  // 横の大きさに上限があるらしく二次元的に作る必要がある
+  // あと縦とか横にに極端にでかいとキャッシュ効率が悪いらしい
+  // ' ' から '~' まで
+  for (int i = 0; i < 95; i++) {
+    char c = static_cast<char>(i + ' ');
+    UniChar unichar_c = static_cast<UniChar>(c);
+    CGGlyph glyph = 0;
+    CTFontGetGlyphsForCharacters(font, &unichar_c, &glyph, 1);
+
+    // グリッド上の位置
+    // col は最終列まで行ったら自動的に巻き戻される
+    // row は最終列まで行ったら自動的に大きくなる
+    int col = i % cols_per_row;
+    int row = i / cols_per_row;
+
+    // ビットマップ上の位置
+    int x = col * font_atlas->data.cell_width;
+    int y = row * font_atlas->data.cell_height;
+
+    // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
+    CGPoint pos = CGPointMake(x, y + descent);
+    CTFontDrawGlyphs(font, &glyph, &pos, 1, ctx);
+
+    // UV 座標の記録
+    // 0.0f ~ 1.0f に正規化してる
+    // 頂点座標のようにピクセル座標で受け付けるようにシェーダを改造するのもあり
+    font_atlas->data.glyph_table[i].u_min = x / static_cast<float>(atlas_width);
+    font_atlas->data.glyph_table[i].v_min =
+        y / static_cast<float>(atlas_height);
+    font_atlas->data.glyph_table[i].u_max =
+        (x + font_atlas->data.cell_width) / static_cast<float>(atlas_width);
+    font_atlas->data.glyph_table[i].v_max =
+        (y + font_atlas->data.cell_height) / static_cast<float>(atlas_height);
+  }
+
+  CGContextRelease(ctx);
+  CFRelease(font);
+
+  TextureDesc desc;
+  desc.format = TextureFormat::Mono;
+  desc.drawable_flag = TextureDrawable::Disable;
+
+  font_atlas->data.texture = device->createTexture(atlas_width, atlas_height, desc);
+  if (font_atlas->data.texture == nullptr) {
+    std::free(bitmap_data);
+    return nullptr;
+  }
+
+  font_atlas->data.texture->upload(bitmap_data, total_bytes, atlas_width);
+  std::free(bitmap_data);
+
+  return font_atlas;
+}

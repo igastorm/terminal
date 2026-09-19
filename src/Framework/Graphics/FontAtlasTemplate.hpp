@@ -10,5 +10,5 @@ class FontAtlasTemplate : public CommonFontAtlas {
         : CommonFontAtlas(device) {};
   public:
     FontAtlasTemplate() = delete;
-    ~FontAtlasTemplate();
+    ~FontAtlasTemplate() = default;
 };
