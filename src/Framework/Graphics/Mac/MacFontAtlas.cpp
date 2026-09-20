@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <new> // IWYU pragma: keep
+#include <wchar.h>
 
 enum class UTF8Result {
   Success,    // 正常に1文字デコードできた
@@ -617,22 +618,27 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
 
   // オンデマンドキャッシュ生成用のビットマップをあらかじめ用意
   // サイズは全角文字一つ分
-  size_t size =
-      font_atlas->cell_width * font_atlas->cell_height * sizeof(std::uint8_t);
+  size_t size = font_atlas->cell_width * 2.0f * font_atlas->cell_height *
+                sizeof(std::uint8_t);
   font_atlas->on_demand_bitmap_data =
       static_cast<std::uint8_t *>(std::calloc(size, sizeof(std::uint8_t)));
-  if (bitmap_data == nullptr) {
+  if (font_atlas->on_demand_bitmap_data == nullptr) {
     font_atlas->release();
     return nullptr;
   }
 
   font_atlas->data.ctx = MacFontAtlasHelper::createBitmapContext(
-      font_atlas->on_demand_bitmap_data, size, font_atlas->cell_width,
+      font_atlas->on_demand_bitmap_data, size, font_atlas->cell_width * 2.0f,
       font_atlas->cell_height);
   if (font_atlas->data.ctx == nullptr) {
     font_atlas->release();
     return nullptr;
   }
+
+  font_atlas->cursor_x = 0.0f;
+  int ascii_rows =
+      (95 + font_atlas->cols_per_row - 1) / font_atlas->cols_per_row;
+  font_atlas->cursor_y = ascii_rows * font_atlas->cell_height;
 
   return font_atlas;
 }
@@ -651,27 +657,61 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
   float cw = this->cell_width;
   float ch = this->cell_height;
 
-  size_t len = std::strlen(str);
+  float current_x = start_x;
+  float y = start_y;
+  const uint8_t *ptr = reinterpret_cast<const uint8_t *>(str);
+  size_t remaining = std::strlen(str);
 
-  for (int i = 0; i < len; i++) {
-    char c = str[i];
-    GlyphUV uv = getGlyphUV(c);
+  while (remaining > 0) {
+    uint8_t b0 = *ptr;
 
-    float x = start_x + i * cw;
-    float y = start_y;
+    if (b0 >= 32 && b0 <= 126) {
+      // ----------------------------
+      // ASCII 文字の場合
+      // ----------------------------
+      GlyphUV uv = getGlyphUV((char)b0);
+      VertexTex quad[6] = {
+          {{current_x, y}, {uv.u_min, uv.v_min}, color},
+          {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
+          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+          {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
+          {{current_x + cw, y + ch}, {uv.u_max, uv.v_max}, color},
+      };
+      pass->drawVerticesTex(this->texture, quad, 6);
 
-    // 1文字分の四角形
-    VertexTex quad[6] = {
-        {{x, y}, {uv.u_min, uv.v_min}, color},
-        {{x + cw, y}, {uv.u_max, uv.v_min}, color},
-        {{x, y + ch}, {uv.u_min, uv.v_max}, color},
+      current_x += cw; // 1 マス進む
+      ptr += 1;
+      remaining -= 1;
+    } else {
+      // ----------------------------
+      // 非 ASCII 文字の場合
+      // ----------------------------
+      UniChar unichar_c[2] = {};
+      uint32_t code_point = 0;
+      size_t consumed = 0;
 
-        {{x, y + ch}, {uv.u_min, uv.v_max}, color},
-        {{x + cw, y}, {uv.u_max, uv.v_min}, color},
-        {{x + cw, y + ch}, {uv.u_max, uv.v_max}, color},
-    };
+      UTF8Result cvt_result = cvtUTF8ToUTF16(ptr, remaining, unichar_c, 2,
+                                             &code_point, &consumed, nullptr);
+      if (cvt_result != UTF8Result::Success) {
+        // 壊れた文字はスキップ (置換文字にするのもあり)
+        ptr++;
+        remaining--;
+        continue;
+      }
 
-    pass->drawVerticesTex(this->texture, quad, 6);
+      // 文字幅 (半角なら 1, 全角なら 2)
+      int cols = wcwidth((wchar_t)code_point);
+      if (cols <= 0) cols = 1;
+      float char_width = cw * cols;
+
+      HashEntry* hash_table = &this->glyph_hash_table[this->hashCodepoint(code_point)];
+      if (hash_table->codepoint == code_point) {
+        // キャッシュ済み
+      } else {
+        // 未キャッシュ
+      }
+    }
   }
 
   return true;
