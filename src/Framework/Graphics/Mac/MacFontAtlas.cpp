@@ -23,9 +23,10 @@ enum class UTF8Result {
 // 一文字分専用
 // 別に文字列全体にも対応しているが code_point の容量チェックがめんどくさいので
 // つまり最終引数は最後の文字のコードポイントを返す
-UTF8Result cvtUTF8ToUTF16(const uint8_t *src, size_t src_len, uint16_t *dst,
-                          size_t dst_cap, std::uint32_t *out_code_point,
-                          size_t *consume_src_bytes, size_t *consume_dst_len) {
+UTF8Result cvtUTF8ToUTF16(const uint8_t *src, size_t src_len,
+                          uint16_t *dst_high, uint16_t *dst_low,
+                          size_t *consume_src_bytes, size_t *out_utf16_len,
+                          std::uint32_t *out_code_point) {
   // 継続バイトかの判定
   // 文字の先頭ではなく, 前のバイトの続きであることを示す値
   // 2バイト目以降の下限から上限の範囲内か
@@ -34,13 +35,16 @@ UTF8Result cvtUTF8ToUTF16(const uint8_t *src, size_t src_len, uint16_t *dst,
     return (0x80 <= b && b <= 0xBF);
   };
 
-  if (src == nullptr || src_len == 0 || dst == nullptr || dst_cap == 0) {
+  if (src == nullptr || src_len == 0 || dst_high == nullptr || dst_low == 0) {
     return UTF8Result::Error;
   }
 
   size_t i = 0;
-  size_t out = 0;
   std::uint32_t code_point = 0;
+  size_t utf16_len = 0;
+
+  *dst_high = 0;
+  *dst_low = 0;
 
   while (i < src_len) {
     // 各文字の先頭バイト
@@ -147,21 +151,20 @@ UTF8Result cvtUTF8ToUTF16(const uint8_t *src, size_t src_len, uint16_t *dst,
       // その他は不正
       return UTF8Result::Error;
     }
-    if (code_point <= 0xFFFF && out < dst_cap) {
+    if (code_point <= 0xFFFF) {
       // サロゲートでない
-      dst[out] = static_cast<uint16_t>(code_point);
-      out++;
-    } else if (0x10000 <= code_point && code_point <= 0x10FFFF &&
-               out + 1 < dst_cap) {
+      *dst_high = static_cast<uint16_t>(code_point);
+      utf16_len = 1;
+    } else if (0x10000 <= code_point && code_point <= 0x10FFFF) {
       // 10000000000000000 ~ 100001111111111111111
       // サロゲート
       uint32_t tmp = code_point - 0x10000;
       uint16_t high = (tmp >> 10) + 0xD800; // 0x400 で割って 0xD800 を足す
       uint16_t low =
           (tmp & 0x3FF) + 0xDC00; // 0x400 で割った余りに 0xDC00 を足す
-      dst[out] = high;
-      dst[out + 1] = low;
-      out += 2;
+      *dst_high = high;
+      *dst_low = low;
+      utf16_len = 2;
     }
 
     // 一文字分の処理が完了したら即時抜ける
@@ -173,8 +176,8 @@ UTF8Result cvtUTF8ToUTF16(const uint8_t *src, size_t src_len, uint16_t *dst,
   if (consume_src_bytes != nullptr) {
     *consume_src_bytes = i;
   }
-  if (consume_dst_len != nullptr) {
-    *consume_dst_len = out;
+  if (out_utf16_len != nullptr) {
+    *out_utf16_len = utf16_len;
   }
   return UTF8Result::Success;
 }
@@ -259,7 +262,7 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   size_t len = 0;
   UTF8Result result = cvtUTF8ToUTF16(
       reinterpret_cast<const uint8_t *>(chracter), std::strlen(chracter),
-      unichar_c, 2, nullptr, nullptr, &len);
+      &unichar_c[0], &unichar_c[1], nullptr, &len, nullptr);
 
   if (result != UTF8Result::Success) {
     return nullptr;
@@ -556,10 +559,10 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     char c = static_cast<char>(i + ' ');
     UniChar unichar_c[2] = {};
     size_t len = 0;
-    UTF8Result cvt_result = cvtUTF8ToUTF16(
-        reinterpret_cast<const std::uint8_t *>(&c),
-        sizeof(c) / sizeof(std::uint8_t), unichar_c,
-        sizeof(unichar_c) / sizeof(UniChar), nullptr, nullptr, &len);
+    UTF8Result cvt_result =
+        cvtUTF8ToUTF16(reinterpret_cast<const std::uint8_t *>(&c),
+                       sizeof(c) / sizeof(std::uint8_t), &unichar_c[0],
+                       &unichar_c[1], nullptr, &len, nullptr);
     if (cvt_result != UTF8Result::Success) {
       // ctx が bitmap を参照してるので free は後ろに書く必要がある
       font_atlas->release();
@@ -790,8 +793,9 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       size_t consumed = 0;
       size_t utf16_len = 0;
 
-      UTF8Result cvt_result = cvtUTF8ToUTF16(
-          ptr, remaining, unichar_c, 2, &code_point, &consumed, &utf16_len);
+      UTF8Result cvt_result =
+          cvtUTF8ToUTF16(ptr, remaining, &unichar_c[0], &unichar_c[1],
+                         &consumed, &utf16_len, &code_point);
       if (cvt_result != UTF8Result::Success) {
         // 壊れた文字はスキップ (置換文字にするのもあり)
         ptr++;
