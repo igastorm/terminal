@@ -696,9 +696,10 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
   size_t idx = start_idx;
   while (font_atlas->glyph_hash_table[idx].codepoint != 0 &&
          font_atlas->glyph_hash_table[idx].codepoint != code_point) {
-    // 末尾まで行ったら自動で巻き戻る (どっちみち if
-    // で抜けるので巻き戻らなくてもいいかも) %
-    // 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
+    // 末尾まで行ったら自動で巻き戻る
+    // % 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
+    // 一見すると if で抜けるので巻き戻しが不要だが start_idx 
+    // からではなく全体から見れば一周する可能性もある
     idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
     if (idx == start_idx) {
       // 一周したなら満タンを意味する (キャッシュフラッシュ)
