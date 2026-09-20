@@ -443,6 +443,7 @@ MacFontAtlas::~MacFontAtlas() {
     CGContextRelease(this->data.ctx);
     this->data.ctx = nullptr;
   }
+  // on_demand_bitmap_data は親のコンストラクタで free してる
 }
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
@@ -556,10 +557,29 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     return nullptr;
   }
 
-  // オブジェクト自体は破棄するがオンデマンド描画ように変数は再利用する
+  // オブジェクト自体は破棄するがオンデマンド描画用に変数は再利用する
   CGContextRelease(font_atlas->data.ctx);
   font_atlas->data.ctx = nullptr;
   std::free(bitmap_data);
+
+  // オンデマンドキャッシュ生成用のビットマップをあらかじめ用意
+  // サイズは全角文字一つ分
+  size_t size =
+      font_atlas->cell_width * font_atlas->cell_height * sizeof(std::uint8_t);
+  font_atlas->on_demand_bitmap_data =
+      static_cast<std::uint8_t *>(std::calloc(size, sizeof(std::uint8_t)));
+  if (bitmap_data == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
+
+  font_atlas->data.ctx = MacFontAtlasHelper::createBitmapContext(
+      font_atlas->on_demand_bitmap_data, size, font_atlas->cell_width,
+      font_atlas->cell_width);
+  if (font_atlas->data.ctx == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
 
   return font_atlas;
 }

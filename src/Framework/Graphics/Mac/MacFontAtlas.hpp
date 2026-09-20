@@ -33,21 +33,7 @@ public:
 };
 
 class MacFontAtlasHelper {
-private:
-  CFStringRef cf_font_name = nullptr;
-  CTFontRef font = nullptr;
-  CGContextRef ctx = nullptr;
-  float descent = 0.0f;
-  float cell_width = 0.0f;
-  float cell_height = 0.0f;
-  bool is_ready = false;
-  int atlas_width = 0;
-  int atlas_height = 0;
-  int cols_per_row = 0;
-  std::uint8_t *bitmap_data = nullptr;
-
 public:
-  std::uint8_t *getBitmap() const { return this->bitmap_data; }
   [[nodiscard]] static CTFontRef createCTFont(const char *, float);
   [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t, int, int);
   [[nodiscard]] static CellSize getCellSize(CTFontRef);
