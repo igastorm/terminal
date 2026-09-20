@@ -644,28 +644,33 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   return font_atlas;
 }
 
-GlyphUV MacFontAtlas::getOrCreateGlyphUV(uint32_t code_point,
-                                         UniChar unichar_c[2], size_t utf16_len,
-                                         int cols) {
+GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
+                                               uint32_t code_point,
+                                               UniChar unichar_c[2],
+                                               size_t utf16_len, int cols) {
+  // 中身は MacFontAtlas のはずだから大丈夫なキャスト
+  MacFontAtlas *font_atlas = static_cast<MacFontAtlas *>(font_atlas_template);
+
   // ハッシュテーブルを検索
-  size_t start_idx = this->hashCodepoint(code_point);
+  size_t start_idx = font_atlas->hashCodepoint(code_point);
   size_t idx = start_idx;
-  while (this->glyph_hash_table[idx].codepoint != 0 &&
-         this->glyph_hash_table[idx].codepoint != code_point) {
+  while (font_atlas->glyph_hash_table[idx].codepoint != 0 &&
+         font_atlas->glyph_hash_table[idx].codepoint != code_point) {
     // 末尾まで行ったら自動で巻き戻る (どっちみち if
     // で抜けるので巻き戻らなくてもいいかも) %
     // 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
     idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
     if (idx == start_idx) {
       // 一周したなら満タンを意味する (キャッシュフラッシュ)
-      std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
-      this->rewindCursor();
-      idx = this->hashCodepoint(code_point);
+      std::memset(font_atlas->glyph_hash_table, 0,
+                  sizeof(font_atlas->glyph_hash_table));
+      font_atlas->rewindCursor();
+      idx = font_atlas->hashCodepoint(code_point);
       break;
     }
   }
 
-  HashEntry *entry = &this->glyph_hash_table[idx];
+  HashEntry *entry = &font_atlas->glyph_hash_table[idx];
 
   // すでにキャッシュにあれば、その UV を返す
   if (entry->codepoint == code_point) {
@@ -673,56 +678,65 @@ GlyphUV MacFontAtlas::getOrCreateGlyphUV(uint32_t code_point,
   }
 
   // 未キャッシュの場合
-  float char_width = this->cell_width * cols;
-  int atlas_width = this->texture->getWidth();
-  int atlas_height = this->texture->getHeight();
+  float char_width = font_atlas->cell_width * cols;
+  int atlas_width = font_atlas->texture->getWidth();
+  int atlas_height = font_atlas->texture->getHeight();
 
   // 横幅チェック
   // はみ出すなら行を進める
-  if (this->cursor_x + char_width > atlas_width) {
-    this->cursor_x = 0.0f;
-    this->cursor_y += this->cell_height;
+  if (font_atlas->cursor_x + char_width > atlas_width) {
+    font_atlas->cursor_x = 0.0f;
+    font_atlas->cursor_y += font_atlas->cell_height;
   }
 
   // 高さチェク
   // はみ出すならフラッシュ (満タン)
-  if (this->cursor_y + this->cell_height > atlas_height) {
-    std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
-    this->rewindCursor();
+  if (font_atlas->cursor_y + font_atlas->cell_height > atlas_height) {
+    std::memset(font_atlas->glyph_hash_table, 0,
+                sizeof(font_atlas->glyph_hash_table));
+    font_atlas->rewindCursor();
     // フラッシュしたのでインデックスを再取得
-    idx = this->hashCodepoint(code_point);
-    entry = &this->glyph_hash_table[idx];
+    idx = font_atlas->hashCodepoint(code_point);
+    entry = &font_atlas->glyph_hash_table[idx];
   }
 
   // 作業用ビットマップをクリア
-  size_t on_demand_size = (this->cell_width * 2) * this->cell_height;
-  std::memset(this->on_demand_bitmap_data, 0, on_demand_size);
+  size_t on_demand_size =
+      (font_atlas->cell_width * 2) * font_atlas->cell_height;
+  std::memset(font_atlas->on_demand_bitmap_data, 0, on_demand_size);
 
-  CellSize cell_size = MacFontAtlasHelper::getCellSize(this->data.font);
+  CellSize cell_size = MacFontAtlasHelper::getCellSize(font_atlas->data.font);
 
-  MacFontAtlasHelper::drawBitmap(this->data.ctx, this->data.font, cell_size,
-                                 unichar_c, utf16_len, char_width,
-                                 this->cell_height, 0, 0);
+  if (!MacFontAtlasHelper::drawBitmap(
+          font_atlas->data.ctx, font_atlas->data.font, cell_size, unichar_c,
+          utf16_len, char_width, font_atlas->cell_height, 0, 0)) {
+    return {};
+  }
 
   // texure 上のカーソル位置に焼く
-  this->texture->upload(
-      this->on_demand_bitmap_data, char_width * this->cell_height, char_width,
-      {static_cast<int>(this->cursor_x), static_cast<int>(this->cursor_y),
-       static_cast<int>(char_width), static_cast<int>(this->cell_height)});
+  if (!font_atlas->texture->upload(
+          font_atlas->on_demand_bitmap_data,
+          char_width * font_atlas->cell_height, char_width,
+          {static_cast<int>(font_atlas->cursor_x),
+           static_cast<int>(font_atlas->cursor_y), static_cast<int>(char_width),
+           static_cast<int>(font_atlas->cell_height)})) {
+    return {};
+  }
 
   // GlyphUV を生成
   GlyphUV uv = {};
-  uv.u_min = this->cursor_x / static_cast<float>(atlas_width);
-  uv.v_min = this->cursor_y / static_cast<float>(atlas_height);
-  uv.u_max = (this->cursor_x + char_width) / static_cast<float>(atlas_width);
-  uv.v_max =
-      (this->cursor_y + this->cell_height) / static_cast<float>(atlas_height);
+  uv.u_min = font_atlas->cursor_x / static_cast<float>(atlas_width);
+  uv.v_min = font_atlas->cursor_y / static_cast<float>(atlas_height);
+  uv.u_max =
+      (font_atlas->cursor_x + char_width) / static_cast<float>(atlas_width);
+  uv.v_max = (font_atlas->cursor_y + font_atlas->cell_height) /
+             static_cast<float>(atlas_height);
 
   entry->codepoint = code_point;
   entry->glyph_table = uv;
 
   // カーソルを進める
-  this->cursor_x += char_width;
+  font_atlas->cursor_x += char_width;
 
   return uv;
 }
@@ -792,8 +806,8 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       }
       float char_width = cw * cols;
 
-      GlyphUV uv = static_cast<MacFontAtlas *>(this)->getOrCreateGlyphUV(
-          code_point, unichar_c, utf16_len, cols);
+      GlyphUV uv = MacFontAtlasHelper::getOrCreateGlyphUV(
+          this, code_point, unichar_c, utf16_len, cols);
 
       VertexTex quad[6] = {
           {{current_x, y}, {uv.u_min, uv.v_min}, color},

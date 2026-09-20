@@ -32,19 +32,6 @@ public:
   float cell_height = 0.0f;
 };
 
-class MacFontAtlasHelper {
-public:
-  [[nodiscard]] static CTFontRef createCTFont(const char *, float);
-  [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t,
-                                                        int, int);
-  [[nodiscard]] static CellSize getCellSize(CTFontRef);
-  [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize,
-                                       const UniChar *, size_t, int, int, int,
-                                       int);
-  MacFontAtlasHelper(const char *, float, int, int);
-  ~MacFontAtlasHelper();
-};
-
 struct FontAtlasData {
   CTFontRef font = nullptr;
   CGContextRef ctx = nullptr;
@@ -56,13 +43,26 @@ using FontAtlas = FontAtlasTemplate<FontAtlasData>;
 class MacFontAtlas : public FontAtlas {
 private:
   MacFontAtlas(IGraphicsDevice *);
+  friend class MacFontAtlasHelper;
 
 public:
   MacFontAtlas() = delete;
   ~MacFontAtlas();
   static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *,
                                           float);
-  [[nodiscard]] GlyphUV getOrCreateGlyphUV(uint32_t code_point,
+};
+
+class MacFontAtlasHelper {
+public:
+  [[nodiscard]] static CTFontRef createCTFont(const char *, float);
+  [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t,
+                                                        int, int);
+  [[nodiscard]] static CellSize getCellSize(CTFontRef);
+  [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize,
+                                       const UniChar *, size_t, int, int, int,
+                                       int);
+  [[nodiscard]] static GlyphUV getOrCreateGlyphUV(FontAtlas*, uint32_t code_point,
                                            UniChar unichar_c[2],
                                            size_t utf16_len, int cols);
+  //MacFontAtlasHelper() = delete;
 };
