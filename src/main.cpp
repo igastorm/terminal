@@ -92,7 +92,7 @@ private:
 
     if (this->font_atlas != nullptr) {
       this->font_atlas->release();
-      this->font_texture = nullptr;
+      this->font_atlas = nullptr;
     }
   }
 
