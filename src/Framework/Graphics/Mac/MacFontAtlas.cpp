@@ -575,7 +575,7 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
 
   font_atlas->data.ctx = MacFontAtlasHelper::createBitmapContext(
       font_atlas->on_demand_bitmap_data, size, font_atlas->cell_width,
-      font_atlas->cell_width);
+      font_atlas->cell_height);
   if (font_atlas->data.ctx == nullptr) {
     font_atlas->release();
     return nullptr;
