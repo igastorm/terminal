@@ -35,10 +35,12 @@ public:
 class MacFontAtlasHelper {
 public:
   [[nodiscard]] static CTFontRef createCTFont(const char *, float);
-  [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t, int, int);
+  [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t,
+                                                        int, int);
   [[nodiscard]] static CellSize getCellSize(CTFontRef);
-  [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize, char, int, int, int,
-                         int);
+  [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize,
+                                       const UniChar *, size_t, int, int, int,
+                                       int);
   MacFontAtlasHelper(const char *, float, int, int);
   ~MacFontAtlasHelper();
 };

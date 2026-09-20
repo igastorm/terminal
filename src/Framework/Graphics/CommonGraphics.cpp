@@ -36,6 +36,12 @@ int CommonFontAtlas::release() {
   return this->ref_count;
 }
 
+// コードポイントをハッシュ化
+size_t CommonFontAtlas::hashCodepoint(std::uint32_t cp) {
+  // このようなハッシュ関数にするとなんか重複が少なくなるらしい
+  return (cp * 2654435761u) & (HashEntry::HASH_SIZE - 1);
+}
+
 CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {
   this->addRef();
   if (device != nullptr) {

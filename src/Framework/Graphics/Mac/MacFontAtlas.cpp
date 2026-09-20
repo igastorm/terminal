@@ -400,8 +400,10 @@ CGContextRef MacFontAtlasHelper::createBitmapContext(std::uint8_t *bitmap_data,
 }
 
 bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
-                                    CellSize cell_size, char c, int atlas_width,
-                                    int atlas_height, int x, int y) {
+                                    CellSize cell_size,
+                                    const UniChar *unichar_c, size_t len,
+                                    int atlas_width, int atlas_height, int x,
+                                    int y) {
   if (ctx == nullptr || font == nullptr) {
     return false;
   }
@@ -409,9 +411,16 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
     return false;
   }
 
-  UniChar unichar_c = static_cast<UniChar>(c);
+  // 一文字分しか受け付けないようにする
+  if (len > 2 || unichar_c == nullptr) {
+    return false;
+  }
+  if (len == 2 && (unichar_c[0] <= 0xD800 || 0xDBFF <= unichar_c[1])) {
+    return false;
+  }
+
   CGGlyph glyph = 0;
-  if (!CTFontGetGlyphsForCharacters(font, &unichar_c, &glyph, 1)) {
+  if (!CTFontGetGlyphsForCharacters(font, unichar_c, &glyph, len)) {
     return false;
   }
 
@@ -510,6 +519,10 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   // ' ' から '~' まで
   for (int i = 0; i < 95; i++) {
     char c = static_cast<char>(i + ' ');
+    UniChar unichar_c[2] = {};
+    size_t len = cvtUTF8ToUTF16(reinterpret_cast<const std::uint8_t *>(&c),
+                                sizeof(c) / sizeof(std::uint8_t), unichar_c,
+                                sizeof(unichar_c) / sizeof(UniChar));
     // グリッド上の位置
     // col は最終列まで行ったら自動的に巻き戻される
     // row は最終列まで行ったら自動的に大きくなる
@@ -518,9 +531,9 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     int x = col * static_cast<int>(font_atlas->cell_width);
     int y = row * static_cast<int>(font_atlas->cell_height);
 
-    if (!MacFontAtlasHelper::drawBitmap(font_atlas->data.ctx,
-                                        font_atlas->data.font, cell_size, c,
-                                        atlas_width, atlas_height, x, y)) {
+    if (!MacFontAtlasHelper::drawBitmap(
+            font_atlas->data.ctx, font_atlas->data.font, cell_size, unichar_c,
+            len, atlas_width, atlas_height, x, y)) {
       // ctx が bitmap を参照してるので free は後ろに書く必要がある
       font_atlas->release();
       std::free(bitmap_data);
