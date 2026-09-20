@@ -62,4 +62,7 @@ public:
   ~MacFontAtlas();
   static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *,
                                           float);
+  [[nodiscard]] GlyphUV getOrCreateGlyphUV(uint32_t code_point,
+                                           UniChar unichar_c[2],
+                                           size_t utf16_len, int cols);
 };

@@ -42,6 +42,20 @@ size_t CommonFontAtlas::hashCodepoint(std::uint32_t cp) {
   return (cp * 2654435761u) & (HashEntry::HASH_SIZE - 1);
 }
 
+bool CommonFontAtlas::rewindCursor() {
+  int cols_per_row = this->cols_per_row;
+  if (cols_per_row == 0) {
+    return false;
+  }
+
+  this->cursor_x = 0.0f;
+
+  // 整数で切り上げを行う公式らしい
+  int ascii_rows = (95 + cols_per_row - 1) / cols_per_row;
+  this->cursor_y = ascii_rows * cell_height;
+  return true;
+}
+
 CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {
   this->addRef();
   if (device != nullptr) {

@@ -434,12 +434,13 @@ CGContextRef MacFontAtlasHelper::createBitmapContext(std::uint8_t *bitmap_data,
 bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
                                     CellSize cell_size,
                                     const UniChar *unichar_c, size_t len,
-                                    int atlas_width, int atlas_height, int x,
+                                    int campas_width, int campas_height, int x,
                                     int y) {
   if (ctx == nullptr || font == nullptr) {
     return false;
   }
-  if (atlas_width == 0 || atlas_height == 0 || cell_size.cell_height == 0.0f) {
+  if (campas_width == 0 || campas_height == 0 ||
+      cell_size.cell_height == 0.0f) {
     return false;
   }
 
@@ -447,7 +448,7 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
   if (len == 0 || len > 2 || unichar_c == nullptr) {
     return false;
   }
-  if (len == 2 && (unichar_c[0] <= 0xD800 || 0xDBFF <= unichar_c[1])) {
+  if (len == 2 && (unichar_c[0] <= 0xD800 || 0xDBFF <= unichar_c[0])) {
     return false;
   }
 
@@ -457,7 +458,7 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
   }
 
   // CoreGraphics は左下が原点なので変換が必要
-  int cg_y = atlas_height - (y + cell_size.cell_height);
+  int cg_y = campas_height - (y + cell_size.cell_height);
 
   // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
   CGPoint pos = CGPointMake(x, cg_y + cell_size.descent);
@@ -521,9 +522,11 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   font_atlas->cell_height = cell_size.cell_height;
 
   // とりあえず 512 x 512 = 約 256KB 分
-  constexpr int atlas_width = 512;
-  constexpr int atlas_height = 512;
-  constexpr int total_bytes = atlas_width * atlas_height * sizeof(std::uint8_t);
+  int atlas_width = 512;
+  int atlas_height = 512;
+  font_atlas->atlas_width = atlas_width;
+  font_atlas->atlas_height = atlas_height;
+  const int total_bytes = atlas_width * atlas_height * sizeof(std::uint8_t);
 
   // 一行当たりの文字数を計算しておく (半角ベース)
   font_atlas->cols_per_row =
@@ -635,12 +638,93 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     return nullptr;
   }
 
-  font_atlas->cursor_x = 0.0f;
-  int ascii_rows =
-      (95 + font_atlas->cols_per_row - 1) / font_atlas->cols_per_row;
-  font_atlas->cursor_y = ascii_rows * font_atlas->cell_height;
+  // カーソルを初期化
+  font_atlas->rewindCursor();
 
   return font_atlas;
+}
+
+GlyphUV MacFontAtlas::getOrCreateGlyphUV(uint32_t code_point,
+                                         UniChar unichar_c[2], size_t utf16_len,
+                                         int cols) {
+  // ハッシュテーブルを検索
+  size_t start_idx = this->hashCodepoint(code_point);
+  size_t idx = start_idx;
+  while (this->glyph_hash_table[idx].codepoint != 0 &&
+         this->glyph_hash_table[idx].codepoint != code_point) {
+    // 末尾まで行ったら自動で巻き戻る (どっちみち if
+    // で抜けるので巻き戻らなくてもいいかも) %
+    // 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
+    idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
+    if (idx == start_idx) {
+      // 一周したなら満タンを意味する (キャッシュフラッシュ)
+      std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
+      this->rewindCursor();
+      idx = this->hashCodepoint(code_point);
+      break;
+    }
+  }
+
+  HashEntry *entry = &this->glyph_hash_table[idx];
+
+  // すでにキャッシュにあれば、その UV を返す
+  if (entry->codepoint == code_point) {
+    return entry->glyph_table;
+  }
+
+  // 未キャッシュの場合
+  float char_width = this->cell_width * cols;
+  int atlas_width = this->texture->getWidth();
+  int atlas_height = this->texture->getHeight();
+
+  // 横幅チェック
+  // はみ出すなら行を進める
+  if (this->cursor_x + char_width > atlas_width) {
+    this->cursor_x = 0.0f;
+    this->cursor_y += this->cell_height;
+  }
+
+  // 高さチェク
+  // はみ出すならフラッシュ (満タン)
+  if (this->cursor_y + this->cell_height > atlas_height) {
+    std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
+    this->rewindCursor();
+    // フラッシュしたのでインデックスを再取得
+    idx = this->hashCodepoint(code_point);
+    entry = &this->glyph_hash_table[idx];
+  }
+
+  // 作業用ビットマップをクリア
+  size_t on_demand_size = (this->cell_width * 2) * this->cell_height;
+  std::memset(this->on_demand_bitmap_data, 0, on_demand_size);
+
+  CellSize cell_size = MacFontAtlasHelper::getCellSize(this->data.font);
+
+  MacFontAtlasHelper::drawBitmap(this->data.ctx, this->data.font, cell_size,
+                                 unichar_c, utf16_len, char_width,
+                                 this->cell_height, 0, 0);
+
+  // texure 上のカーソル位置に焼く
+  this->texture->upload(
+      this->on_demand_bitmap_data, char_width * this->cell_height, char_width,
+      {static_cast<int>(this->cursor_x), static_cast<int>(this->cursor_y),
+       static_cast<int>(char_width), static_cast<int>(this->cell_height)});
+
+  // GlyphUV を生成
+  GlyphUV uv = {};
+  uv.u_min = this->cursor_x / static_cast<float>(atlas_width);
+  uv.v_min = this->cursor_y / static_cast<float>(atlas_height);
+  uv.u_max = (this->cursor_x + char_width) / static_cast<float>(atlas_width);
+  uv.v_max =
+      (this->cursor_y + this->cell_height) / static_cast<float>(atlas_height);
+
+  entry->codepoint = code_point;
+  entry->glyph_table = uv;
+
+  // カーソルを進める
+  this->cursor_x += char_width;
+
+  return uv;
 }
 
 template <>
@@ -690,9 +774,10 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       UniChar unichar_c[2] = {};
       uint32_t code_point = 0;
       size_t consumed = 0;
+      size_t utf16_len = 0;
 
-      UTF8Result cvt_result = cvtUTF8ToUTF16(ptr, remaining, unichar_c, 2,
-                                             &code_point, &consumed, nullptr);
+      UTF8Result cvt_result = cvtUTF8ToUTF16(
+          ptr, remaining, unichar_c, 2, &code_point, &consumed, &utf16_len);
       if (cvt_result != UTF8Result::Success) {
         // 壊れた文字はスキップ (置換文字にするのもあり)
         ptr++;
@@ -701,16 +786,29 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       }
 
       // 文字幅 (半角なら 1, 全角なら 2)
-      int cols = wcwidth((wchar_t)code_point);
-      if (cols <= 0) cols = 1;
+      int cols = wcwidth(static_cast<wchar_t>(code_point));
+      if (cols <= 0) {
+        cols = 1;
+      }
       float char_width = cw * cols;
 
-      HashEntry* hash_table = &this->glyph_hash_table[this->hashCodepoint(code_point)];
-      if (hash_table->codepoint == code_point) {
-        // キャッシュ済み
-      } else {
-        // 未キャッシュ
-      }
+      GlyphUV uv = static_cast<MacFontAtlas *>(this)->getOrCreateGlyphUV(
+          code_point, unichar_c, utf16_len, cols);
+
+      VertexTex quad[6] = {
+          {{current_x, y}, {uv.u_min, uv.v_min}, color},
+          {{current_x + char_width, y}, {uv.u_max, uv.v_min}, color},
+          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+          {{current_x + char_width, y}, {uv.u_max, uv.v_min}, color},
+          {{current_x + char_width, y + ch}, {uv.u_max, uv.v_max}, color},
+      };
+      pass->drawVerticesTex(this->texture, quad, 6);
+
+      // 進める
+      current_x += char_width;
+      ptr += consumed;
+      remaining -= consumed;
     }
   }
 

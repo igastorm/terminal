@@ -1,4 +1,5 @@
 #include "CommonApplication.hpp"
+#include <clocale>
 #include <cstdio>
 #include <cstdlib>
 
@@ -27,5 +28,6 @@ int CommonApplication::startApp(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+  std::setlocale(LC_ALL, "");
   return CommonApplication::startApp(argc, argv);
 }

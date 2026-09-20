@@ -56,12 +56,16 @@ protected:
   float cell_height = 0.0f;
   int cols_per_row = 0;
 
+  int atlas_width = 0;
+  int atlas_height = 0;
+
   IGraphicsDevice *device = nullptr;
   ITexture *texture = nullptr;
 
   float cursor_x = 0.0f;
   float cursor_y = 0.0f;
 
+  bool rewindCursor();
   size_t hashCodepoint(std::uint32_t);
 
   CommonFontAtlas(IGraphicsDevice *);
