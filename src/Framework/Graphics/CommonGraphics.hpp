@@ -47,6 +47,7 @@ protected:
   GlyphUV glyph_table[95] = {};
   float cell_width = 0.0f;
   float cell_height = 0.0f;
+  int cols_per_row = 0;
   
   IGraphicsDevice *device = nullptr;
   ITexture *texture = nullptr;

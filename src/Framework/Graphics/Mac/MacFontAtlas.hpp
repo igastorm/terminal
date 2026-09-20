@@ -21,6 +21,17 @@ public:
 //
 //  ========================================================
 
+class MacFontAtlasHelper;
+struct CellSize {
+private:
+  CGFloat descent = 0.0;
+  friend class MacFontAtlasHelper;
+
+public:
+  float cell_width = 0.0f;
+  float cell_height = 0.0f;
+};
+
 class MacFontAtlasHelper {
 private:
   CFStringRef cf_font_name = nullptr;
@@ -35,20 +46,22 @@ private:
   int cols_per_row = 0;
   std::uint8_t *bitmap_data = nullptr;
 
-  bool getCellSize();
-  bool initCTX();
-
 public:
-  bool isReady() const { return this->is_ready; }
-  float getCellWidth() const { return this->cell_width; }
-  float getCellHeight() const { return this->cell_height; }
-  bool drawBitmap(char, GlyphUV *, int, int);
   std::uint8_t *getBitmap() const { return this->bitmap_data; }
+  [[nodiscard]] static CTFontRef createCTFont(const char *, float);
+  [[nodiscard]] static CGContextRef createBitmapContext(std::uint8_t *, size_t, int, int);
+  [[nodiscard]] static CellSize getCellSize(CTFontRef);
+  [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize, char, int, int, int,
+                         int);
   MacFontAtlasHelper(const char *, float, int, int);
   ~MacFontAtlasHelper();
 };
 
-struct FontAtlasData {};
+struct FontAtlasData {
+  CTFontRef font = nullptr;
+  CGContextRef ctx = nullptr;
+  int cols_per_row = 0;
+};
 
 using FontAtlas = FontAtlasTemplate<FontAtlasData>;
 

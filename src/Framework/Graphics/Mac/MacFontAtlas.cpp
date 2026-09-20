@@ -289,58 +289,34 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
 
 //  ========================================================
 //
-//  FontAtlas
+//  Mac Font Atlas Helper
 //
 //  ========================================================
 
-MacFontAtlasHelper::MacFontAtlasHelper(const char *font_name, float font_size,
-                                       int atlas_width, int atlas_height)
-    : atlas_width(atlas_width), atlas_height(atlas_height) {
-  this->is_ready = false;
-  if (std::strlen(font_name) == 0 || this->atlas_width == 0 ||
-      this->atlas_height == 0) {
-    return;
+CTFontRef MacFontAtlasHelper::createCTFont(const char *font_name,
+                                           float font_size) {
+  if (font_name == nullptr || font_size == 0.0f) {
+    return nullptr;
   }
 
-  this->cf_font_name = CFStringCreateWithCString(kCFAllocatorDefault, font_name,
-                                                 kCFStringEncodingUTF8);
-  if (this->cf_font_name == nullptr) {
-    return;
+  CFStringRef cf_font_name = CFStringCreateWithCString(
+      kCFAllocatorDefault, font_name, kCFStringEncodingUTF8);
+  if (cf_font_name == nullptr) {
+    return nullptr;
   }
 
   // 第三引数は斜体とかを作りたい時に使うらしい
-  this->font = CTFontCreateWithName(cf_font_name, font_size, nullptr);
-  if (this->font == nullptr) {
-    return;
-  }
+  CTFontRef font = CTFontCreateWithName(cf_font_name, font_size, nullptr);
+  CFRelease(cf_font_name);
 
-  if (!this->getCellSize()) {
-    return;
-  }
-
-  this->is_ready = this->initCTX();
+  return font;
 }
 
-MacFontAtlasHelper::~MacFontAtlasHelper() {
-  if (this->cf_font_name != nullptr) {
-    CFRelease(this->cf_font_name);
-    this->cf_font_name = nullptr;
+CellSize MacFontAtlasHelper::getCellSize(CTFontRef font) {
+  if (font == nullptr) {
+    return {};
   }
-  if (this->font != nullptr) {
-    CFRelease(this->font);
-    this->font = nullptr;
-  }
-  if (this->ctx != nullptr) {
-    CGContextRelease(this->ctx);
-    this->ctx = nullptr;
-  }
-  if (this->bitmap_data != nullptr) {
-    std::free(this->bitmap_data);
-    this->bitmap_data = nullptr;
-  }
-}
 
-bool MacFontAtlasHelper::getCellSize() {
   // 大文字の M のグリフを取得する
   // 等幅の場合, これに合わせるとちょうどいいらしい
   UniChar char_M = 'M';
@@ -359,45 +335,48 @@ bool MacFontAtlasHelper::getCellSize() {
 
   // ベースラインから下に必要な高さ
   // こいつはメンバ変数
-  descent = CTFontGetDescent(font);
+  CGFloat descent = CTFontGetDescent(font);
 
   // 推奨される行間の間隔
   CGFloat leading = CTFontGetLeading(font);
 
+  CellSize cell_size = {};
+
+  cell_size.descent = descent;
+
   // 小数点以下を切り上げておく
-  this->cell_width = std::ceill(advance_M.width);
+  cell_size.cell_width = std::ceill(advance_M.width);
   // ascent + descent + leading の中に実質 advance_M.height
   // が含まれているようなもの
-  this->cell_height = std::ceill(ascent + descent + leading);
+  cell_size.cell_height = std::ceill(ascent + descent + leading);
 
-  if (this->cell_width > 0.0f && this->cell_height > 0.0f) {
-    return true;
-  }
-  return false;
+  return cell_size;
 }
 
-bool MacFontAtlasHelper::initCTX() {
+CGContextRef MacFontAtlasHelper::createBitmapContext(std::uint8_t *bitmap_data,
+                                                     size_t bytes_bitmap_data,
+                                                     int width, int height) {
+  if (bitmap_data == nullptr || width == 0 || height == 0) {
+    return nullptr;
+  }
+
+  size_t total_bytes = width * height * sizeof(std::uint8_t);
+  if (total_bytes != bytes_bitmap_data) {
+    return nullptr;
+  }
+
   // 白黒フォーマットで作成
   CGColorSpaceRef color_space = CGColorSpaceCreateDeviceGray();
-
   if (color_space == nullptr) {
-    return false;
+    return nullptr;
   }
 
-  this->cols_per_row = atlas_width / static_cast<int>(this->cell_width);
-  size_t total_bytes = atlas_width * atlas_height;
-  this->bitmap_data = static_cast<std::uint8_t *>(
-      std::calloc(total_bytes, sizeof(std::uint8_t)));
-  if (this->bitmap_data == nullptr) {
-    return false;
-  }
-
-  this->ctx = CGBitmapContextCreate(
-      this->bitmap_data, atlas_width, atlas_height, 8 * sizeof(std::uint8_t),
-      atlas_width * sizeof(std::uint8_t), color_space, kCGImageAlphaNone);
+  CGContextRef ctx = CGBitmapContextCreate(
+      bitmap_data, width, height, 8 * sizeof(std::uint8_t),
+      width * sizeof(std::uint8_t), color_space, kCGImageAlphaNone);
   CGColorSpaceRelease(color_space);
   if (ctx == nullptr) {
-    return false;
+    return nullptr;
   }
 
   // 初期の塗りつぶし色ではなくペン (バケツのインクの色 ) の色のようなもの
@@ -405,7 +384,7 @@ bool MacFontAtlasHelper::initCTX() {
   CGContextSetGrayFillColor(ctx, 0.0f, 1.0f);
 
   // 先ほど設定した黒で背景をクリア
-  CGContextFillRect(ctx, CGRectMake(0, 0, atlas_width, atlas_height));
+  CGContextFillRect(ctx, CGRectMake(0, 0, width, height));
 
   // 文字は白で描画すべきなのでバケツを白に切り替え
   CGContextSetGrayFillColor(ctx, 1.0f, 1.0f);
@@ -417,46 +396,53 @@ bool MacFontAtlasHelper::initCTX() {
   CGContextSetAllowsFontSmoothing(ctx, true);
   CGContextSetShouldSmoothFonts(ctx, true);
 
-  return true;
+  return ctx;
 }
 
-bool MacFontAtlasHelper::drawBitmap(char c, GlyphUV *uv, int col, int row) {
-  if (uv == nullptr || this->font == nullptr) {
+bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
+                                    CellSize cell_size, char c, int atlas_width,
+                                    int atlas_height, int x, int y) {
+  if (ctx == nullptr || font == nullptr) {
+    return false;
+  }
+  if (atlas_width == 0 || atlas_height == 0 || cell_size.cell_height == 0.0f) {
     return false;
   }
 
   UniChar unichar_c = static_cast<UniChar>(c);
   CGGlyph glyph = 0;
-  if (!CTFontGetGlyphsForCharacters(this->font, &unichar_c, &glyph, 1)) {
+  if (!CTFontGetGlyphsForCharacters(font, &unichar_c, &glyph, 1)) {
     return false;
   }
 
-  // ビットマップ上の位置
-  int x = col * this->cell_width;
-  int y = row * this->cell_height;
   // CoreGraphics は左下が原点なので変換が必要
-  int cg_y = this->atlas_height - (row + 1) * this->cell_height;
+  int cg_y = atlas_height - (y + cell_size.cell_height);
 
   // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
-  CGPoint pos = CGPointMake(x, cg_y + descent);
-  CTFontDrawGlyphs(font, &glyph, &pos, 1, this->ctx);
-
-  // UV 座標の記録
-  // 0.0f ~ 1.0f に正規化してる
-  // 頂点座標のようにピクセル座標で受け付けるようにシェーダを改造するのもあり
-  uv->u_min = x / static_cast<float>(this->atlas_width);
-  uv->v_min = y / static_cast<float>(this->atlas_height);
-  uv->u_max = (x + this->cell_width) / static_cast<float>(this->atlas_width);
-  uv->v_max = (y + this->cell_height) / static_cast<float>(this->atlas_height);
+  CGPoint pos = CGPointMake(x, cg_y + cell_size.descent);
+  CTFontDrawGlyphs(font, &glyph, &pos, 1, ctx);
 
   return true;
 }
+
+//  ========================================================
+//
+//  Mac Font Atlas
+//
+//  ========================================================
 
 MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
 
 MacFontAtlas::~MacFontAtlas() {
   // device と texture は親のデストラクタで参照カウントを減らしている
-  // on_demand_bitmap_data は親のデストラクタで free している
+  if (this->data.font != nullptr) {
+    CFRelease(this->data.font);
+    this->data.font = nullptr;
+  }
+  if (this->data.ctx != nullptr) {
+    CGContextRelease(this->data.ctx);
+    this->data.ctx = nullptr;
+  }
 }
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
@@ -476,32 +462,44 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   // device はコンストラクタで参照カウントを増やしてある
   font_atlas = new (font_atlas) MacFontAtlas(device);
 
-  // とりあえず 512 x 512 = 約 256KB 分
-  constexpr int atlas_width = 512;
-  constexpr int atlas_height = 512;
-
-  MacFontAtlasHelper helper(font_name, font_size, atlas_width, atlas_height);
-  if (!helper.isReady()) {
+  font_atlas->data.font =
+      MacFontAtlasHelper::createCTFont(font_name, font_size);
+  if (font_atlas->data.font == nullptr) {
     font_atlas->release();
     return nullptr;
   }
 
-  // セルサイズを得る
-  // サイズは小数点以下切り上げ済み
-  font_atlas->cell_width = helper.getCellWidth();
-  font_atlas->cell_height = helper.getCellHeight();
-  int cols_per_row = atlas_width / static_cast<int>(font_atlas->cell_width);
-
-  int cell_width_int = static_cast<int>(font_atlas->cell_width);
-  int cell_height_int = static_cast<int>(font_atlas->cell_height);
-
-  // オンデマンドキャッシュ用の一文字分の領域を確保
-  // (全角文字用に幅を2倍にしている) 後々,
-  // ユニファイドメモリに最適化するので不要になる予定
-  font_atlas->on_demand_bitmap_data = static_cast<std::uint8_t *>(std::calloc(
-      (cell_width_int * 2) * cell_height_int, sizeof(std::uint8_t)));
-  if (font_atlas->on_demand_bitmap_data == nullptr) {
+  // 半角文字 セルサイズを取得 (小数点以下切り上げ済み)
+  CellSize cell_size = MacFontAtlasHelper::getCellSize(font_atlas->data.font);
+  if (cell_size.cell_height == 0.0f || cell_size.cell_width == 0.0f) {
     font_atlas->release();
+    return nullptr;
+  }
+  font_atlas->cell_width = cell_size.cell_width;
+  font_atlas->cell_height = cell_size.cell_height;
+
+  // とりあえず 512 x 512 = 約 256KB 分
+  constexpr int atlas_width = 512;
+  constexpr int atlas_height = 512;
+  constexpr int total_bytes = atlas_width * atlas_height * sizeof(std::uint8_t);
+
+  // 一行当たりの文字数を計算しておく (半角ベース)
+  font_atlas->cols_per_row =
+      atlas_width / static_cast<int>(font_atlas->cell_width);
+
+  std::uint8_t *bitmap_data = static_cast<std::uint8_t *>(
+      std::calloc(total_bytes, sizeof(std::uint8_t)));
+  if (bitmap_data == nullptr) {
+    font_atlas->release();
+    return nullptr;
+  }
+
+  font_atlas->data.ctx = MacFontAtlasHelper::createBitmapContext(
+      bitmap_data, total_bytes, atlas_width, atlas_height);
+  if (font_atlas->data.ctx == nullptr) {
+    // ctx が bitmap を参照してるので free は後ろに書く必要がある
+    font_atlas->release();
+    std::free(bitmap_data);
     return nullptr;
   }
 
@@ -514,9 +512,29 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     // グリッド上の位置
     // col は最終列まで行ったら自動的に巻き戻される
     // row は最終列まで行ったら自動的に大きくなる
-    int col = i % cols_per_row;
-    int row = i / cols_per_row;
-    helper.drawBitmap(c, &font_atlas->glyph_table[i], col, row);
+    int col = i % font_atlas->cols_per_row;
+    int row = i / font_atlas->cols_per_row;
+    int x = col * static_cast<int>(font_atlas->cell_width);
+    int y = row * static_cast<int>(font_atlas->cell_height);
+
+    if (!MacFontAtlasHelper::drawBitmap(font_atlas->data.ctx,
+                                        font_atlas->data.font, cell_size, c,
+                                        atlas_width, atlas_height, x, y)) {
+      // ctx が bitmap を参照してるので free は後ろに書く必要がある
+      font_atlas->release();
+      std::free(bitmap_data);
+      return nullptr;
+    }
+
+    // UV 座標の記録
+    // 0.0f ~ 1.0f に正規化してる
+    // 頂点座標のようにピクセル座標で受け付けるようにシェーダを改造するのもあり
+    font_atlas->glyph_table[i].u_min = x / static_cast<float>(atlas_width);
+    font_atlas->glyph_table[i].v_min = y / static_cast<float>(atlas_height);
+    font_atlas->glyph_table[i].u_max =
+        (x + font_atlas->cell_width) / static_cast<float>(atlas_width);
+    font_atlas->glyph_table[i].v_max =
+        (y + font_atlas->cell_height) / static_cast<float>(atlas_height);
   }
 
   TextureDesc desc;
@@ -525,12 +543,23 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
 
   font_atlas->texture = device->createTexture(atlas_width, atlas_height, desc);
   if (font_atlas->texture == nullptr) {
+    std::free(bitmap_data);
+    font_atlas->release();
     return nullptr;
   }
 
-  font_atlas->texture->upload(helper.getBitmap(), atlas_width * atlas_height,
-                              atlas_width * sizeof(std::uint8_t),
-                              {0, 0, atlas_width, atlas_height});
+  if (!font_atlas->texture->upload(bitmap_data, atlas_width * atlas_height,
+                                   atlas_width * sizeof(std::uint8_t),
+                                   {0, 0, atlas_width, atlas_height})) {
+    std::free(bitmap_data);
+    font_atlas->release();
+    return nullptr;
+  }
+
+  // オブジェクト自体は破棄するがオンデマンド描画ように変数は再利用する
+  CGContextRelease(font_atlas->data.ctx);
+  font_atlas->data.ctx = nullptr;
+  std::free(bitmap_data);
 
   return font_atlas;
 }
