@@ -43,7 +43,7 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 # ----------------------------
 find_program(XCRUN xcrun REQUIRED)
 
-set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Mac/Shaders.metal")
+set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Mac/MacShaders.metal")
 set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
 set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/shaders.air")
 set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/shaders.metallib")
