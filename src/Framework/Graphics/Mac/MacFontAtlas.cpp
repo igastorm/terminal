@@ -11,7 +11,8 @@
 enum class CvtCharCodeResult {
   Success,    // 正常に1文字デコードできた
   Incomplete, // バイトが途中で切れている (次の read() のデータを待つべき)
-  Error       // 明らかな不正 (0xFF など。1バイト読み飛ばして '' を出すべき)
+  Invalid,    // 明らかな不正 (0xFF など。1バイト読み飛ばして '' を出すべき)
+  Error       // 引数がおかしい
 };
 
 // 以下をもとに実装
@@ -24,8 +25,8 @@ enum class CvtCharCodeResult {
 // 別に文字列全体にも対応しているが code_point の容量チェックがめんどくさいので
 // つまり最終引数は最後の文字のコードポイントを返す
 
-CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
-                                 size_t *consume_src_bytes,
+CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, std::size_t src_len,
+                                 std::size_t *consumed_src_bytes,
                                  std::uint32_t *out_code_point) {
   // 継続バイトかの判定
   // 文字の先頭ではなく, 前のバイトの続きであることを示す値
@@ -35,12 +36,16 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
     return (0x80 <= b && b <= 0xBF);
   };
 
-  if (src == nullptr || src_len == 0) {
+  if (src == nullptr || src_len == 0 || out_code_point == nullptr ||
+      consumed_src_bytes == nullptr) {
     return CvtCharCodeResult::Error;
   }
 
-  size_t i = 0;
-  std::uint32_t code_point = 0;
+  std::size_t &i = *consumed_src_bytes;
+  i = 0;
+
+  std::uint32_t &code_point = *out_code_point;
+  code_point = 0;
 
   while (i < src_len) {
     // 各文字の先頭バイト
@@ -58,6 +63,7 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       if (i + 1 >= src_len) {
         // 続きのデータがないならエラー
         // ただし後から続きを取得できるかも
+        i = 0;
         return CvtCharCodeResult::Incomplete;
       }
 
@@ -65,7 +71,8 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       if (!isContinuationByte(b1)) {
         // 2バイト目なのに前のバイトの続きじゃなかったらおかしい
         // 2バイト目に入るべき値の範囲外
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
       // 識別ビットを削除して繋げる
       code_point = static_cast<uint32_t>(b0 & 0x1F) << 6 |
@@ -78,6 +85,7 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       if (i + 2 >= src_len) {
         // 続きのデータがないならエラー
         // ただし後から続きを取得できるかも
+        i = 0;
         return CvtCharCodeResult::Incomplete;
       }
 
@@ -86,7 +94,8 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       if (!isContinuationByte(b1) || !isContinuationByte(b2)) {
         // 2バイト目以降なのに前のバイトの続きじゃなかったらおかしい
         // 2バイト目以降に入るべき値の範囲外
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // UTF-16 で16ビットをはみ出す (サロゲートというらしい) 部分
@@ -94,12 +103,14 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       // 0x10000 ~ 0x10FFFF の範囲である必要がある
       // 0xED 0xA0 ~
       if (b0 == 0xED && 0xA0 <= b1) {
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // 0xE0 0x80 ~ 0x9F は本来1バイトの文字を3バイトで表してるから不正らしい
       if (b0 == 0xE0 && 0x80 <= b1 && b1 <= 0x9F) {
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // 識別ビットを削除して繋げる
@@ -114,6 +125,7 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       if (i + 3 >= src_len) {
         // 続きのデータがないならエラー
         // ただし後から続きを取得できるかも
+        i = 0;
         return CvtCharCodeResult::Incomplete;
       }
 
@@ -124,17 +136,20 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
           !isContinuationByte(b3)) {
         // 2バイト目以降なのに前のバイトの続きじゃなかったらおかしい
         // 2バイト目以降に入るべき値の範囲外
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // 0xF0 0x80 ~ 0x8F は不正らしい
       if (b0 == 0xF0 && 0x80 <= b1 && b1 <= 0x8F) {
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // 0xF4 0x90 ~ は不正らしい
       if (b0 == 0xF4 && 0x90 <= b1) {
-        return CvtCharCodeResult::Error;
+        i++;
+        return CvtCharCodeResult::Invalid;
       }
 
       // 識別ビットを削除して繋げる
@@ -145,7 +160,8 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
       i += 4;
     } else {
       // その他は不正
-      return CvtCharCodeResult::Error;
+      i++;
+      return CvtCharCodeResult::Invalid;
     }
 
     // 一文字分の処理が完了したら即時抜ける
@@ -154,41 +170,39 @@ CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, size_t src_len,
   if (out_code_point != nullptr) {
     *out_code_point = code_point;
   }
-  if (consume_src_bytes != nullptr) {
-    *consume_src_bytes = i;
+  if (consumed_src_bytes != nullptr) {
+    *consumed_src_bytes = i;
   }
   return CvtCharCodeResult::Success;
 }
 
-CvtCharCodeResult cvtUTF32ToUTF16(std::uint32_t code_point, uint16_t *dst_high,
-                                  uint16_t *dst_low, size_t *out_utf16_len) {
-  if (dst_high == nullptr || dst_low == nullptr) {
-    return CvtCharCodeResult::Error;
-  }
-
-  size_t utf16_len = 0;
+CvtCharCodeResult cvtUTF32ToUTF16(std::uint32_t code_point, uint16_t (&dst)[2],
+                                  std::size_t *out_utf16_len) {
+  std::size_t utf16_len = 0;
+  dst[0] = 0;
+  dst[1] = 0;
   // サロゲート領域 (0xD800〜0xDFFF) 自体 と 0x10FFFF 超えは不正
   if ((code_point >= 0xD800 && code_point <= 0xDFFF) || code_point > 0x10FFFF) {
-    *dst_high = 0;
-    *dst_low = 0;
     if (out_utf16_len != nullptr) {
       *out_utf16_len = 0;
     }
-    return CvtCharCodeResult::Error;
+    return CvtCharCodeResult::Invalid;
   }
 
   if (code_point <= 0xFFFF) {
     // サロゲートでない
-    *dst_high = static_cast<uint16_t>(code_point);
+    dst[0] = static_cast<uint16_t>(code_point);
     utf16_len = 1;
   } else if (0x10000 <= code_point && code_point <= 0x10FFFF) {
     // 10000000000000000 ~ 100001111111111111111
     // サロゲート
     uint32_t tmp = code_point - 0x10000;
-    uint16_t high = (tmp >> 10) + 0xD800;  // 0x400 で割って 0xD800 を足す
-    uint16_t low = (tmp & 0x3FF) + 0xDC00; // 0x400 で割った余りに 0xDC00 を足す
-    *dst_high = high;
-    *dst_low = low;
+    uint16_t high = static_cast<uint16_t>(
+        (tmp >> 10) + 0xD800); // 0x400 で割って 0xD800 を足す
+    uint16_t low = static_cast<uint16_t>(
+        (tmp & 0x3FF) + 0xDC00); // 0x400 で割った余りに 0xDC00 を足す
+    dst[0] = high;
+    dst[1] = low;
     utf16_len = 2;
   }
 
@@ -200,14 +214,16 @@ CvtCharCodeResult cvtUTF32ToUTF16(std::uint32_t code_point, uint16_t *dst_high,
 }
 
 // 直接変換用
-CvtCharCodeResult cvtUTF8ToUTF16(const uint8_t *src, size_t src_len,
-                                 uint16_t *dst_high, uint16_t *dst_low,
-                                 size_t *consume_src_bytes,
-                                 size_t *out_utf16_len,
+CvtCharCodeResult cvtUTF8ToUTF16(const uint8_t *src, std::size_t src_len,
+                                 uint16_t (&dst)[2],
+                                 std::size_t *consumed_src_bytes,
+                                 std::size_t *out_utf16_len,
                                  std::uint32_t *out_code_point) {
+  dst[0] = 0;
+  dst[1] = 0;
   std::uint32_t code_point = 0;
   CvtCharCodeResult res =
-      cvtUTF8ToUTF32(src, src_len, consume_src_bytes, &code_point);
+      cvtUTF8ToUTF32(src, src_len, consumed_src_bytes, &code_point);
   if (res != CvtCharCodeResult::Success) {
     return res;
   }
@@ -216,7 +232,7 @@ CvtCharCodeResult cvtUTF8ToUTF16(const uint8_t *src, size_t src_len,
     *out_code_point = code_point;
   }
 
-  return cvtUTF32ToUTF16(code_point, dst_high, dst_low, out_utf16_len);
+  return cvtUTF32ToUTF16(code_point, dst, out_utf16_len);
 }
 
 MacFont::~MacFont() {
@@ -297,9 +313,12 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   UniChar unichar_c[2] = {};
 
   size_t len = 0;
+  size_t consumed = 0;
+  std::uint32_t code_point = 0;
+
   CvtCharCodeResult result = cvtUTF8ToUTF16(
       reinterpret_cast<const uint8_t *>(chracter), std::strlen(chracter),
-      &unichar_c[0], &unichar_c[1], nullptr, &len, nullptr);
+      unichar_c, &consumed, &len, &code_point);
 
   if (result != CvtCharCodeResult::Success) {
     return nullptr;
@@ -596,10 +615,12 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     char c = static_cast<char>(i + ' ');
     UniChar unichar_c[2] = {};
     size_t len = 0;
+    size_t consumed = 0;
+    std::uint32_t code_point = 0;
     CvtCharCodeResult cvt_result =
         cvtUTF8ToUTF16(reinterpret_cast<const std::uint8_t *>(&c),
-                       sizeof(c) / sizeof(std::uint8_t), &unichar_c[0],
-                       &unichar_c[1], nullptr, &len, nullptr);
+                       sizeof(c) / sizeof(std::uint8_t), unichar_c, &consumed,
+                       &len, &code_point);
     if (cvt_result != CvtCharCodeResult::Success) {
       // ctx が bitmap を参照してるので free は後ろに書く必要がある
       font_atlas->release();
@@ -698,7 +719,7 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
          font_atlas->glyph_hash_table[idx].codepoint != code_point) {
     // 末尾まで行ったら自動で巻き戻る
     // % 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
-    // 一見すると if で抜けるので巻き戻しが不要だが start_idx 
+    // 一見すると if で抜けるので巻き戻しが不要だが start_idx
     // からではなく全体から見れば一周する可能性もある
     idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
     if (idx == start_idx) {
@@ -831,9 +852,8 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       size_t consumed = 0;
       size_t utf16_len = 0;
 
-      CvtCharCodeResult cvt_result =
-          cvtUTF8ToUTF16(ptr, remaining, &unichar_c[0], &unichar_c[1],
-                         &consumed, &utf16_len, &code_point);
+      CvtCharCodeResult cvt_result = cvtUTF8ToUTF16(
+          ptr, remaining, unichar_c, &consumed, &utf16_len, &code_point);
       if (cvt_result != CvtCharCodeResult::Success) {
         // 壊れた文字はスキップ (置換文字にするのもあり)
         ptr++;
