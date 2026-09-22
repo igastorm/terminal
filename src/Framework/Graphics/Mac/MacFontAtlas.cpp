@@ -425,7 +425,6 @@ CellSize MacFontAtlasHelper::getCellSize(CTFontRef font) {
   CGFloat ascent = CTFontGetAscent(font);
 
   // ベースラインから下に必要な高さ
-  // こいつはメンバ変数
   CGFloat descent = CTFontGetDescent(font);
 
   // 推奨される行間の間隔
