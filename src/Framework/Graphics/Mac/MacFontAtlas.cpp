@@ -814,42 +814,30 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
     return this->glyph_table[0]; // 範囲外はスペース
   };
 
-  float cw = this->cell_width;
-  float ch = this->cell_height;
-
   float current_x = start_x;
   float y = start_y;
   const uint8_t *ptr = reinterpret_cast<const uint8_t *>(str);
   size_t remaining = std::strlen(str);
 
   while (remaining > 0) {
+    float cw = this->cell_width;
+    float ch = this->cell_height;
+    GlyphUV uv = {};
+    size_t consumed = 0;
     uint8_t b0 = *ptr;
 
     if (b0 >= 32 && b0 <= 126) {
       // ----------------------------
       // ASCII 文字の場合
       // ----------------------------
-      GlyphUV uv = getGlyphUV((char)b0);
-      VertexTex quad[6] = {
-          {{current_x, y}, {uv.u_min, uv.v_min}, color},
-          {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
-          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
-          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
-          {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
-          {{current_x + cw, y + ch}, {uv.u_max, uv.v_max}, color},
-      };
-      pass->drawVerticesTex(this->texture, quad, 6);
-
-      current_x += cw; // 1 マス進む
-      ptr += 1;
-      remaining -= 1;
+      uv = getGlyphUV(static_cast<char>(b0));
+      consumed = 1;
     } else {
       // ----------------------------
       // 非 ASCII 文字の場合
       // ----------------------------
       UniChar unichar_c[2] = {};
       uint32_t code_point = 0;
-      size_t consumed = 0;
       size_t utf16_len = 0;
 
       CvtCharCodeResult cvt_result = cvtUTF8ToUTF16(
@@ -866,26 +854,25 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       if (cols <= 0) {
         cols = 1;
       }
-      float char_width = cw * cols;
+      cw = cw * cols;
 
-      GlyphUV uv = MacFontAtlasHelper::getOrCreateGlyphUV(
-          this, code_point, unichar_c, utf16_len, cols);
-
-      VertexTex quad[6] = {
-          {{current_x, y}, {uv.u_min, uv.v_min}, color},
-          {{current_x + char_width, y}, {uv.u_max, uv.v_min}, color},
-          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
-          {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
-          {{current_x + char_width, y}, {uv.u_max, uv.v_min}, color},
-          {{current_x + char_width, y + ch}, {uv.u_max, uv.v_max}, color},
-      };
-      pass->drawVerticesTex(this->texture, quad, 6);
-
-      // 進める
-      current_x += char_width;
-      ptr += consumed;
-      remaining -= consumed;
+      uv = MacFontAtlasHelper::getOrCreateGlyphUV(this, code_point, unichar_c,
+                                                  utf16_len, cols);
     }
+    VertexTex quad[6] = {
+        {{current_x, y}, {uv.u_min, uv.v_min}, color},
+        {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
+        {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+        {{current_x, y + ch}, {uv.u_min, uv.v_max}, color},
+        {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},
+        {{current_x + cw, y + ch}, {uv.u_max, uv.v_max}, color},
+    };
+    pass->drawVerticesTex(this->texture, quad, 6);
+
+    // 進める
+    current_x += cw;
+    ptr += consumed;
+    remaining -= consumed;
   }
 
   return true;
