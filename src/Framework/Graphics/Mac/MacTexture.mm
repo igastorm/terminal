@@ -120,10 +120,13 @@ bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row,
 
   size_t bpp = (this->format == TextureFormat::Mono) ? sizeof(std::uint8_t)
                                                      : sizeof(std::uint32_t);
-  if (bytes_per_row / bpp != static_cast<size_t>(rect.width)) {
+  // 1行分のバイト数が1行分のデータ量に満たないならエラー
+  if (bytes_per_row / bpp < static_cast<size_t>(rect.width)) {
     return false;
   }
-  if (bytes / bytes_per_row != static_cast<size_t>(rect.height)) {
+  
+  // 全体のデータ量が不足していればエラー
+  if (bytes < bytes_per_row * static_cast<size_t>(rect.height)) {
     return false;
   }
 

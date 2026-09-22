@@ -217,7 +217,7 @@ public:
                 };
                 pass->drawVerticesTex(tex, quad, 6);
                 if (app->font_atlas != nullptr) {
-                  app->font_atlas->drawText(pass, "あいうえおABC常用でない漢字もいける𩿗このように", 10, 500,
+                  app->font_atlas->drawText(pass, "ｱいうえおABC常用でない漢字もいける𩿗このように", 10, 500,
                                             0xFFFFFFFF);
                 }
               },

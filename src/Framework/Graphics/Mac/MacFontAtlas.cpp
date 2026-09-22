@@ -775,9 +775,22 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
   }
 
   // texure 上のカーソル位置に焼く
+  // 非 ASCII 半角文字問題
+  // 作業領域の幅が全角文字の幅固定なので bytes_per_row
+  // はセル幅の2倍にする必要がある 例えば半角文字をオンデマンドキャッシュする時
+  // 作業ビットマップの左半分にだけ描画される
+  // その際, 右側は黒のまま
+  // それを線形に戻すと横幅バイトごとに白の部分と黒の部分が交互に現れることになる
+  // (山と谷)
+  // ここで bytes_per_row を半角の幅にしてしまうと偶数行目が黒になる
+  // そこで bytes_per_row
+  // を全角の幅にすると元のビットマップ領域と同じようにテクスチャへ焼かれる
+  // しかし実際は半角なので右半分が無駄になる
+  // そこで領域指定で半角の幅にすれば自動的に線形にしたときの偶数番目に現れる黒の塊がカットされる
+  size_t stride = font_atlas->cell_width * 2.0f;
   if (!font_atlas->texture->upload(
-          font_atlas->on_demand_bitmap_data,
-          char_width * font_atlas->cell_height, char_width,
+          font_atlas->on_demand_bitmap_data, stride * font_atlas->cell_height,
+          stride,
           {static_cast<int>(font_atlas->cursor_x),
            static_cast<int>(font_atlas->cursor_y), static_cast<int>(char_width),
            static_cast<int>(font_atlas->cell_height)})) {
@@ -802,6 +815,10 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
   return uv;
 }
 
+// 基本的な文字列描画をテストするデモ関数
+// 実際にターミナルで文字を描画するにはエスケープシーケンスはバッファの途切れを意識した実装を
+// main.cpp 側で行う必要がある (そこまで Framework
+// 側で実装するのは適切でないと考える)
 template <>
 bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
                          float start_y, std::uint32_t color) {
