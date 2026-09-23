@@ -94,14 +94,6 @@ bool RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
     return false;
   }
 
-  struct {
-    float width;
-    float r_height;
-    float inv_255;
-  } viewport = {true_width, 2.0f / true_height, inv_255};
-
-  [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
-
   // ここでコールバック
   MacRenderPass pass(device, encoder);
   if (pass.isReady()) {

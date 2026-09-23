@@ -1,5 +1,6 @@
 #include "MacTextureSurface.h"
 #include "MacGraphicsDevice.h"
+#import "MacSurface.h"
 #include "MacTexture.h"
 #include <cstdio>
 #include <cstdlib>
@@ -12,7 +13,11 @@
 //  ========================================================
 
 MacTextureSurface::MacTextureSurface(IGraphicsDevice *device, ITexture *texture)
-    : TextureSurface(device, texture) {}
+    : TextureSurface(device, texture) {
+  // texture != nullptr は呼び出し元で保証済み
+  this->data.viewport = {static_cast<float>(texture->getWidth()),
+                         2.0f / static_cast<float>(texture->getHeight())};
+}
 
 // テクスチャ専用デストラクタ
 MacTextureSurface::~MacTextureSurface() {
@@ -123,6 +128,15 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
     if (encoder == nil) {
       return false;
     }
+
+    struct {
+      float width;
+      float r_height;
+      float inv_255;
+    } viewport = {this->data.viewport.width, this->data.viewport.r_height,
+                  RenderHelper::inv_255};
+
+    [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
 
     result =
         helper.renderBase(encoder, true_width, true_height, callback, data);

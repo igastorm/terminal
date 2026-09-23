@@ -216,6 +216,14 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
+    struct {
+      float width;
+      float r_height;
+      float inv_255;
+    } viewport = {true_width, 2.0f / true_height, RenderHelper::inv_255};
+
+    [encoder setVertexBytes:&viewport length:sizeof(viewport) atIndex:1];
+
     // 描画処理
     result =
         helper.renderBase(encoder, true_width, true_height, callback, data);

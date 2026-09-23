@@ -16,12 +16,12 @@ struct SurfaceData {
 // ヘルパークラス
 class RenderHelper {
 private:
-  static constexpr float inv_255 = 1.0f / 255.0f;
   MTLRenderPassDescriptor *mtl_pass_desc = nil;
   IGraphicsDevice *device = nullptr;
   bool is_ready = false;
 
 public:
+  static constexpr float inv_255 = 1.0f / 255.0f;
   MTLRenderPassDescriptor *getMTLRenderPassDescripter(id<MTLTexture>,
                                                       const RenderPassDesc *);
   [[nodiscard]] bool renderBase(id<MTLRenderCommandEncoder>, float, float,

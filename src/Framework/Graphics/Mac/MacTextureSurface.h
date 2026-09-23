@@ -8,7 +8,10 @@
 //  ========================================================
 
 struct TextureSurfaceData : public SurfaceData {
-  // 今のところ空
+  struct {
+    float width;
+    float r_height;
+  } viewport = {};
 };
 
 using TextureSurface = SurfaceTemplate<TextureSurfaceData>;

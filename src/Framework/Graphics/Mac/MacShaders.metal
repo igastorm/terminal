@@ -17,7 +17,7 @@ struct VertexOut {
 // 画面サイズ
 struct ViewportUniform {
   float width;
-  float r_height; // 2.0 x 逆数
+  float r_height; // 2.0f x 逆数
   float inv_255;  // 255 の逆数
 };
 
@@ -53,6 +53,9 @@ struct VertexOutWithUV {
 };
 
 // device や constant はアドレス空間を指すらしい
+// ないとエラーだがどちらを指定しても動くように見える
+// device は比較的大きいデータを扱えてシェーダから書き込み可能らしい
+// constant は書き込み不可らしい
 // float は 32bit だから MTLPixelFormatBGRA8Unorm
 // に対して違和感を持つが演算時には float で行うが VRAM には演算結果を 1B
 // に圧縮して保存するという意味らしい
