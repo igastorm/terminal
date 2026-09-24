@@ -182,14 +182,16 @@ public:
                 };
                 pass->drawVertices(quad3, 6);
 
+                float u = static_cast<ITexture *>(arg)->getWidth();
+                float v = static_cast<ITexture *>(arg)->getHeight();
                 VertexTex quad4[6] = {
                     {{x, y}, {0.0f, 0.0f}, 0xFF00FF00},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFF00FF00},
+                    {{x + w, y}, {u, 0.0f}, 0xFF00FF00},
+                    {{x, y + h}, {0.0f, v}, 0xFF00FF00},
 
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFF00FF00},
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFF00FF00},
-                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFF00FF00},
+                    {{x, y + h}, {0.0f, v}, 0xFF00FF00},
+                    {{x + w, y}, {u, 0.0f}, 0xFF00FF00},
+                    {{x + w, y + h}, {u, v}, 0xFF00FF00},
                 };
                 pass->drawVerticesTex(static_cast<ITexture *>(arg), quad4, 6);
               },
@@ -208,12 +210,12 @@ public:
 
                 VertexTex quad[6] = {
                     {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},     // 左上
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF}, // 右上
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF}, // 左下
+                    {{x + w, y}, {800.0f, 0.0f}, 0xFFFFFFFF}, // 右上
+                    {{x, y + h}, {0.0f, 600.0f}, 0xFFFFFFFF}, // 左下
 
-                    {{x, y + h}, {0.0f, 1.0f}, 0xFFFFFFFF},     // 左下
-                    {{x + w, y}, {1.0f, 0.0f}, 0xFFFFFFFF},     // 右上
-                    {{x + w, y + h}, {1.0f, 1.0f}, 0xFFFFFFFF}, // 右下
+                    {{x, y + h}, {0.0f, 600.0f}, 0xFFFFFFFF},     // 左下
+                    {{x + w, y}, {800.0f, 0.0f}, 0xFFFFFFFF},     // 右上
+                    {{x + w, y + h}, {800.0f, 600.0f}, 0xFFFFFFFF}, // 右下
                 };
                 pass->drawVerticesTex(tex, quad, 6);
                 if (app->font_atlas != nullptr) {

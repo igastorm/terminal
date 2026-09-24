@@ -645,14 +645,13 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     }
 
     // UV 座標の記録
-    // 0.0f ~ 1.0f に正規化してる
-    // 頂点座標のようにピクセル座標で受け付けるようにシェーダを改造するのもあり
-    font_atlas->glyph_table[i].u_min = x / static_cast<float>(atlas_width);
-    font_atlas->glyph_table[i].v_min = y / static_cast<float>(atlas_height);
-    font_atlas->glyph_table[i].u_max =
-        (x + font_atlas->cell_width) / static_cast<float>(atlas_width);
-    font_atlas->glyph_table[i].v_max =
-        (y + font_atlas->cell_height) / static_cast<float>(atlas_height);
+    // 本来 0.0f ~ 1.0f に正規化されるが
+    // ampler_desc.normalizedCoordinates = NO;
+    // によってピクセル座標で渡せる
+    font_atlas->glyph_table[i].u_min = x;
+    font_atlas->glyph_table[i].v_min = y;
+    font_atlas->glyph_table[i].u_max = x + font_atlas->cell_width;
+    font_atlas->glyph_table[i].v_max = y + font_atlas->cell_height;
   }
 
   TextureDesc desc;
@@ -799,12 +798,10 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
 
   // GlyphUV を生成
   GlyphUV uv = {};
-  uv.u_min = font_atlas->cursor_x / static_cast<float>(atlas_width);
-  uv.v_min = font_atlas->cursor_y / static_cast<float>(atlas_height);
-  uv.u_max =
-      (font_atlas->cursor_x + char_width) / static_cast<float>(atlas_width);
-  uv.v_max = (font_atlas->cursor_y + font_atlas->cell_height) /
-             static_cast<float>(atlas_height);
+  uv.u_min = font_atlas->cursor_x;
+  uv.v_min = font_atlas->cursor_y;
+  uv.u_max = font_atlas->cursor_x + char_width;
+  uv.v_max = font_atlas->cursor_y + font_atlas->cell_height;
 
   entry->codepoint = code_point;
   entry->glyph_table = uv;

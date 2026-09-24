@@ -204,6 +204,8 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
     sampler_desc.sAddressMode = MTLSamplerAddressModeClampToEdge;
     // 縦方向に関して座標が範囲外の時に座標を 0.0f か 1.0f として扱うっぽい
     sampler_desc.tAddressMode = MTLSamplerAddressModeClampToEdge;
+    // UV 座標を正規化座標ではなくピクセル座標のように扱う
+    sampler_desc.normalizedCoordinates = NO;
 
     device->data.sampler_state =
         [device->data.mtl_device newSamplerStateWithDescriptor:sampler_desc];
