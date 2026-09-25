@@ -33,11 +33,6 @@ public:
 //
 //  ========================================================
 
-struct GlyphUV {
-  float u_min = 0.0f, v_min = 0.0f;
-  float u_max = 0.0f, v_max = 0.0f;
-};
-
 struct HashEntry {
   static constexpr size_t HASH_SIZE = 1024;
   std::uint32_t codepoint = 0;
@@ -71,6 +66,7 @@ protected:
   CommonFontAtlas(IGraphicsDevice *);
 
 public:
+  ITexture* getTexture() override;
   int addRef() override;
   int release() override;
   ~CommonFontAtlas();

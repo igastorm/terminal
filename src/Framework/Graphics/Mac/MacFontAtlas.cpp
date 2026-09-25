@@ -1,4 +1,5 @@
 #include "MacFontAtlas.hpp"
+#include "CharConverter.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 #include <cmath>
@@ -7,233 +8,6 @@
 #include <cstring>
 #include <new> // IWYU pragma: keep
 #include <wchar.h>
-
-enum class CvtCharCodeResult {
-  Success,    // 正常に1文字デコードできた
-  Incomplete, // バイトが途中で切れている (次の read() のデータを待つべき)
-  Invalid,    // 明らかな不正 (0xFF など。1バイト読み飛ばして '' を出すべき)
-  Error       // 引数がおかしい
-};
-
-// 以下をもとに実装
-// https://ja.wikipedia.org/wiki/UTF-8
-// https://ja.wikipedia.org/wiki/UTF-16
-// https://ja.wikipedia.org/wiki/Unicode#サロゲートペア
-// dst_cap は文字数単位
-// サイズは要素単位
-// 一文字分専用
-// 別に文字列全体にも対応しているが code_point の容量チェックがめんどくさいので
-// つまり最終引数は最後の文字のコードポイントを返す
-
-CvtCharCodeResult cvtUTF8ToUTF32(const uint8_t *src, std::size_t src_len,
-                                 std::size_t *consumed_src_bytes,
-                                 std::uint32_t *out_code_point) {
-  // 継続バイトかの判定
-  // 文字の先頭ではなく, 前のバイトの続きであることを示す値
-  // 2バイト目以降の下限から上限の範囲内か
-  auto isContinuationByte = [](uint8_t b) -> bool {
-    // 10000000 ~ 10111111
-    return (0x80 <= b && b <= 0xBF);
-  };
-
-  if (src == nullptr || src_len == 0 || out_code_point == nullptr ||
-      consumed_src_bytes == nullptr) {
-    return CvtCharCodeResult::Error;
-  }
-
-  std::size_t &i = *consumed_src_bytes;
-  i = 0;
-
-  std::uint32_t &code_point = *out_code_point;
-  code_point = 0;
-
-  while (i < src_len) {
-    // 各文字の先頭バイト
-    uint8_t b0 = src[i];
-
-    // ASCII はそのまま
-    // 0 ~ 01111111
-    if (b0 <= 0x7F) {
-      code_point = src[i];
-      i++;
-    } else if (0xC2 <= b0 && b0 <= 0xDF) {
-      // 2バイトの UTF-8 (1バイト目はすでに b0 に入ってる)
-      // 11000010 ~ 11011111
-      uint8_t b1 = 0;
-      if (i + 1 >= src_len) {
-        // 続きのデータがないならエラー
-        // ただし後から続きを取得できるかも
-        i = 0;
-        return CvtCharCodeResult::Incomplete;
-      }
-
-      b1 = src[i + 1];
-      if (!isContinuationByte(b1)) {
-        // 2バイト目なのに前のバイトの続きじゃなかったらおかしい
-        // 2バイト目に入るべき値の範囲外
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-      // 識別ビットを削除して繋げる
-      code_point = static_cast<uint32_t>(b0 & 0x1F) << 6 |
-                   static_cast<uint32_t>(b1 & 0x3F);
-      i += 2;
-    } else if (0xE0 <= b0 && b0 <= 0xEF) {
-      // 3バイトの UTF-8 (1バイト目はすでに b0 に入ってる)
-      // 11100000 ~ 11101111
-      uint8_t b1 = 0, b2 = 0;
-      if (i + 2 >= src_len) {
-        // 続きのデータがないならエラー
-        // ただし後から続きを取得できるかも
-        i = 0;
-        return CvtCharCodeResult::Incomplete;
-      }
-
-      b1 = src[i + 1];
-      b2 = src[i + 2];
-      if (!isContinuationByte(b1) || !isContinuationByte(b2)) {
-        // 2バイト目以降なのに前のバイトの続きじゃなかったらおかしい
-        // 2バイト目以降に入るべき値の範囲外
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // UTF-16 で16ビットをはみ出す (サロゲートというらしい) 部分
-      // UTF-32 への変換だとしてもそのまま UTF-8 にみられる場合は不正らしい
-      // 0x10000 ~ 0x10FFFF の範囲である必要がある
-      // 0xED 0xA0 ~
-      if (b0 == 0xED && 0xA0 <= b1) {
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // 0xE0 0x80 ~ 0x9F は本来1バイトの文字を3バイトで表してるから不正らしい
-      if (b0 == 0xE0 && 0x80 <= b1 && b1 <= 0x9F) {
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // 識別ビットを削除して繋げる
-      code_point = static_cast<uint32_t>(b0 & 0x0F) << 12 |
-                   static_cast<uint32_t>(b1 & 0x3F) << 6 |
-                   static_cast<uint32_t>(b2 & 0x3F);
-      i += 3;
-    } else if (b0 >= 0xF0 && b0 <= 0xF4) {
-      // 4バイトの UTF-8 (1バイト目はすでに b0 に入ってる)
-      // 11110000 ~ 11110100
-      uint8_t b1 = 0, b2 = 0, b3 = 0;
-      if (i + 3 >= src_len) {
-        // 続きのデータがないならエラー
-        // ただし後から続きを取得できるかも
-        i = 0;
-        return CvtCharCodeResult::Incomplete;
-      }
-
-      b1 = src[i + 1];
-      b2 = src[i + 2];
-      b3 = src[i + 3];
-      if (!isContinuationByte(b1) || !isContinuationByte(b2) ||
-          !isContinuationByte(b3)) {
-        // 2バイト目以降なのに前のバイトの続きじゃなかったらおかしい
-        // 2バイト目以降に入るべき値の範囲外
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // 0xF0 0x80 ~ 0x8F は不正らしい
-      if (b0 == 0xF0 && 0x80 <= b1 && b1 <= 0x8F) {
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // 0xF4 0x90 ~ は不正らしい
-      if (b0 == 0xF4 && 0x90 <= b1) {
-        i++;
-        return CvtCharCodeResult::Invalid;
-      }
-
-      // 識別ビットを削除して繋げる
-      code_point = static_cast<uint32_t>(b0 & 0x07) << 18 |
-                   static_cast<uint32_t>(b1 & 0x3F) << 12 |
-                   static_cast<uint32_t>(b2 & 0x3F) << 6 |
-                   static_cast<uint32_t>(b3 & 0x3F);
-      i += 4;
-    } else {
-      // その他は不正
-      i++;
-      return CvtCharCodeResult::Invalid;
-    }
-
-    // 一文字分の処理が完了したら即時抜ける
-    break;
-  }
-  if (out_code_point != nullptr) {
-    *out_code_point = code_point;
-  }
-  if (consumed_src_bytes != nullptr) {
-    *consumed_src_bytes = i;
-  }
-  return CvtCharCodeResult::Success;
-}
-
-CvtCharCodeResult cvtUTF32ToUTF16(std::uint32_t code_point, uint16_t (&dst)[2],
-                                  std::size_t *out_utf16_len) {
-  std::size_t utf16_len = 0;
-  dst[0] = 0;
-  dst[1] = 0;
-  // サロゲート領域 (0xD800〜0xDFFF) 自体 と 0x10FFFF 超えは不正
-  if ((code_point >= 0xD800 && code_point <= 0xDFFF) || code_point > 0x10FFFF) {
-    if (out_utf16_len != nullptr) {
-      *out_utf16_len = 0;
-    }
-    return CvtCharCodeResult::Invalid;
-  }
-
-  if (code_point <= 0xFFFF) {
-    // サロゲートでない
-    dst[0] = static_cast<uint16_t>(code_point);
-    utf16_len = 1;
-  } else if (0x10000 <= code_point && code_point <= 0x10FFFF) {
-    // 10000000000000000 ~ 100001111111111111111
-    // サロゲート
-    uint32_t tmp = code_point - 0x10000;
-    uint16_t high = static_cast<uint16_t>(
-        (tmp >> 10) + 0xD800); // 0x400 で割って 0xD800 を足す
-    uint16_t low = static_cast<uint16_t>(
-        (tmp & 0x3FF) + 0xDC00); // 0x400 で割った余りに 0xDC00 を足す
-    dst[0] = high;
-    dst[1] = low;
-    utf16_len = 2;
-  }
-
-  if (out_utf16_len != nullptr) {
-    *out_utf16_len = utf16_len;
-  }
-
-  return CvtCharCodeResult::Success;
-}
-
-// 直接変換用
-CvtCharCodeResult cvtUTF8ToUTF16(const uint8_t *src, std::size_t src_len,
-                                 uint16_t (&dst)[2],
-                                 std::size_t *consumed_src_bytes,
-                                 std::size_t *out_utf16_len,
-                                 std::uint32_t *out_code_point) {
-  dst[0] = 0;
-  dst[1] = 0;
-  std::uint32_t code_point = 0;
-  CvtCharCodeResult res =
-      cvtUTF8ToUTF32(src, src_len, consumed_src_bytes, &code_point);
-  if (res != CvtCharCodeResult::Success) {
-    return res;
-  }
-
-  if (out_code_point != nullptr) {
-    *out_code_point = code_point;
-  }
-
-  return cvtUTF32ToUTF16(code_point, dst, out_utf16_len);
-}
 
 MacFont::~MacFont() {
   if (bitmap_data != nullptr) {
@@ -316,11 +90,11 @@ ITexture *MacFont::createFontTextureBase(IGraphicsDevice *device,
   size_t consumed = 0;
   std::uint32_t code_point = 0;
 
-  CvtCharCodeResult result = cvtUTF8ToUTF16(
+  CharConverter::Result result = CharConverter::cvtUTF8ToUTF16(
       reinterpret_cast<const uint8_t *>(chracter), std::strlen(chracter),
       unichar_c, &consumed, &len, &code_point);
 
-  if (result != CvtCharCodeResult::Success) {
+  if (result != CharConverter::Result::Success) {
     return nullptr;
   }
 
@@ -619,11 +393,11 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
     size_t len = 0;
     size_t consumed = 0;
     std::uint32_t code_point = 0;
-    CvtCharCodeResult cvt_result =
-        cvtUTF8ToUTF16(reinterpret_cast<const std::uint8_t *>(&c),
-                       sizeof(c) / sizeof(std::uint8_t), unichar_c, &consumed,
-                       &len, &code_point);
-    if (cvt_result != CvtCharCodeResult::Success) {
+    CharConverter::Result cvt_result = CharConverter::cvtUTF8ToUTF16(
+        reinterpret_cast<const std::uint8_t *>(&c),
+        sizeof(c) / sizeof(std::uint8_t), unichar_c, &consumed, &len,
+        &code_point);
+    if (cvt_result != CharConverter::Result::Success) {
       // ctx が bitmap を参照してるので free は後ろに書く必要がある
       font_atlas->release();
       std::free(bitmap_data);
@@ -706,34 +480,46 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   return font_atlas;
 }
 
-GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
-                                               uint32_t code_point,
-                                               UniChar unichar_c[2],
-                                               size_t utf16_len, int cols) {
-  // 中身は MacFontAtlas のはずだから大丈夫なキャスト
-  MacFontAtlas *font_atlas = static_cast<MacFontAtlas *>(font_atlas_template);
+template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
+  // キャッシュフラッシュ
+  auto flash = [this]() -> void {
+    std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
+    this->rewindCursor();
+  };
+
+  // ASCII の範囲はそのまま取得可能
+  // 0x20 = ' '
+  // 0x7E = '~'
+  if (0x20 <= code_point && code_point <= 0x7E) {
+    return this->glyph_table[code_point - 0x20];
+  }
 
   // ハッシュテーブルを検索
-  size_t start_idx = font_atlas->hashCodepoint(code_point);
-  size_t idx = start_idx;
-  while (font_atlas->glyph_hash_table[idx].codepoint != 0 &&
-         font_atlas->glyph_hash_table[idx].codepoint != code_point) {
+  const std::size_t start_idx = this->hashCodepoint(code_point);
+  std::size_t idx = start_idx;
+
+  // 注目中のインデックスのコードポイントが空でないかつ別のコードポイントである間ループ
+  // つまりそのインデックスが空きか既に自分のコードポイントだったらそのままループを抜けて正しいインデックスを取得できる
+  while (this->glyph_hash_table[idx].codepoint != 0 &&
+         this->glyph_hash_table[idx].codepoint != code_point) {
     // 末尾まで行ったら自動で巻き戻る
     // % 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
     // 一見すると if で抜けるので巻き戻しが不要だが start_idx
     // からではなく全体から見れば一周する可能性もある
+    // idx = (idx + 1) % (HashEntry::HASH_SIZE - 1)
     idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
     if (idx == start_idx) {
       // 一周したなら満タンを意味する (キャッシュフラッシュ)
-      std::memset(font_atlas->glyph_hash_table, 0,
-                  sizeof(font_atlas->glyph_hash_table));
-      font_atlas->rewindCursor();
-      idx = font_atlas->hashCodepoint(code_point);
+      flash();
+
+      // フラッシュしたらインデックスを再取得
+      idx = this->hashCodepoint(code_point);
       break;
     }
   }
 
-  HashEntry *entry = &font_atlas->glyph_hash_table[idx];
+  // entry は作業する要素へのポインタ
+  HashEntry *entry = &this->glyph_hash_table[idx];
 
   // すでにキャッシュにあれば、その UV を返す
   if (entry->codepoint == code_point) {
@@ -741,38 +527,48 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
   }
 
   // 未キャッシュの場合
-  float char_width = font_atlas->cell_width * cols;
-  int atlas_width = font_atlas->texture->getWidth();
-  int atlas_height = font_atlas->texture->getHeight();
+  // 文字幅 (半角なら 1, 全角なら 2)
+  int cols = wcwidth(static_cast<wchar_t>(code_point));
+  if (cols <= 0) {
+    cols = 1;
+  }
+  float char_width = this->cell_width * cols;
+  int atlas_width = this->texture->getWidth();
+  int atlas_height = this->texture->getHeight();
 
   // 横幅チェック
   // はみ出すなら行を進める
-  if (font_atlas->cursor_x + char_width > atlas_width) {
-    font_atlas->cursor_x = 0.0f;
-    font_atlas->cursor_y += font_atlas->cell_height;
+  if (this->cursor_x + char_width > atlas_width) {
+    this->cursor_x = 0.0f;
+    this->cursor_y += this->cell_height;
   }
 
   // 高さチェク
   // はみ出すならフラッシュ (満タン)
-  if (font_atlas->cursor_y + font_atlas->cell_height > atlas_height) {
-    std::memset(font_atlas->glyph_hash_table, 0,
-                sizeof(font_atlas->glyph_hash_table));
-    font_atlas->rewindCursor();
+  if (this->cursor_y + this->cell_height > atlas_height) {
+    flash();
     // フラッシュしたのでインデックスを再取得
-    idx = font_atlas->hashCodepoint(code_point);
-    entry = &font_atlas->glyph_hash_table[idx];
+    idx = this->hashCodepoint(code_point);
+    entry = &this->glyph_hash_table[idx];
   }
 
   // 作業用ビットマップをクリア
-  size_t on_demand_size =
-      (font_atlas->cell_width * 2) * font_atlas->cell_height;
-  std::memset(font_atlas->on_demand_bitmap_data, 0, on_demand_size);
+  const size_t on_demand_bitmap_size =
+      (this->cell_width * 2) * this->cell_height;
+  std::memset(this->on_demand_bitmap_data, 0, on_demand_bitmap_size);
 
-  CellSize cell_size = MacFontAtlasHelper::getCellSize(font_atlas->data.font);
+  CellSize cell_size = MacFontAtlasHelper::getCellSize(this->data.font);
 
-  if (!MacFontAtlasHelper::drawBitmap(
-          font_atlas->data.ctx, font_atlas->data.font, cell_size, unichar_c,
-          utf16_len, char_width, font_atlas->cell_height, 0, 0)) {
+  UniChar unichar_c[2] = {};
+  std::size_t utf16_len = 0;
+  if (CharConverter::cvtUTF32ToUTF16(code_point, unichar_c, &utf16_len) !=
+      CharConverter::Result::Success) {
+    return {};
+  }
+
+  if (!MacFontAtlasHelper::drawBitmap(this->data.ctx, this->data.font,
+                                      cell_size, unichar_c, utf16_len,
+                                      char_width, this->cell_height, 0, 0)) {
     return {};
   }
 
@@ -789,30 +585,26 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
   // を全角の幅にすると元のビットマップ領域と同じようにテクスチャへ焼かれる
   // しかし実際は半角なので右半分が無駄になる
   // そこで領域指定で半角の幅にすれば自動的に線形にしたときの偶数番目に現れる黒の塊がカットされる
-  size_t stride = font_atlas->cell_width * 2.0f;
-  if (!font_atlas->texture->upload(
-          font_atlas->on_demand_bitmap_data, stride * font_atlas->cell_height,
-          stride,
-          {static_cast<int>(font_atlas->cursor_x),
-           static_cast<int>(font_atlas->cursor_y), static_cast<int>(char_width),
-           static_cast<int>(font_atlas->cell_height)})) {
+  size_t stride = this->cell_width * 2.0f;
+  if (!this->texture->upload(
+          this->on_demand_bitmap_data, stride * this->cell_height, stride,
+          {static_cast<int>(this->cursor_x), static_cast<int>(this->cursor_y),
+           static_cast<int>(char_width),
+           static_cast<int>(this->cell_height)})) {
     return {};
   }
 
-  // GlyphUV を生成
-  GlyphUV uv = {};
-  uv.u_min = font_atlas->cursor_x;
-  uv.v_min = font_atlas->cursor_y;
-  uv.u_max = font_atlas->cursor_x + char_width;
-  uv.v_max = font_atlas->cursor_y + font_atlas->cell_height;
-
+  // GlyphUV を生成しつつ, 作業領域を更新
   entry->codepoint = code_point;
-  entry->glyph_table = uv;
+  entry->glyph_table.u_min = this->cursor_x;
+  entry->glyph_table.v_min = this->cursor_y;
+  entry->glyph_table.u_max = this->cursor_x + char_width;
+  entry->glyph_table.v_max = this->cursor_y + this->cell_height;
 
   // カーソルを進める
-  font_atlas->cursor_x += char_width;
+  this->cursor_x += char_width;
 
-  return uv;
+  return entry->glyph_table;
 }
 
 // 基本的な文字列描画をテストするデモ関数
@@ -822,59 +614,31 @@ GlyphUV MacFontAtlasHelper::getOrCreateGlyphUV(FontAtlas *font_atlas_template,
 template <>
 bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
                          float start_y, std::uint32_t color) {
-  // 文字から UV 座標を取得
-  auto getGlyphUV = [this](char c) -> GlyphUV {
-    if (c >= 32 && c <= 126) {
-      return this->glyph_table[c - 32];
-    }
-    return this->glyph_table[0]; // 範囲外はスペース
-  };
-
   float current_x = start_x;
-  float y = start_y;
+  const float y = start_y;
   const uint8_t *ptr = reinterpret_cast<const uint8_t *>(str);
   size_t remaining = std::strlen(str);
 
   while (remaining > 0) {
-    float cw = this->cell_width;
-    float ch = this->cell_height;
-    GlyphUV uv = {};
     size_t consumed = 0;
-    uint8_t b0 = *ptr;
+    uint32_t code_point = 0;
 
-    if (b0 >= 32 && b0 <= 126) {
-      // ----------------------------
-      // ASCII 文字の場合
-      // ----------------------------
-      uv = getGlyphUV(static_cast<char>(b0));
-      consumed = 1;
-    } else {
-      // ----------------------------
-      // 非 ASCII 文字の場合
-      // ----------------------------
-      UniChar unichar_c[2] = {};
-      uint32_t code_point = 0;
-      size_t utf16_len = 0;
-
-      CvtCharCodeResult cvt_result = cvtUTF8ToUTF16(
-          ptr, remaining, unichar_c, &consumed, &utf16_len, &code_point);
-      if (cvt_result != CvtCharCodeResult::Success) {
-        // 壊れた文字はスキップ (置換文字にするのもあり)
-        ptr++;
-        remaining--;
-        continue;
-      }
-
-      // 文字幅 (半角なら 1, 全角なら 2)
-      int cols = wcwidth(static_cast<wchar_t>(code_point));
-      if (cols <= 0) {
-        cols = 1;
-      }
-      cw = cw * cols;
-
-      uv = MacFontAtlasHelper::getOrCreateGlyphUV(this, code_point, unichar_c,
-                                                  utf16_len, cols);
+    // UTF-8 コードから UTF-32 コードを取得
+    CharConverter::Result cvt_result =
+        CharConverter::cvtUTF8ToUTF32(ptr, remaining, &consumed, &code_point);
+    if (cvt_result != CharConverter::Result::Success) {
+      // 壊れた文字はスキップ (置換文字にするのもあり)
+      ptr++;
+      remaining--;
+      continue;
     }
+
+    const GlyphUV uv = this->getGlyphUV(code_point);
+
+    // uv から計算すればそのままサイズがわかる
+    float cw = uv.u_max - uv.u_min;
+    float ch = uv.v_max - uv.v_min;
+
     VertexTex quad[6] = {
         {{current_x, y}, {uv.u_min, uv.v_min}, color},
         {{current_x + cw, y}, {uv.u_max, uv.v_min}, color},

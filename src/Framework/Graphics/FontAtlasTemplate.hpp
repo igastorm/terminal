@@ -9,6 +9,7 @@ protected:
 
   bool drawText(IRenderPass *, const char *, float, float,
                 std::uint32_t) override;
+  GlyphUV getGlyphUV(wchar_t) override;
 
 public:
   FontAtlasTemplate() = delete;

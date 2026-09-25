@@ -31,9 +31,10 @@ class ITexture : public IObject {
 public:
   virtual ~ITexture() = default;
 
-  virtual bool upload(const void *, size_t, size_t, const TextureDataRegion) = 0;
+  virtual bool upload(const void *, size_t, size_t,
+                      const TextureDataRegion) = 0;
 
-  virtual TextureFormat getFormat() = 0;
+  [[nodiscard]] virtual TextureFormat getFormat() = 0;
 
   virtual int getWidth() = 0;
   virtual int getHeight() = 0;

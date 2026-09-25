@@ -61,8 +61,5 @@ public:
   [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize,
                                        const UniChar *, size_t, int, int, int,
                                        int);
-  [[nodiscard]] static GlyphUV getOrCreateGlyphUV(FontAtlas*, uint32_t code_point,
-                                           UniChar unichar_c[2],
-                                           size_t utf16_len, int cols);
   //MacFontAtlasHelper() = delete;
 };

@@ -25,6 +25,10 @@ int CommonRenderPass::release() {
 //
 //  ========================================================
 
+ITexture* CommonFontAtlas::getTexture() {
+  return this->texture;
+}
+
 int CommonFontAtlas::addRef() { return ++this->ref_count; }
 
 int CommonFontAtlas::release() {
@@ -39,6 +43,7 @@ int CommonFontAtlas::release() {
 // コードポイントをハッシュ化
 size_t CommonFontAtlas::hashCodepoint(std::uint32_t cp) {
   // このようなハッシュ関数にするとなんか重複が少なくなるらしい
+  // 原理はいまいちわからん
   return (cp * 2654435761u) & (HashEntry::HASH_SIZE - 1);
 }
 
