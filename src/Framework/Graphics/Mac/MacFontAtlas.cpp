@@ -512,7 +512,10 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
 
   CGGlyph glyph = 0;
   if (!CTFontGetGlyphsForCharacters(font, unichar_c, &glyph, len)) {
-    return false;
+    UniChar replacement_char = 0x25A1;
+    if (!CTFontGetGlyphsForCharacters(font, &replacement_char, &glyph, 1)) {
+      return false;
+    }
   }
 
   // CoreGraphics は左下が原点なので変換が必要
