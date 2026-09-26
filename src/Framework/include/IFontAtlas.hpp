@@ -14,5 +14,7 @@ public:
                         std::uint32_t) = 0;
   [[nodiscard]] virtual ITexture *getTexture() = 0;
   [[nodiscard]] virtual GlyphUV getGlyphUV(wchar_t) = 0;
+  virtual bool preloadGlyphs32(const wchar_t *) = 0;
+  //virtual bool drawText(IRenderPass *, float, float, std::uint32_t) = 0;
   virtual ~IFontAtlas() = default;
 };

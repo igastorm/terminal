@@ -563,6 +563,8 @@ template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
   std::size_t utf16_len = 0;
   if (CharConverter::cvtUTF32ToUTF16(code_point, unichar_c, &utf16_len) !=
       CharConverter::Result::Success) {
+    // そもそも UTF32 から UTF16
+    // への変換だからバグがない限りエラーにはならないと思われる
     return {};
   }
 
@@ -605,6 +607,30 @@ template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
   this->cursor_x += char_width;
 
   return entry->glyph_table;
+}
+
+template <> bool FontAtlas::preloadGlyphs32(const wchar_t *str) {
+  if (str == nullptr) {
+    return false;
+  }
+  size_t remaining = wcslen(str);
+  while (remaining > 0) {
+    size_t consumed = 0;
+    uint32_t code_point = *str;
+
+    // u_max と v_max が 0.0f だったらエラーとみなせる
+    const GlyphUV uv = this->getGlyphUV(code_point);
+    
+    if (uv.u_max == 0.0f || uv.v_max == 0.0f) {
+      return false;
+    }
+
+    consumed++;
+    str += consumed;
+    remaining -= consumed;
+  }
+
+  return true;
 }
 
 // 基本的な文字列描画をテストするデモ関数

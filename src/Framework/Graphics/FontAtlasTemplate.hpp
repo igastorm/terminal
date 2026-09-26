@@ -11,6 +11,8 @@ protected:
                 std::uint32_t) override;
   GlyphUV getGlyphUV(wchar_t) override;
 
+  bool preloadGlyphs32(const wchar_t*) override;
+
 public:
   FontAtlasTemplate() = delete;
   ~FontAtlasTemplate() = default;
