@@ -13,6 +13,8 @@ protected:
 
   bool preloadGlyphs32(const wchar_t*) override;
 
+  bool updateGlyphCache(const wchar_t) override;
+
 public:
   FontAtlasTemplate() = delete;
   ~FontAtlasTemplate() = default;

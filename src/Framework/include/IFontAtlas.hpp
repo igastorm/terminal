@@ -15,6 +15,8 @@ public:
   [[nodiscard]] virtual ITexture *getTexture() = 0;
   [[nodiscard]] virtual GlyphUV getGlyphUV(wchar_t) = 0;
   virtual bool preloadGlyphs32(const wchar_t *) = 0;
-  //virtual bool drawText(IRenderPass *, float, float, std::uint32_t) = 0;
+  // レンダリングパイプラインの begin-end 内で呼ばない方がいい
+  virtual bool updateGlyphCache(const wchar_t) = 0;
+  // virtual bool drawText(IRenderPass *, float, float, std::uint32_t) = 0;
   virtual ~IFontAtlas() = default;
 };

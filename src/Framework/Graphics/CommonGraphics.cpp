@@ -41,7 +41,7 @@ int CommonFontAtlas::release() {
 }
 
 // コードポイントをハッシュ化
-size_t CommonFontAtlas::hashCodepoint(std::uint32_t cp) {
+size_t CommonFontAtlas::hashCodepoint(std::uint32_t cp) const {
   // このようなハッシュ関数にするとなんか重複が少なくなるらしい
   // 原理はいまいちわからん
   return (cp * 2654435761u) & (HashEntry::HASH_SIZE - 1);
@@ -59,6 +59,27 @@ bool CommonFontAtlas::rewindCursor() {
   int ascii_rows = (95 + cols_per_row - 1) / cols_per_row;
   this->cursor_y = ascii_rows * cell_height;
   return true;
+}
+
+// ハッシュテーブルに既に存在するか探すだけ
+const HashEntry* CommonFontAtlas::findEntry(uint32_t code_point) const {
+  const std::size_t start_idx = this->hashCodepoint(code_point);
+  std::size_t idx = start_idx;
+
+  while (this->glyph_hash_table[idx].codepoint != 0) {
+    if (this->glyph_hash_table[idx].codepoint == code_point) {
+      // 見つかった
+      return &this->glyph_hash_table[idx];
+    }
+    idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
+    if (idx == start_idx) {
+      // 一周した（満タンかつ見つからなかった）
+      break;
+    }
+  }
+  
+  // キャッシュに存在しない
+  return nullptr;
 }
 
 CommonFontAtlas::CommonFontAtlas(IGraphicsDevice *device) {

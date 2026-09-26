@@ -325,7 +325,9 @@ MacFontAtlas::~MacFontAtlas() {
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
                                                const char *font_name,
-                                               float font_size, int atlash_width, int atlash_height) {
+                                               float font_size,
+                                               int atlash_width,
+                                               int atlash_height) {
   if (std::strlen(font_name) == 0) {
     return nullptr;
   }
@@ -480,38 +482,67 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
 }
 
 template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
-  // キャッシュフラッシュ
+  // ASCII の範囲はそのまま配列から即座に返す
+  if (0x20 <= code_point && code_point <= 0x7E) {
+    return this->glyph_table[code_point - 0x20];
+  }
+
+  // ハッシュテーブルから探す
+  const HashEntry *entry = this->findEntry(static_cast<uint32_t>(code_point));
+  if (entry != nullptr) {
+    // キャッシュヒット
+    return entry->glyph_table;
+  }
+
+  // キャッシュに無かった場合 (事前 preload 漏れなど)
+  // ここで flash や upload をするとバグる
+  return {};
+}
+
+template <> bool FontAtlas::updateGlyphCache(const wchar_t code_point) {
+  // キャッシュフラッシュ関数
   auto flash = [this]() -> void {
     std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
     this->rewindCursor();
   };
 
-  // ASCII の範囲はそのまま取得可能
-  // 0x20 = ' '
-  // 0x7E = '~'
+  // ASCII は何もしない
   if (0x20 <= code_point && code_point <= 0x7E) {
-    return this->glyph_table[code_point - 0x20];
+    return true;
   }
 
-  // ハッシュテーブルを検索
-  const std::size_t start_idx = this->hashCodepoint(code_point);
-  std::size_t idx = start_idx;
+  // すでにキャッシュにあれば, 何もしない
+  if (this->findEntry(code_point) != nullptr) {
+    return true;
+  }
 
-  // 注目中のインデックスのコードポイントが空でないかつ別のコードポイントである間ループ
-  // つまりそのインデックスが空きか既に自分のコードポイントだったらそのままループを抜けて正しいインデックスを取得できる
-  while (this->glyph_hash_table[idx].codepoint != 0 &&
-         this->glyph_hash_table[idx].codepoint != code_point) {
-    // 末尾まで行ったら自動で巻き戻る
-    // % 使って自動折り返ししてたやつの高速版 & すると結果的にあまりが出てくる
-    // 一見すると if で抜けるので巻き戻しが不要だが start_idx
-    // からではなく全体から見れば一周する可能性もある
-    // idx = (idx + 1) % (HashEntry::HASH_SIZE - 1)
+  int cols = wcwidth(static_cast<wchar_t>(code_point));
+  if (cols <= 0) {
+    cols = 1;
+  }
+  const float char_width = this->cell_width * cols;
+  const int atlas_width = this->texture->getWidth();
+  const int atlas_height = this->texture->getHeight();
+
+  // 横幅チェック (はみ出すなら改行)
+  if (this->cursor_x + char_width > atlas_width) {
+    this->cursor_x = 0.0f;
+    this->cursor_y += this->cell_height;
+  }
+
+  // 高さチェック (はみ出すなら容量不足だからフラッシュ)
+  if (this->cursor_y + this->cell_height > atlas_height) {
+    flash();
+  }
+
+  // 空きをさがす
+  size_t start_idx = this->hashCodepoint(code_point);
+  size_t idx = start_idx;
+  while (this->glyph_hash_table[idx].codepoint != 0) {
     idx = (idx + 1) & (HashEntry::HASH_SIZE - 1);
     if (idx == start_idx) {
-      // 一周したなら満タンを意味する (キャッシュフラッシュ)
+      // テーブル満タンなら flash して最初から
       flash();
-
-      // フラッシュしたらインデックスを再取得
       idx = this->hashCodepoint(code_point);
       break;
     }
@@ -520,57 +551,23 @@ template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
   // entry は作業する要素へのポインタ
   HashEntry *entry = &this->glyph_hash_table[idx];
 
-  // すでにキャッシュにあれば、その UV を返す
-  if (entry->codepoint == code_point) {
-    return entry->glyph_table;
-  }
-
-  // 未キャッシュの場合
-  // 文字幅 (半角なら 1, 全角なら 2)
-  int cols = wcwidth(static_cast<wchar_t>(code_point));
-  if (cols <= 0) {
-    cols = 1;
-  }
-  float char_width = this->cell_width * cols;
-  int atlas_width = this->texture->getWidth();
-  int atlas_height = this->texture->getHeight();
-
-  // 横幅チェック
-  // はみ出すなら行を進める
-  if (this->cursor_x + char_width > atlas_width) {
-    this->cursor_x = 0.0f;
-    this->cursor_y += this->cell_height;
-  }
-
-  // 高さチェク
-  // はみ出すならフラッシュ (満タン)
-  if (this->cursor_y + this->cell_height > atlas_height) {
-    flash();
-    // フラッシュしたのでインデックスを再取得
-    idx = this->hashCodepoint(code_point);
-    entry = &this->glyph_hash_table[idx];
-  }
-
-  // 作業用ビットマップをクリア
+  // 焼き付け
   const size_t on_demand_bitmap_size =
       (this->cell_width * 2) * this->cell_height;
   std::memset(this->on_demand_bitmap_data, 0, on_demand_bitmap_size);
-
   CellSize cell_size = MacFontAtlasHelper::getCellSize(this->data.font);
 
   UniChar unichar_c[2] = {};
   std::size_t utf16_len = 0;
   if (CharConverter::cvtUTF32ToUTF16(code_point, unichar_c, &utf16_len) !=
       CharConverter::Result::Success) {
-    // そもそも UTF32 から UTF16
-    // への変換だからバグがない限りエラーにはならないと思われる
-    return {};
+    return false;
   }
 
   if (!MacFontAtlasHelper::drawBitmap(this->data.ctx, this->data.font,
                                       cell_size, unichar_c, utf16_len,
                                       char_width, this->cell_height, 0, 0)) {
-    return {};
+    return false;
   }
 
   // texure 上のカーソル位置に焼く
@@ -586,26 +583,25 @@ template <> GlyphUV FontAtlas::getGlyphUV(wchar_t code_point) {
   // を全角の幅にすると元のビットマップ領域と同じようにテクスチャへ焼かれる
   // しかし実際は半角なので右半分が無駄になる
   // そこで領域指定で半角の幅にすれば自動的に線形にしたときの偶数番目に現れる黒の塊がカットされる
-  size_t stride = this->cell_width * 2.0f;
+  const size_t stride = this->cell_width * 2.0f;
   if (!this->texture->upload(
           this->on_demand_bitmap_data, stride * this->cell_height, stride,
           {static_cast<int>(this->cursor_x), static_cast<int>(this->cursor_y),
            static_cast<int>(char_width),
            static_cast<int>(this->cell_height)})) {
-    return {};
+    return false;
   }
 
-  // GlyphUV を生成しつつ, 作業領域を更新
+  // 7. エントリに UV を登録し、カーソルを進める
   entry->codepoint = code_point;
   entry->glyph_table.u_min = this->cursor_x;
   entry->glyph_table.v_min = this->cursor_y;
   entry->glyph_table.u_max = this->cursor_x + char_width;
   entry->glyph_table.v_max = this->cursor_y + this->cell_height;
 
-  // カーソルを進める
   this->cursor_x += char_width;
 
-  return entry->glyph_table;
+  return true;
 }
 
 template <> bool FontAtlas::preloadGlyphs32(const wchar_t *str) {
@@ -619,7 +615,7 @@ template <> bool FontAtlas::preloadGlyphs32(const wchar_t *str) {
 
     // u_max と v_max が 0.0f だったらエラーとみなせる
     const GlyphUV uv = this->getGlyphUV(code_point);
-    
+
     if (uv.u_max == 0.0f || uv.v_max == 0.0f) {
       return false;
     }
@@ -658,6 +654,7 @@ bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
       continue;
     }
 
+    this->updateGlyphCache(code_point);
     const GlyphUV uv = this->getGlyphUV(code_point);
 
     // uv から計算すればそのままサイズがわかる

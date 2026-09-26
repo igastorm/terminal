@@ -61,7 +61,8 @@ protected:
   float cursor_y = 0.0f;
 
   bool rewindCursor();
-  size_t hashCodepoint(std::uint32_t);
+  size_t hashCodepoint(std::uint32_t) const;
+  const HashEntry* findEntry(uint32_t code_point) const;
 
   CommonFontAtlas(IGraphicsDevice *);
 
