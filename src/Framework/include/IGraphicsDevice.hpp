@@ -17,5 +17,6 @@ public:
   createTexture(int, int, const TextureDesc = ITexture::DEFAULT_DESC) = 0;
 
   [[nodiscard]] virtual ITexture *createFontTexture(const char *, int) = 0;
-  [[nodiscard]] virtual IFontAtlas *createFontAtlas(const char *, float) = 0;
+  [[nodiscard]] virtual IFontAtlas *createFontAtlas(const char *, float,
+                                                    int = 512, int = 512) = 0;
 };

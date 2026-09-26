@@ -49,7 +49,7 @@ public:
   MacFontAtlas() = delete;
   ~MacFontAtlas();
   static MacFontAtlas *createMacFontAtlas(IGraphicsDevice *, const char *,
-                                          float);
+                                          float, int, int);
 };
 
 class MacFontAtlasHelper {

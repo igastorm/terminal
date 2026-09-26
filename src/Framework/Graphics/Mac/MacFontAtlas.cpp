@@ -325,7 +325,7 @@ MacFontAtlas::~MacFontAtlas() {
 
 MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
                                                const char *font_name,
-                                               float font_size) {
+                                               float font_size, int atlash_width, int atlash_height) {
   if (std::strlen(font_name) == 0) {
     return nullptr;
   }
@@ -356,9 +356,8 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   font_atlas->cell_width = cell_size.cell_width;
   font_atlas->cell_height = cell_size.cell_height;
 
-  // とりあえず 512 x 512 = 約 256KB 分
-  int atlas_width = 512;
-  int atlas_height = 512;
+  int atlas_width = atlash_width;
+  int atlas_height = atlash_height;
   font_atlas->atlas_width = atlas_width;
   font_atlas->atlas_height = atlas_height;
   const int total_bytes = atlas_width * atlas_height * sizeof(std::uint8_t);
