@@ -9,11 +9,11 @@ protected:
 
   bool drawText(IRenderPass *, const char *, float, float,
                 std::uint32_t) override;
-  GlyphUV getGlyphUV(wchar_t) override;
+  GlyphUV getGlyphUV(char32_t) override;
 
-  bool preloadGlyphs32(const wchar_t*) override;
+  bool preloadGlyphs32(const char32_t*) override;
 
-  bool updateGlyphCache(const wchar_t) override;
+  bool updateGlyphCache(const char32_t) override;
 
 public:
   FontAtlasTemplate() = delete;
