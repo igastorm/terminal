@@ -85,8 +85,8 @@ add_executable(terminal
   "${SRC_DIR}/Framework/Graphics/Mac/MacFontAtlas.cpp"
   "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
   "${SRC_DIR}/Framework/CharConverter/CharConverter.cpp"
-  "${SRC_DIR}/main.cpp"
-  "${SRC_DIR}/PTY/PTY.cpp"
+  "${SRC_DIR}/Terminal/main.cpp"
+  "${SRC_DIR}/Terminal/PTY/PTY.cpp"
   "${SHADER_HEADER}"
 )
 

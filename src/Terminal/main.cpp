@@ -1,5 +1,5 @@
 #include "IApplication.hpp"
-#include "PTY/IPTY.hpp"
+#include "include/IPTY.hpp"
 #include <cstring>
 #include <iostream>
 
