@@ -232,7 +232,7 @@ IWindow *ApplicationTemplate<ApplicationData>::createWindow(int width,
       // https://www.dojeun.com/contentsview.php?listid=00016
       // とりあえず ASCII コード表にあるものだけ
       if ((c >= '@' && c <= '_') || (c >= 'a' && c <= 'z')) {
-        char ctrl_code = (char)(c & 0x1F);
+        char ctrl_code = static_cast<char>(c & 0x1F);
 
         // onEvent とか C++ 側のコードはコールベースで Cocoa
         // 側から呼ばれるのでスタック上のポインタを渡しても安全なはず
@@ -267,7 +267,7 @@ IWindow *ApplicationTemplate<ApplicationData>::createWindow(int width,
     str = [(NSAttributedString *)string string];
   } else {
     // そのままポインタをコピー (中身はコピーしない)
-    str = (NSString *)string;
+    str = static_cast<NSString *>(string);
   }
 
   if (str != nil && str.length > 0) {
