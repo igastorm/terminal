@@ -1,9 +1,28 @@
 #pragma once
 #include "IApplication.hpp"
 #include "IFontAtlas.hpp"
+#include "IFontRasterizer.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
+
+//  ========================================================
+//
+//  Font Rasterizer
+//
+//  ========================================================
+
+class CommonFontRasterizer : public IFontRasterizer {
+private:
+  int ref_count = 0;
+  IFont* font = nullptr;
+
+public:
+  int addRef() override;
+  int release() override;
+  CommonFontRasterizer(IFont*);
+  ~CommonFontRasterizer();
+};
 
 //  ========================================================
 //
@@ -62,12 +81,12 @@ protected:
 
   bool rewindCursor();
   size_t hashCodepoint(std::uint32_t) const;
-  const HashEntry* findEntry(uint32_t code_point) const;
+  const HashEntry *findEntry(uint32_t code_point) const;
 
   CommonFontAtlas(IGraphicsDevice *);
 
 public:
-  ITexture* getTexture() override;
+  ITexture *getTexture() override;
   int addRef() override;
   int release() override;
   ~CommonFontAtlas();

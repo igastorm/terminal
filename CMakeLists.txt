@@ -83,6 +83,7 @@ add_executable(terminal
   "${SRC_DIR}/Framework/Graphics/Mac/MacTexture.mm"
   "${SRC_DIR}/Framework/Graphics/Mac/MacRenderPass.mm"
   "${SRC_DIR}/Framework/Graphics/Mac/MacFontAtlas.cpp"
+  "${SRC_DIR}/Framework/Graphics/Mac/MacFontRasterizer.cpp"
   "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
   "${SRC_DIR}/Framework/CharConverter/CharConverter.cpp"
   "${SRC_DIR}/Terminal/main.cpp"

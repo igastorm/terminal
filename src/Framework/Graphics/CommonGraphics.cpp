@@ -4,6 +4,31 @@
 
 //  ========================================================
 //
+//  Font Rasterizer
+//
+//  ========================================================
+
+int CommonFontRasterizer::addRef() { return ++this->ref_count; }
+
+int CommonFontRasterizer::release() {
+  if (--this->ref_count == 0) {
+    this->~CommonFontRasterizer();
+    free(this);
+    return 0;
+  }
+  return this->ref_count;
+}
+
+CommonFontRasterizer::CommonFontRasterizer(IFont *font) : font(font) {}
+
+CommonFontRasterizer::~CommonFontRasterizer() {
+  if (this->font != nullptr) {
+    this->font->release();
+  }
+}
+
+//  ========================================================
+//
 //  Render Pass
 //
 //  ========================================================
@@ -25,9 +50,7 @@ int CommonRenderPass::release() {
 //
 //  ========================================================
 
-ITexture* CommonFontAtlas::getTexture() {
-  return this->texture;
-}
+ITexture *CommonFontAtlas::getTexture() { return this->texture; }
 
 int CommonFontAtlas::addRef() { return ++this->ref_count; }
 
@@ -62,7 +85,7 @@ bool CommonFontAtlas::rewindCursor() {
 }
 
 // ハッシュテーブルに既に存在するか探すだけ
-const HashEntry* CommonFontAtlas::findEntry(uint32_t code_point) const {
+const HashEntry *CommonFontAtlas::findEntry(uint32_t code_point) const {
   const std::size_t start_idx = this->hashCodepoint(code_point);
   std::size_t idx = start_idx;
 
@@ -77,7 +100,7 @@ const HashEntry* CommonFontAtlas::findEntry(uint32_t code_point) const {
       break;
     }
   }
-  
+
   // キャッシュに存在しない
   return nullptr;
 }
