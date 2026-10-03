@@ -1,41 +1,43 @@
-#include "MacFontRasterizer.hpp"
+#include "MacBitmap.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <new> // IWYU pragma: keep
 
-MacFontRasterizer::MacFontRasterizer(CGContextRef cg_context) {
+MacBitmap::MacBitmap(CGContextRef cg_context, void *bitmap_data) {
   this->data.cg_context = cg_context;
+  this->data.bitmap_data = bitmap_data;
 }
 
-MacFontRasterizer::~MacFontRasterizer() {
+MacBitmap::~MacBitmap() {
   if (this->data.cg_context != nullptr) {
     CGContextRelease(this->data.cg_context);
     this->data.cg_context = nullptr;
   }
+  if (this->data.bitmap_data != nullptr) {
+    std::free(this->data.bitmap_data);
+    this->data.bitmap_data = nullptr;
+  }
 }
 
-MacFontRasterizer *MacFontRasterizer::createMacFontRasterizer(
-    IFont *font, std::uint8_t *bitmap_data, std::size_t bytes, std::size_t width,
-    std::size_t height, std::size_t bytes_per_row) {
-  if (font == nullptr || bitmap_data == nullptr || width == 0 || height == 0) {
+MacBitmap *MacBitmap::createMacBitmap(std::size_t bytes, std::size_t width,
+                                      std::size_t height, std::size_t count) {
+  if (width == 0 || height == 0) {
     return nullptr;
   }
 
-  // 1行分のバイト数が1行分のデータ量に満たないならエラー
-  // bytes_per_row が大きい分には OK (Rect
-  // に合わせて無駄な部分がカットされるだけなので)
-  if (bytes_per_row < width * sizeof(std::uint8_t)) {
+  if (bytes < width * height * count) {
     return nullptr;
   }
 
-  // 全体の容量が不足していたらエラー
-  if (bytes < bytes_per_row * height) {
+  void *bitmap_data = std::calloc(width * height, count);
+  if (bitmap_data == nullptr) {
     return nullptr;
   }
 
   // 白黒フォーマットで作成
   CGColorSpaceRef color_space = CGColorSpaceCreateDeviceGray();
   if (color_space == nullptr) {
+    std::free(bitmap_data);
     return nullptr;
   }
 
@@ -44,6 +46,7 @@ MacFontRasterizer *MacFontRasterizer::createMacFontRasterizer(
       width * sizeof(std::uint8_t), color_space, kCGImageAlphaNone);
   CGColorSpaceRelease(color_space);
   if (cg_context == nullptr) {
+    std::free(bitmap_data);
     return nullptr;
   }
 
@@ -64,21 +67,19 @@ MacFontRasterizer *MacFontRasterizer::createMacFontRasterizer(
   CGContextSetAllowsFontSmoothing(cg_context, true);
   CGContextSetShouldSmoothFonts(cg_context, true);
 
-  MacFontRasterizer *font_rasterizer =
-      static_cast<MacFontRasterizer *>(std::malloc(sizeof(MacFontRasterizer)));
-  if (font_rasterizer == nullptr) {
+  MacBitmap *bitmap = static_cast<MacBitmap *>(std::malloc(sizeof(MacBitmap)));
+  if (bitmap == nullptr) {
     std::perror("malloc failed (createFont)");
+    std::free(bitmap_data);
     return nullptr;
   }
 
-  font_rasterizer = new (font_rasterizer) MacFontRasterizer(cg_context);
+  bitmap = new (bitmap) MacBitmap(cg_context, bitmap_data);
 
-  return font_rasterizer;
+  return bitmap;
 }
 
-IFontRasterizer *IFontRasterizer::createFontRasterizer(IFont *, std::uint8_t *,
-                                                       std::size_t, std::size_t,
-                                                       std::size_t,
-                                                       std::size_t) {
+IBitmap *IBitmap::createBitmap(std::size_t, std::size_t, std::size_t,
+                               std::size_t) {
   return nullptr;
 }

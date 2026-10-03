@@ -2,7 +2,7 @@
 #include "IApplication.hpp"
 #include "IFont.hpp"
 #include "IFontAtlas.hpp"
-#include "IFontRasterizer.hpp"
+#include "IBitmap.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
@@ -29,15 +29,15 @@ class CommonFont : public IFont {
 //
 //  ========================================================
 
-class CommonFontRasterizer : public IFontRasterizer {
+class CommonBitmap : public IBitmap {
 private:
   int ref_count = 0;
 
 public:
   int addRef() override;
   int release() override;
-  CommonFontRasterizer();
-  ~CommonFontRasterizer();
+  CommonBitmap();
+  ~CommonBitmap();
 };
 
 //  ========================================================

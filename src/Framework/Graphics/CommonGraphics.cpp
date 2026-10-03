@@ -25,24 +25,24 @@ CommonFont::~CommonFont() {}
 
 //  ========================================================
 //
-//  Font Rasterizer
+//  CommonBitmap
 //
 //  ========================================================
 
-int CommonFontRasterizer::addRef() { return ++this->ref_count; }
+int CommonBitmap::addRef() { return ++this->ref_count; }
 
-int CommonFontRasterizer::release() {
+int CommonBitmap::release() {
   if (--this->ref_count == 0) {
-    this->~CommonFontRasterizer();
+    this->~CommonBitmap();
     free(this);
     return 0;
   }
   return this->ref_count;
 }
 
-CommonFontRasterizer::CommonFontRasterizer() {}
+CommonBitmap::CommonBitmap() {}
 
-CommonFontRasterizer::~CommonFontRasterizer() {}
+CommonBitmap::~CommonBitmap() {}
 
 //  ========================================================
 //
