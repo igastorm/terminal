@@ -11,7 +11,7 @@ struct FontCellSize {
 
 class IFont : public IObject {
   public:
-    virtual FontCellSize getCellSize() const;
+    virtual FontCellSize getCellSize() const = 0;
     static IFont* createFont(const char8_t*, float);
     virtual ~IFont() = default;
 };
