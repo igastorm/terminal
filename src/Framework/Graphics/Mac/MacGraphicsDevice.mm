@@ -16,7 +16,7 @@
 //  ========================================================
 
 MacGraphicsDevice::MacGraphicsDevice(IApplication *appInstance)
-    : GraphicsDevice(appInstance) {}
+    : CommonGraphicsDevice(appInstance) {}
 
 MacGraphicsDevice *
 MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
@@ -270,37 +270,34 @@ MacGraphicsDevice::~MacGraphicsDevice() {
   }
 }
 
-template <>
-ITexture *GraphicsDevice::createTexture(int width, int height,
-                                        TextureDesc texture_desc) {
+ITexture *MacGraphicsDevice::createTexture(int width, int height,
+                                           TextureDesc texture_desc) {
   return MacTexture::createMacTexture(this, width, height, texture_desc);
 }
 
-template <>
-ITexture *GraphicsDevice::createFontTexture(const char *character, int size) {
+ITexture *MacGraphicsDevice::createFontTexture(const char *character,
+                                               int size) {
   MacFont factory;
   return factory.createFontTextureBase(this, character, size);
 }
 
-template <> ISurface *GraphicsDevice::createSurfaceFromWindow(IWindow *window) {
+ISurface *MacGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
   return MacWindowSurface::createMacSurfaceFromWindow(this, window);
 }
 
-template <>
-ISurface *GraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
+ISurface *MacGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
   return MacTextureSurface::createMacSurfaceFromTexture(this, texture);
 }
 
-template <>
-IFontAtlas *GraphicsDevice::createFontAtlas(const char *font_name,
-                                            float font_size, int atlash_width,
-                                            int atlash_height) {
+IFontAtlas *MacGraphicsDevice::createFontAtlas(const char *font_name,
+                                               float font_size,
+                                               int atlash_width,
+                                               int atlash_height) {
   return MacFontAtlas::createMacFontAtlas(this, font_name, font_size,
                                           atlash_width, atlash_height);
 }
 
-template <>
-IGraphicsDevice *ApplicationTemplate<ApplicationData>::createGraphicsDevice() {
+IGraphicsDevice *MacApplication::createGraphicsDevice() {
   IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
   return device;
 }

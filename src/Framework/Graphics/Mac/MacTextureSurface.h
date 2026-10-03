@@ -7,18 +7,19 @@
 //
 //  ========================================================
 
-struct TextureSurfaceData : public SurfaceData {
+struct TextureSurfaceData {
   struct {
     float width;
     float r_height;
   } viewport = {};
 };
 
-using TextureSurface = SurfaceTemplate<TextureSurfaceData>;
-
-class MacTextureSurface : public TextureSurface {
+class MacTextureSurface : public MacSurface {
 private:
+  TextureSurfaceData data = {};
   MacTextureSurface(IGraphicsDevice *, ITexture *);
+  
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
 
 public:
   MacTextureSurface() = delete;

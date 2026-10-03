@@ -11,7 +11,7 @@
 //  ========================================================
 
 MacWindowSurface::MacWindowSurface(IGraphicsDevice *device, IWindow *window)
-    : WindowSurface(device, window) {}
+    : MacSurface(device, window) {}
 
 // ウィンドウ専用デストラクタ
 MacWindowSurface::~MacWindowSurface() {
@@ -122,8 +122,8 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
     surface->data.metal_layer = layer;
 
     // CAMetalView の drawable は 3 枚ある
-    surface->data.in_flight_semaphore = dispatch_semaphore_create(3);
-    if (surface->data.in_flight_semaphore == nil) {
+    surface->in_flight_semaphore = dispatch_semaphore_create(3);
+    if (surface->in_flight_semaphore == nil) {
       device->release();
     }
   }
@@ -137,15 +137,14 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
 //
 //  ========================================================
 
-template <>
-bool WindowSurface::render(RenderCallBack callback, void *data,
+bool MacWindowSurface::render(RenderCallBack callback, void *data,
                            const RenderPassDesc pass_desc) {
   bool result = false;
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
     // 残っていなければ返却されるまで停止
-    if (dispatch_semaphore_wait(this->data.in_flight_semaphore,
+    if (dispatch_semaphore_wait(this->in_flight_semaphore,
                                 pass_desc.frame_dropping ==
                                         FrameDropping::Enable
                                     ? DISPATCH_TIME_NOW
@@ -189,7 +188,7 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
     id<CAMetalDrawable> drawable = [metal_layer nextDrawable];
     if (drawable == nil) {
       // チケットを返却
-      dispatch_semaphore_signal(this->data.in_flight_semaphore);
+      dispatch_semaphore_signal(this->in_flight_semaphore);
       return false;
     }
 
@@ -234,7 +233,7 @@ bool WindowSurface::render(RenderCallBack callback, void *data,
 
     // ローカル変数にコピーしないと this がキャプチャされる
     // キャプチャしたものはヒープにコピーされて retain される
-    dispatch_semaphore_t semaphore = this->data.in_flight_semaphore;
+    dispatch_semaphore_t semaphore = this->in_flight_semaphore;
     [cmd_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
       dispatch_semaphore_signal(semaphore); // 返却
     }];

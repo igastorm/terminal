@@ -1,5 +1,5 @@
 #pragma once
-#include "../RenderPassTemplate.hpp"
+#include "../CommonGraphics.hpp"
 #import <Metal/Metal.h>
 
 //  ========================================================
@@ -19,9 +19,13 @@ struct RenderPassData {
   // id<MTLBuffer> vertex_buffer = nil;
 };
 
-using RenderPass = RenderPassTemplate<RenderPassData>;
+class MacRenderPass : public CommonRenderPass {
+private:
+RenderPassData data = {};  
+  bool drawVertices(const Vertex *vertices, int vertex_count) override;
+  bool drawVerticesTex(ITexture *, const VertexTex *vertices,
+                       int vertex_count) override;
 
-class MacRenderPass : public RenderPass {
 public:
   MacRenderPass(IGraphicsDevice *,
                 id<MTLRenderCommandEncoder> /*, id<MTLBuffer>*/);

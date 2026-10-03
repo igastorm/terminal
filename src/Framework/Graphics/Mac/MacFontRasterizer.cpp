@@ -1,6 +1,6 @@
 #include "MacFontRasterizer.hpp"
 
-MacFontRasterizer::MacFontRasterizer(IFont *font) : FontRasterizer(font) {}
+MacFontRasterizer::MacFontRasterizer(IFont *font) : CommonFontRasterizer(font) {}
 
 MacFontRasterizer::~MacFontRasterizer() {}
 

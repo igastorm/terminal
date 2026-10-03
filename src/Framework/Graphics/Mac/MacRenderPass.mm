@@ -57,8 +57,7 @@ MacRenderPass::~MacRenderPass() {
   this->data.is_ready = false;
 }
 
-template <>
-bool RenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
+bool MacRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
   if (this->data.is_ready == false || vertices == nil || vertex_count <= 0) {
@@ -92,8 +91,7 @@ bool RenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   return true;
 }
 
-template <>
-bool RenderPass::drawVerticesTex(ITexture *itexture, const VertexTex *vertices,
+bool MacRenderPass::drawVerticesTex(ITexture *itexture, const VertexTex *vertices,
                                  int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい

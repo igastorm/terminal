@@ -110,16 +110,12 @@ bool RenderHelper::renderBase(id<MTLRenderCommandEncoder> encoder,
 //
 //  ========================================================
 
-template class SurfaceTemplate<WindowSurfaceData>;
-template class SurfaceTemplate<TextureSurfaceData>;
-
 // 共通デストラクタ
-template <class PlatformData>
-SurfaceTemplate<PlatformData>::~SurfaceTemplate<PlatformData>() {
+MacSurface::~MacSurface() {
   @autoreleasepool {
-    if (this->data.in_flight_semaphore != nil) {
-      dispatch_release(this->data.in_flight_semaphore);
-      this->data.in_flight_semaphore = nil;
+    if (this->in_flight_semaphore != nil) {
+      dispatch_release(this->in_flight_semaphore);
+      this->in_flight_semaphore = nil;
     }
     // ~CommonSurface に任せる
     // if (this->device != nullptr) {
@@ -128,10 +124,4 @@ SurfaceTemplate<PlatformData>::~SurfaceTemplate<PlatformData>() {
     //   this->device = nullptr;
     // }
   }
-}
-
-// 共通ゲッター
-template <class PlatformData>
-PlatformData SurfaceTemplate<PlatformData>::getPlatformData() const {
-  return this->data;
 }

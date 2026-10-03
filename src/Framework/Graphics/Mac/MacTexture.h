@@ -1,5 +1,5 @@
 #pragma once
-#include "../TextureTemplate.hpp"
+#include "../CommonGraphics.hpp"
 #import "Metal/Metal.h"
 
 //  ========================================================
@@ -12,15 +12,16 @@ struct TextureData {
   id<MTLTexture> mtl_texture = nil;
 };
 
-using Texture = TextureTemplate<TextureData>;
-
-class MacTexture : public Texture {
+class MacTexture : public CommonTexture {
 private:
+TextureData data = {};  
   MacTexture(IGraphicsDevice *, int, int, TextureFormat);
+  bool upload(const void *, size_t, size_t, const TextureDataRegion) override;
 
 public:
   ~MacTexture();
   MacTexture() = delete;
   static MacTexture *createMacTexture(IGraphicsDevice *, int, int,
                                       const TextureDesc);
+  [[nodiscard]] TextureData getPlatformData() const { return this->data; }
 };

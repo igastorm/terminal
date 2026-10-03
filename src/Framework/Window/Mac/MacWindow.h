@@ -1,6 +1,6 @@
 #pragma once
 #include "../Application/Mac/MacApplication.h"
-#include "../WindowTemplate.hpp"
+#include "../CommonWindow.hpp"
 #include "IWindow.hpp"
 #import <AppKit/AppKit.h>
 
@@ -30,13 +30,19 @@ struct WindowData {
   bool resizing = false;
 };
 
-using Window = WindowTemplate<WindowData, ApplicationData>;
+class MacWindow : public CommonWindow {
+private:
+  WindowData data = {};
 
-class MacWindow : public Window {
+  bool setTitle(const char *) override;
+  bool show() override;
+  bool hide() override;
+
 public:
+  [[nodiscard]] WindowData getPlatformData() const;
   MacWindow(IApplication *);
-  ~MacWindow() = default;
+  ~MacWindow();
   void notifyResizing(bool);
-  [[nodiscard]] static MacWindow *createWindow(Application *, int, int,
+  [[nodiscard]] static MacWindow *createWindow(MacApplication *, int, int,
                                                const char *);
 };

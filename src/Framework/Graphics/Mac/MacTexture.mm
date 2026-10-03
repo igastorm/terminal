@@ -12,7 +12,7 @@
 
 MacTexture::MacTexture(IGraphicsDevice *device, int w, int h,
                        TextureFormat format)
-    : Texture(device, w, h, format) {}
+    : CommonTexture(device, w, h, format) {}
 
 MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {
@@ -98,8 +98,7 @@ MacTexture::~MacTexture() {
   }
 }
 
-template <>
-bool Texture::upload(const void *pixels, size_t bytes, size_t bytes_per_row,
+bool MacTexture::upload(const void *pixels, size_t bytes, size_t bytes_per_row,
                      TextureDataRegion rect) {
   // 与えられたデータが要件を満たしていなければ弾く
   if (this->data.mtl_texture == nil || pixels == nullptr) {

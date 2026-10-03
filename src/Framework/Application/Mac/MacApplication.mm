@@ -1,7 +1,7 @@
 #include "MacApplication.h"
 #include <atomic>
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 #include <new>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
@@ -45,7 +45,7 @@ bool MacApplication::initPlatform() {
   }
 }
 
-template <> void Application::terminate() {
+void MacApplication::terminate() {
   @autoreleasepool {
     // ループが生きている間に実行しないとリークっぽくなる
     this->handler->onQuit(this);
@@ -77,7 +77,7 @@ template <> void Application::terminate() {
                    });
 }
 
-template <> void Application::dispatchEvent(const Event &event) {
+void MacApplication::dispatchEvent(const Event &event) {
   if (this->handler != nullptr) {
     if (this->handler->onEvent(this, event) == AppResult::Continue) {
       return;
@@ -86,8 +86,7 @@ template <> void Application::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-template <>
-bool Application::run(const char *appName, IAppHandler *handler) {
+bool MacApplication::run(const char *appName, IAppHandler *handler) {
   this->handler = handler;
   this->data.appDelegate.handler = handler;
   @autoreleasepool {
@@ -131,7 +130,7 @@ bool Application::run(const char *appName, IAppHandler *handler) {
   return true;
 }
 
-template <> void Application::postEvent() {
+void MacApplication::postEvent() {
   // もし, dispatch_async_f
   // が処理中に再度同じイベントをぶち込むと重複してイベントが発行されることになるのでフラグで判定が必要
   // (よっぽど重い時以外には問題にならないかもしれないが)

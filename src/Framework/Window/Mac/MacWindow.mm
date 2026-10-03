@@ -7,7 +7,7 @@
 //  具象クラス
 //  ----------------------------
 
-template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
+MacWindow::~MacWindow() {
   @autoreleasepool {
     if (this->data.window != nil) {
       [this->data.window setDelegate:nil];
@@ -38,9 +38,9 @@ template <> Window::~WindowTemplate<WindowData, ApplicationData>() {
   }
 }
 
-template <> WindowData Window::getPlatformData() const { return this->data; }
+WindowData MacWindow::getPlatformData() const { return this->data; }
 
-template <> bool Window::setTitle(const char *title) {
+bool MacWindow::setTitle(const char *title) {
   @autoreleasepool {
     NSString *ns_title = [NSString stringWithUTF8String:title];
     [this->data.window setTitle:ns_title];
@@ -48,7 +48,7 @@ template <> bool Window::setTitle(const char *title) {
   }
 }
 
-template <> bool Window::show() {
+bool MacWindow::show() {
   @autoreleasepool {
     [this->data.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
@@ -56,18 +56,18 @@ template <> bool Window::show() {
   }
 }
 
-template <> bool Window::hide() {
+bool MacWindow::hide() {
   @autoreleasepool {
     [this->data.window orderOut:nil];
     return true;
   }
 }
 
-MacWindow::MacWindow(IApplication *appInstance) : Window(appInstance) {}
+MacWindow::MacWindow(IApplication *appInstance) : CommonWindow(appInstance) {}
 
 void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
-MacWindow *MacWindow::createWindow(Application *appInstance, int width,
+MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
                                    int height, const char *title) {
   @autoreleasepool {
     MacWindow *window =
@@ -130,10 +130,8 @@ MacWindow *MacWindow::createWindow(Application *appInstance, int width,
 }
 //} // namespace
 
-template <>
-IWindow *ApplicationTemplate<ApplicationData>::createWindow(int width,
-                                                            int height,
-                                                            const char *title) {
+IWindow *MacApplication::createWindow(int width, int height,
+                                      const char *title) {
   IWindow *window = MacWindow::createWindow(this, width, height, title);
   return window;
 }

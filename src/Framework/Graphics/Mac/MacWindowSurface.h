@@ -8,15 +8,16 @@
 //
 //  ========================================================
 
-struct WindowSurfaceData : public SurfaceData {
+struct WindowSurfaceData {
   CAMetalLayer *metal_layer = nil;
 };
 
-using WindowSurface = SurfaceTemplate<WindowSurfaceData>;
-
-class MacWindowSurface : public WindowSurface {
+class MacWindowSurface : public MacSurface {
 private:
+  WindowSurfaceData data = {};
   MacWindowSurface(IGraphicsDevice *, IWindow *);
+
+  bool render(RenderCallBack, void *, const RenderPassDesc) override;
 
 public:
   MacWindowSurface() = delete;

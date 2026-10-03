@@ -1,6 +1,6 @@
 #pragma once
 #include "../Application/Mac/MacApplication.h"
-#include "../GraphicsDeviceTemplate.hpp"
+#include "../CommonGraphics.hpp"
 #import <Metal/Metal.h>
 
 //  ========================================================
@@ -22,15 +22,25 @@ struct GraphicsDeviceData {
   // dispatch_semaphore_t in_flight_semaphore = nil;
 };
 
-using GraphicsDevice =
-    GraphicsDeviceTemplate<GraphicsDeviceData, ApplicationData>;
-
-class MacGraphicsDevice : public GraphicsDevice {
+class MacGraphicsDevice : public CommonGraphicsDevice {
 private:
+  GraphicsDeviceData data;
+
   MacGraphicsDevice(IApplication *);
+
+  ISurface *createSurfaceFromWindow(IWindow *) override;
+  ISurface *createSurfaceFromTexture(ITexture *) override;
+  ITexture *createTexture(int, int, const TextureDesc) override;
+  ITexture *createFontTexture(const char *, int) override;
+  IFontAtlas *createFontAtlas(const char *, float, int, int) override;
 
 public:
   static MacGraphicsDevice *createMacGraphicsDevice(IApplication *);
+  
+  [[nodiscard]] GraphicsDeviceData getPlatformData() const {
+    return this->data;
+  }
+  
   MacGraphicsDevice() = delete;
   ~MacGraphicsDevice();
 };

@@ -308,7 +308,7 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
 //
 //  ========================================================
 
-MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
+MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : CommonFontAtlas(device) {}
 
 MacFontAtlas::~MacFontAtlas() {
   // device と texture は親のデストラクタで参照カウントを減らしている
@@ -481,7 +481,7 @@ MacFontAtlas *MacFontAtlas::createMacFontAtlas(IGraphicsDevice *device,
   return font_atlas;
 }
 
-template <> GlyphUV FontAtlas::getGlyphUV(char32_t code_point) {
+GlyphUV MacFontAtlas::getGlyphUV(char32_t code_point) {
   // ASCII の範囲はそのまま配列から即座に返す
   if (0x20 <= code_point && code_point <= 0x7E) {
     return this->glyph_table[code_point - 0x20];
@@ -499,7 +499,7 @@ template <> GlyphUV FontAtlas::getGlyphUV(char32_t code_point) {
   return {};
 }
 
-template <> bool FontAtlas::updateGlyphCache(const char32_t code_point) {
+bool MacFontAtlas::updateGlyphCache(const char32_t code_point) {
   // キャッシュフラッシュ関数
   auto flash = [this]() -> void {
     std::memset(this->glyph_hash_table, 0, sizeof(this->glyph_hash_table));
@@ -604,7 +604,7 @@ template <> bool FontAtlas::updateGlyphCache(const char32_t code_point) {
   return true;
 }
 
-template <> bool FontAtlas::preloadGlyphs32(const char32_t *str) {
+bool MacFontAtlas::preloadGlyphs32(const char32_t *str) {
   if (str == nullptr) {
     return false;
   }
@@ -632,8 +632,7 @@ template <> bool FontAtlas::preloadGlyphs32(const char32_t *str) {
 // 実際にターミナルで文字を描画するにはエスケープシーケンスはバッファの途切れを意識した実装を
 // main.cpp 側で行う必要がある (そこまで Framework
 // 側で実装するのは適切でないと考える)
-template <>
-bool FontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
+bool MacFontAtlas::drawText(IRenderPass *pass, const char *str, float start_x,
                          float start_y, std::uint32_t color) {
   float current_x = start_x;
   const float y = start_y;

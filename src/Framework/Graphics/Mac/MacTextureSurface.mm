@@ -13,7 +13,7 @@
 //  ========================================================
 
 MacTextureSurface::MacTextureSurface(IGraphicsDevice *device, ITexture *texture)
-    : TextureSurface(device, texture) {
+    : MacSurface(device, texture) {
   // texture != nullptr は呼び出し元で保証済み
   this->data.viewport = {static_cast<float>(texture->getWidth()),
                          2.0f / static_cast<float>(texture->getHeight())};
@@ -60,8 +60,8 @@ MacTextureSurface::createMacSurfaceFromTexture(IGraphicsDevice *device,
 
   @autoreleasepool {
     // Texture は 1 枚の描画先なので処理中か否かの二パターンの状態がある
-    surface->data.in_flight_semaphore = dispatch_semaphore_create(2);
-    if (surface->data.in_flight_semaphore == nil) {
+    surface->in_flight_semaphore = dispatch_semaphore_create(2);
+    if (surface->in_flight_semaphore == nil) {
       device->release();
     }
   }
@@ -75,15 +75,14 @@ MacTextureSurface::createMacSurfaceFromTexture(IGraphicsDevice *device,
 //
 //  ========================================================
 
-template <>
-bool TextureSurface::render(RenderCallBack callback, void *data,
+bool MacTextureSurface::render(RenderCallBack callback, void *data,
                             const RenderPassDesc pass_desc) {
   bool result = false;
   @autoreleasepool {
     // チケットを消費
     // 残っていればスルー
     // 残っていなければ返却されるまで停止
-    if (dispatch_semaphore_wait(this->data.in_flight_semaphore,
+    if (dispatch_semaphore_wait(this->in_flight_semaphore,
                                 pass_desc.frame_dropping ==
                                         FrameDropping::Enable
                                     ? DISPATCH_TIME_NOW
@@ -146,7 +145,7 @@ bool TextureSurface::render(RenderCallBack callback, void *data,
 
     // ローカル変数にコピーしないと this がキャプチャされる
     // キャプチャしたものはヒープにコピーされて retain される
-    dispatch_semaphore_t semaphore = this->data.in_flight_semaphore;
+    dispatch_semaphore_t semaphore = this->in_flight_semaphore;
     [cmd_buffer addCompletedHandler:^(id<MTLCommandBuffer>) {
       dispatch_semaphore_signal(semaphore); // 返却
     }];

@@ -1,18 +1,27 @@
 #pragma once
+#include "../CommonApplication.hpp"
 #include "IApplication.hpp"
-#include "../ApplicationTemplate.hpp"
 #import <AppKit/AppKit.h>
 
 @class AppDelegate;
 
 struct ApplicationData {
   AppDelegate *appDelegate = nil;
-  NSMenuItem* quit_item = nil;
+  NSMenuItem *quit_item = nil;
 };
 
-using Application = ApplicationTemplate<ApplicationData>;
+class MacApplication : public CommonApplication {
+private:
+  ApplicationData data = {};
+  IWindow *createWindow(int, int, const char *) override;
+  IGraphicsDevice *createGraphicsDevice() override;
+  bool run(const char *, IAppHandler *) override;
+  void postEvent() override;
 
-class MacApplication : public Application {
 public:
   bool initPlatform();
+
+  void terminate() override;
+
+  void dispatchEvent(const Event &);
 };

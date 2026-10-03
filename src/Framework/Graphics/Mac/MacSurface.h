@@ -1,5 +1,5 @@
 #pragma once
-#include "../SurfaceTemplate.hpp"
+#include "../CommonGraphics.hpp"
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
 
@@ -9,8 +9,16 @@
 //
 //  ========================================================
 
-struct SurfaceData {
+class MacSurface : public CommonSurface {
+protected:
   dispatch_semaphore_t in_flight_semaphore = nil;
+
+  MacSurface(IGraphicsDevice *device, IObject *window_or_texture)
+      : CommonSurface(device, window_or_texture) {}
+
+public:
+  MacSurface() = delete;
+  ~MacSurface();
 };
 
 // ヘルパークラス

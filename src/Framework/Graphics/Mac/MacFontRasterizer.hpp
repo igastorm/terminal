@@ -1,13 +1,11 @@
 #pragma once
-#include "../FontRasterizerTemplate.h"
+#include "../CommonGraphics.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 
 struct FontRasterizerData {};
 
-using FontRasterizer = FontRasterizerTemplate<FontRasterizerData>;
-
-class MacFontRasterizer : public FontRasterizer {
+class MacFontRasterizer : public CommonFontRasterizer {
 private:
   MacFontRasterizer(IFont *);
 

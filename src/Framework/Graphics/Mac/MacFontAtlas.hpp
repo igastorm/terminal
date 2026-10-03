@@ -1,5 +1,5 @@
 #pragma once
-#include "../FontAtlasTemplate.hpp"
+#include "../CommonGraphics.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 
@@ -38,10 +38,17 @@ struct FontAtlasData {
   int cols_per_row = 0;
 };
 
-using FontAtlas = FontAtlasTemplate<FontAtlasData>;
-
-class MacFontAtlas : public FontAtlas {
+class MacFontAtlas : public CommonFontAtlas {
 private:
+  FontAtlasData data = {};
+  bool drawText(IRenderPass *, const char *, float, float,
+                std::uint32_t) override;
+  GlyphUV getGlyphUV(char32_t) override;
+
+  bool preloadGlyphs32(const char32_t *) override;
+
+  bool updateGlyphCache(const char32_t) override;
+
   MacFontAtlas(IGraphicsDevice *);
   friend class MacFontAtlasHelper;
 
@@ -61,5 +68,5 @@ public:
   [[nodiscard]] static bool drawBitmap(CGContextRef, CTFontRef, CellSize,
                                        const UniChar *, size_t, int, int, int,
                                        int);
-  //MacFontAtlasHelper() = delete;
+  // MacFontAtlasHelper() = delete;
 };
