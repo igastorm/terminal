@@ -4,6 +4,27 @@
 
 //  ========================================================
 //
+//  Font
+//
+//  ========================================================
+
+int CommonFont::addRef() { return ++this->ref_count; }
+
+int CommonFont::release() {
+  if (--this->ref_count == 0) {
+    this->~CommonFont();
+    free(this);
+    return 0;
+  }
+  return this->ref_count;
+}
+
+CommonFont::CommonFont() {}
+
+CommonFont::~CommonFont() {}
+
+//  ========================================================
+//
 //  Font Rasterizer
 //
 //  ========================================================
@@ -19,13 +40,9 @@ int CommonFontRasterizer::release() {
   return this->ref_count;
 }
 
-CommonFontRasterizer::CommonFontRasterizer(IFont *font) : font(font) {}
+CommonFontRasterizer::CommonFontRasterizer() {}
 
-CommonFontRasterizer::~CommonFontRasterizer() {
-  if (this->font != nullptr) {
-    this->font->release();
-  }
-}
+CommonFontRasterizer::~CommonFontRasterizer() {}
 
 //  ========================================================
 //

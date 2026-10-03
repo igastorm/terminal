@@ -1,10 +1,27 @@
 #pragma once
 #include "IApplication.hpp"
+#include "IFont.hpp"
 #include "IFontAtlas.hpp"
 #include "IFontRasterizer.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
+
+//  ========================================================
+//
+//  Font
+//
+//  ========================================================
+
+class CommonFont : public IFont {
+  private:
+    int ref_count = 0;
+  public:
+    int addRef() override;
+    int release() override;
+    CommonFont();
+    ~CommonFont();
+};
 
 //  ========================================================
 //
@@ -15,12 +32,11 @@
 class CommonFontRasterizer : public IFontRasterizer {
 private:
   int ref_count = 0;
-  IFont* font = nullptr;
 
 public:
   int addRef() override;
   int release() override;
-  CommonFontRasterizer(IFont*);
+  CommonFontRasterizer();
   ~CommonFontRasterizer();
 };
 
