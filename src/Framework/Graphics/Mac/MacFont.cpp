@@ -1,4 +1,6 @@
 #include "MacFont.hpp"
+#include "CharConverter.hpp"
+#include "MacBitmap.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -96,4 +98,48 @@ FontCellSize MacFont::getCellSize() const {
       std::ceill(cell_size.ascent + cell_size.descent + cell_size.leading);
 
   return cell_size;
+}
+
+bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
+                        int y) {
+  MacBitmap *bitmap = static_cast<MacBitmap *>(ibitmap);
+  if (bitmap == nullptr) {
+    return false;
+  }
+
+  CGContextRef cg_context = bitmap->getCGContext();
+  if (cg_context == nullptr) {
+    return false;
+  }
+
+  // サイズチェック
+  std::size_t width = bitmap->getWidth();
+  std::size_t height = bitmap->getHeight();
+  FontCellSize cell_size = this->getCellSize();
+  if (width < cell_size.width + x ||
+      height < cell_size.height + y) {
+    return false;
+  }
+
+  CGGlyph glyph = 0;
+  UniChar unichar_c[2] = {};
+  std::size_t utf16_len = 0;
+  CharConverter::Result result =
+      CharConverter::cvtUTF32ToUTF16(code_point, unichar_c, &utf16_len);
+  if (result != CharConverter::Result::Success) {
+    return false;
+  }
+
+  if (!CTFontGetGlyphsForCharacters(this->data.ct_font, unichar_c, &glyph,
+                                    utf16_len)) {
+    return false;
+  }
+
+  // CoreGraphics は左下が原点なので変換が必要
+  int cg_y = height - (y + cell_size.height);
+  // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
+  CGPoint pos = CGPointMake(x, cg_y + cell_size.descent);
+  CTFontDrawGlyphs(this->data.ct_font, &glyph, &pos, 1, cg_context);
+
+  return true;
 }

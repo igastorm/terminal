@@ -3,9 +3,10 @@
 #include <cstdlib>
 #include <new> // IWYU pragma: keep
 
-MacBitmap::MacBitmap(CGContextRef cg_context, void *bitmap_data) {
+MacBitmap::MacBitmap(CGContextRef cg_context, void *bitmap_data,
+                     std::size_t width, std::size_t height)
+    : CommonBitmap(width, height, bitmap_data) {
   this->data.cg_context = cg_context;
-  this->data.bitmap_data = bitmap_data;
 }
 
 MacBitmap::~MacBitmap() {
@@ -13,23 +14,19 @@ MacBitmap::~MacBitmap() {
     CGContextRelease(this->data.cg_context);
     this->data.cg_context = nullptr;
   }
-  if (this->data.bitmap_data != nullptr) {
-    std::free(this->data.bitmap_data);
-    this->data.bitmap_data = nullptr;
-  }
 }
 
 MacBitmap *MacBitmap::createMacBitmap(std::size_t bytes, std::size_t width,
-                                      std::size_t height, std::size_t count) {
+                                      std::size_t height) {
   if (width == 0 || height == 0) {
     return nullptr;
   }
 
-  if (bytes < width * height * count) {
+  if (bytes < width * height * sizeof(std::uint8_t)) {
     return nullptr;
   }
 
-  void *bitmap_data = std::calloc(width * height, count);
+  void *bitmap_data = std::calloc(width * height, sizeof(std::uint8_t));
   if (bitmap_data == nullptr) {
     return nullptr;
   }
@@ -74,12 +71,13 @@ MacBitmap *MacBitmap::createMacBitmap(std::size_t bytes, std::size_t width,
     return nullptr;
   }
 
-  bitmap = new (bitmap) MacBitmap(cg_context, bitmap_data);
+  bitmap = new (bitmap) MacBitmap(cg_context, bitmap_data, width, height);
 
   return bitmap;
 }
 
-IBitmap *IBitmap::createBitmap(std::size_t, std::size_t, std::size_t,
-                               std::size_t) {
+CGContextRef MacBitmap::getCGContext() const { return this->data.cg_context; }
+
+IBitmap *IBitmap::createBitmap(std::size_t, std::size_t, std::size_t) {
   return nullptr;
 }

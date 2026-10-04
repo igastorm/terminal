@@ -13,6 +13,8 @@ private:
   MacFontData data = {};
   MacFont(CTFontRef, float);
 
+  bool drawGlyph(IBitmap *, const char32_t, int, int) override;
+
   FontCellSize getCellSize() const override;
 
   static CTFontRef createCTFont(const char8_t *, float);

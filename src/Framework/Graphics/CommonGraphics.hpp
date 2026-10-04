@@ -1,8 +1,8 @@
 #pragma once
 #include "IApplication.hpp"
+#include "IBitmap.hpp"
 #include "IFont.hpp"
 #include "IFontAtlas.hpp"
-#include "IBitmap.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
@@ -14,29 +14,36 @@
 //  ========================================================
 
 class CommonFont : public IFont {
-  private:
-    int ref_count = 0;
-  public:
-    int addRef() override;
-    int release() override;
-    CommonFont();
-    ~CommonFont();
-};
-
-//  ========================================================
-//
-//  Font Rasterizer
-//
-//  ========================================================
-
-class CommonBitmap : public IBitmap {
 private:
   int ref_count = 0;
 
 public:
   int addRef() override;
   int release() override;
-  CommonBitmap();
+  CommonFont();
+  ~CommonFont();
+};
+
+//  ========================================================
+//
+//  Bitmap
+//
+//  ========================================================
+
+class CommonBitmap : public IBitmap {
+private:
+  int ref_count = 0;
+  const std::size_t width = 0;
+  const std::size_t height = 0;
+  void *bitmap_data = nullptr;
+
+public:
+  [[nodiscard]] void *getBitmapData() const override;
+  [[nodiscard]] std::size_t getWidth() const override;
+  [[nodiscard]] std::size_t getHeight() const override;
+  int addRef() override;
+  int release() override;
+  CommonBitmap(std::size_t, std::size_t, void *);
   ~CommonBitmap();
 };
 

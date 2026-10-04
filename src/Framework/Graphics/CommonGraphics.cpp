@@ -40,9 +40,22 @@ int CommonBitmap::release() {
   return this->ref_count;
 }
 
-CommonBitmap::CommonBitmap() {}
+CommonBitmap::CommonBitmap(std::size_t width, std::size_t height,
+                           void *bitmap_data)
+    : width(width), height(height), bitmap_data(bitmap_data) {}
 
-CommonBitmap::~CommonBitmap() {}
+CommonBitmap::~CommonBitmap() {
+  if (this->bitmap_data != nullptr) {
+    std::free(this->bitmap_data);
+    this->bitmap_data = nullptr;
+  }
+}
+
+std::size_t CommonBitmap::getWidth() const { return this->width; }
+
+std::size_t CommonBitmap::getHeight() const { return this->height; }
+
+void *CommonBitmap::getBitmapData() const { return this->bitmap_data; }
 
 //  ========================================================
 //

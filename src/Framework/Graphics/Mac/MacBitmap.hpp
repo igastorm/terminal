@@ -3,19 +3,18 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 
-struct FontRasterizerData {
+struct MacBitmapData {
   CGContextRef cg_context = nullptr;
-  void* bitmap_data = nullptr;
 };
 
 class MacBitmap : public CommonBitmap {
 private:
-  FontRasterizerData data = {};
-  MacBitmap(CGContextRef, void*);
+  MacBitmapData data = {};
+  MacBitmap(CGContextRef, void *, std::size_t, std::size_t);
 
 public:
-  static MacBitmap *createMacBitmap(std::size_t, std::size_t, std::size_t,
-                                    std::size_t);
+  CGContextRef getCGContext() const;
+  static MacBitmap *createMacBitmap(std::size_t, std::size_t, std::size_t);
   MacBitmap() = delete;
   ~MacBitmap();
 };
