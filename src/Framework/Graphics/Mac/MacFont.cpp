@@ -22,8 +22,11 @@ CTFontRef MacFont::createCTFont(const char8_t *font_name, float size) {
   return font;
 }
 
-MacFont::MacFont(CTFontRef ct_font, float size) : Font(size) {
+MacFont::MacFont(CTFontRef ct_font, float descent, float half_width,
+                 float height)
+    : Font(half_width, height) {
   this->data.ct_font = ct_font;
+  this->data.descent = descent;
 }
 
 MacFont::~MacFont() {
@@ -47,54 +50,46 @@ MacFont *MacFont::createMacFont(const char8_t *font_name, float size) {
     return nullptr;
   }
 
+  // 大文字の M のグリフを取得する
+  // 等幅の場合, これに合わせるとちょうどいいらしい
+  UniChar char_M = 'M';
+  CGGlyph glyph_M = 0;
+  if (!CTFontGetGlyphsForCharacters(ct_font, &char_M, &glyph_M, 1)) {
+    CFRelease(ct_font);
+    return nullptr;
+  }
+
+  // 次の文字に進むとどれだけ位置が進むかを取得
+  // kCTFontOrientationHorizontal なので横方向
+  // まとめると文字のセルに必要な横幅を取得している
+  CGSize advance_M = {};
+  CTFontGetAdvancesForGlyphs(ct_font, kCTFontOrientationHorizontal, &glyph_M,
+                             &advance_M, 1);
+
+  // ベースラインから上に必要な高さ
+  CGFloat ascent = CTFontGetAscent(ct_font);
+
+  // ベースラインから下に必要な高さ
+  CGFloat descent = CTFontGetDescent(ct_font);
+
+  // 推奨される行間の間隔
+  CGFloat leading = CTFontGetLeading(ct_font);
+
+  // 小数点以下を切り上げておく
+  float half_width = std::ceill(advance_M.width);
+  // ascent + descent + leading の中に実質 advance_M.height
+  // が含まれているようなもの
+  float height = std::ceill(ascent + descent + leading);
+
   MacFont *font = static_cast<MacFont *>(std::malloc(sizeof(MacFont)));
   if (font == nullptr) {
     std::perror("malloc failed (createFont)");
     return nullptr;
   }
 
-  font = new (font) MacFont(ct_font, size);
+  font = new (font) MacFont(ct_font, descent, half_width, height);
 
   return font;
-}
-
-FontCellSize MacFont::getCellSize() const {
-  if (this->data.ct_font == nullptr) {
-    return {};
-  }
-
-  // 大文字の M のグリフを取得する
-  // 等幅の場合, これに合わせるとちょうどいいらしい
-  UniChar char_M = 'M';
-  CGGlyph glyph_M = 0;
-  CTFontGetGlyphsForCharacters(this->data.ct_font, &char_M, &glyph_M, 1);
-
-  // 次の文字に進むとどれだけ位置が進むかを取得
-  // kCTFontOrientationHorizontal なので横方向
-  // まとめると文字のセルに必要な横幅を取得している
-  CGSize advance_M = {};
-  CTFontGetAdvancesForGlyphs(this->data.ct_font, kCTFontOrientationHorizontal,
-                             &glyph_M, &advance_M, 1);
-
-  FontCellSize cell_size = {};
-
-  // ベースラインから上に必要な高さ
-  cell_size.ascent = CTFontGetAscent(this->data.ct_font);
-
-  // ベースラインから下に必要な高さ
-  cell_size.descent = CTFontGetDescent(this->data.ct_font);
-
-  // 推奨される行間の間隔
-  cell_size.leading = CTFontGetLeading(this->data.ct_font);
-
-  // 小数点以下を切り上げておく
-  cell_size.width = std::ceill(advance_M.width);
-  // ascent + descent + leading の中に実質 advance_M.height
-  // が含まれているようなもの
-  cell_size.height =
-      std::ceill(cell_size.ascent + cell_size.descent + cell_size.leading);
-
-  return cell_size;
 }
 
 bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
@@ -113,7 +108,7 @@ bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
   std::size_t width = bitmap->getWidth();
   std::size_t height = bitmap->getHeight();
   FontCellSize cell_size = this->getCellSize();
-  if (width < cell_size.width + x || height < cell_size.height + y) {
+  if (width < cell_size.half_width + x || height < cell_size.height + y) {
     return false;
   }
 
@@ -134,7 +129,7 @@ bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
   // CoreGraphics は左下が原点なので変換が必要
   int cg_y = height - (y + cell_size.height);
   // CoreGraphics は左下原点だからベースラインの位置は descent を足せばいい
-  CGPoint pos = CGPointMake(x, cg_y + cell_size.descent);
+  CGPoint pos = CGPointMake(x, cg_y + this->data.descent);
   CTFontDrawGlyphs(this->data.ct_font, &glyph, &pos, 1, cg_context);
 
   return true;

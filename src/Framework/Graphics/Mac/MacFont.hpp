@@ -4,16 +4,15 @@
 
 struct MacFontData {
   CTFontRef ct_font = nullptr;
+  CGFloat descent = 0.0f;
 };
 
 class MacFont : public Font {
 private:
   MacFontData data = {};
-  MacFont(CTFontRef, float);
+  MacFont(CTFontRef, float, float, float);
 
   bool drawGlyph(IBitmap *, const char32_t, int, int) override;
-
-  FontCellSize getCellSize() const override;
 
   static CTFontRef createCTFont(const char8_t *, float);
 
