@@ -2,7 +2,7 @@
 #include "IApplication.hpp"
 #include "IWindow.hpp"
 
-class CommonWindow : public IWindow {
+class Window : public IWindow {
 private:
   int ref_count = 0;
 
@@ -12,7 +12,7 @@ protected:
   
   IApplication *appInstance = nullptr;
 
-  CommonWindow(IApplication*);
+  Window(IApplication*);
 
 public:
   inline static const char *fkeys[] = {
@@ -29,5 +29,5 @@ public:
       "\033[23~", // F11
       "\033[24~", // F12
   };
-  virtual ~CommonWindow();
+  virtual ~Window();
 };

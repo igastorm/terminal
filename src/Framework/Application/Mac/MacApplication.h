@@ -1,5 +1,5 @@
 #pragma once
-#include "../CommonApplication.hpp"
+#include "../Application.hpp"
 #include "IApplication.hpp"
 #import <AppKit/AppKit.h>
 
@@ -10,7 +10,7 @@ struct ApplicationData {
   NSMenuItem *quit_item = nil;
 };
 
-class MacApplication : public CommonApplication {
+class MacApplication : public Application {
 private:
   ApplicationData data = {};
   IWindow *createWindow(int, int, const char *) override;

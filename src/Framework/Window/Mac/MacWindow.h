@@ -1,6 +1,6 @@
 #pragma once
 #include "../Application/Mac/MacApplication.h"
-#include "../CommonWindow.hpp"
+#include "../Window.hpp"
 #include "IWindow.hpp"
 #import <AppKit/AppKit.h>
 
@@ -30,7 +30,7 @@ struct WindowData {
   bool resizing = false;
 };
 
-class MacWindow : public CommonWindow {
+class MacWindow : public Window {
 private:
   WindowData data = {};
 

@@ -154,9 +154,9 @@ void MacApplication::postEvent() {
   }
 }
 
-// Common だがここで実装しないと Cocoa の初期化が呼べない気がする
+//  だがここで実装しないと Cocoa の初期化が呼べない気がする
 // あと startApp から呼ぶため
-CommonApplication *createPlatformApplication() {
+Application *createPlatformApplication() {
   MacApplication *app =
       static_cast<MacApplication *>(std::malloc(sizeof(MacApplication)));
   if (app == nullptr) {

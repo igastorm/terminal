@@ -36,10 +36,10 @@ if(COMPILER_SUPPORTS_FNO_OBJC_ARC)
 endif()
 
 add_library(framework STATIC
-  "Application/CommonApplication.cpp"
+  "Application/Application.cpp"
   "Application/Mac/MacApplication.mm"
   "Window/Mac/MacWindow.mm"
-  "Window/CommonWindow.cpp"
+  "Window/Window.cpp"
   "Graphics/Mac/MacGraphicsDevice.mm"
   "Graphics/Mac/MacSurface.mm"
   "Graphics/Mac/MacWindowSurface.mm"

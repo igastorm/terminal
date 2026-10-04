@@ -1,5 +1,5 @@
 #include "GraphicsDevice.hpp"
-#include "../Application/CommonApplication.hpp"
+#include "../Application/Application.hpp"
 #include <cstdlib>
 
 //  ========================================================
@@ -23,12 +23,12 @@ GraphicsDevice::GraphicsDevice(IApplication *appInstance) {
   this->addRef();
   if (appInstance != nullptr) {
     this->appInstance = appInstance;
-    static_cast<CommonApplication *>(this->appInstance)->addRef();
+    static_cast<Application *>(this->appInstance)->addRef();
   }
 }
 
 GraphicsDevice::~GraphicsDevice() {
   if (this->appInstance != nullptr) {
-    static_cast<CommonApplication *>(this->appInstance)->release();
+    static_cast<Application *>(this->appInstance)->release();
   }
 }

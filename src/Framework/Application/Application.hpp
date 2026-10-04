@@ -1,23 +1,23 @@
 #pragma once
 #include "IApplication.hpp"
 
-class CommonApplication : public IApplication {
+class Application : public IApplication {
 private:
   int ref_count = 0;
 
 protected:
   IAppHandler *handler = nullptr;
 
-  CommonApplication();
-  friend CommonApplication *createPlatformApplication();
+  Application();
+  friend Application *createPlatformApplication();
 
 public:
   int addRef() override;
   int release() override;
 
-  virtual ~CommonApplication() = default;
+  virtual ~Application() = default;
 
   static int startApp(int, char **);
 };
 
-extern CommonApplication *createPlatformApplication();
+extern Application *createPlatformApplication();

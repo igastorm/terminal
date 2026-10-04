@@ -63,7 +63,7 @@ bool MacWindow::hide() {
   }
 }
 
-MacWindow::MacWindow(IApplication *appInstance) : CommonWindow(appInstance) {}
+MacWindow::MacWindow(IApplication *appInstance) : Window(appInstance) {}
 
 void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
@@ -239,7 +239,7 @@ IWindow *MacApplication::createWindow(int width, int height,
         return;
       }
     } else if (c >= NSF1FunctionKey && c <= NSF12FunctionKey) {
-      const char *seq = CommonWindow::fkeys[c - NSF1FunctionKey];
+      const char *seq = Window::fkeys[c - NSF1FunctionKey];
       [self sendEventHelper:seq];
       return;
     }

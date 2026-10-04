@@ -1,23 +1,23 @@
-#include "CommonApplication.hpp"
+#include "Application.hpp"
 #include <clocale>
 #include <cstdio>
 #include <cstdlib>
 
-int CommonApplication::addRef() { return ++this->ref_count; }
+int Application::addRef() { return ++this->ref_count; }
 
-int CommonApplication::release() {
+int Application::release() {
   if (--this->ref_count == 0) {
-    this->~CommonApplication();
+    this->~Application();
     free(this);
     return 0;
   }
   return this->ref_count;
 }
 
-CommonApplication::CommonApplication() { this->addRef(); }
+Application::Application() { this->addRef(); }
 
-int CommonApplication::startApp(int argc, char **argv) {
-  CommonApplication *appInstance = createPlatformApplication();
+int Application::startApp(int argc, char **argv) {
+  Application *appInstance = createPlatformApplication();
   if (appInstance == nullptr) {
     std::perror("Failed to initialize appInstance");
     return 1;
@@ -29,5 +29,5 @@ int CommonApplication::startApp(int argc, char **argv) {
 
 int main(int argc, char **argv) {
   std::setlocale(LC_ALL, "");
-  return CommonApplication::startApp(argc, argv);
+  return Application::startApp(argc, argv);
 }
