@@ -22,9 +22,8 @@ CTFontRef MacFont::createCTFont(const char8_t *font_name, float size) {
   return font;
 }
 
-MacFont::MacFont(CTFontRef ct_font, float size) {
+MacFont::MacFont(CTFontRef ct_font, float size) : Font(size) {
   this->data.ct_font = ct_font;
-  this->data.size = size;
 }
 
 MacFont::~MacFont() {
@@ -58,8 +57,6 @@ MacFont *MacFont::createMacFont(const char8_t *font_name, float size) {
 
   return font;
 }
-
-MacFontData MacFont::getData() const { return this->data; }
 
 FontCellSize MacFont::getCellSize() const {
   if (this->data.ct_font == nullptr) {

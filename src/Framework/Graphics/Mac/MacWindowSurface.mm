@@ -161,12 +161,6 @@ bool MacWindowSurface::render(RenderCallBack callback, void *data,
       return false;
     }
 
-    NSView *view = window->getPlatformData().view;
-
-    if (view == nil) {
-      return false;
-    }
-
     // 解像度を設定 (drawaableSize だけ手動でサイズ変更が必要)
     CGSize size = metal_layer.bounds.size;
     CGFloat scale = metal_layer.contentsScale;

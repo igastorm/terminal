@@ -18,6 +18,6 @@ int Font::release() {
   return this->ref_count;
 }
 
-Font::Font() {}
+Font::Font(float size) : size(size) {}
 
 Font::~Font() {}
