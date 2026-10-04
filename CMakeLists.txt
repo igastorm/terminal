@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(terminal LANGUAGES CXX OBJCXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -36,72 +36,10 @@ if(COMPILER_SUPPORTS_FNO_OBJC_ARC)
   add_compile_options("-fno-objc-arc")
 endif()
 
-set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
-
-# ----------------------------
-# Shader
-# ----------------------------
-find_program(XCRUN xcrun REQUIRED)
-
-set(SHADER_SRC "${SRC_DIR}/Framework/Graphics/Mac/MacShaders.metal")
-set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(SHADER_AIR "${CMAKE_CURRENT_BINARY_DIR}/shaders.air")
-set(SHADER_LIB "${CMAKE_CURRENT_BINARY_DIR}/shaders.metallib")
-set(SHADER_HEADER "${GEN_DIR}/shaders_metallib.hpp")
-set(BIN2H_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/bin2hpp.cmake")
-
-file(MAKE_DIRECTORY "${GEN_DIR}")
-
-add_custom_command(
-  OUTPUT "${SHADER_HEADER}"
-  BYPRODUCTS "${SHADER_AIR}" "${SHADER_LIB}"
-  COMMAND "${XCRUN}" -sdk macosx metal -c "${SHADER_SRC}" -o "${SHADER_AIR}"
-  COMMAND "${XCRUN}" -sdk macosx metallib "${SHADER_AIR}" -o "${SHADER_LIB}"
-  COMMAND "${CMAKE_COMMAND}"
-            "-DINPUT=${SHADER_LIB}"
-            "-DOUTPUT=${SHADER_HEADER}"
-            "-DVARNAME=shaders_metallib"
-            -P "${BIN2H_SCRIPT}"
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  DEPENDS "${SHADER_SRC}"
-  COMMENT "Compiling Metal Shader to Header: ${SHADER_HEADER}"
-  VERBATIM
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+    "${CMAKE_BINARY_DIR}"
 )
 
-# ----------------------------
-# Build
-# ----------------------------
-add_executable(terminal
-  "${SRC_DIR}/Framework/Application/CommonApplication.cpp"
-  "${SRC_DIR}/Framework/Application/Mac/MacApplication.mm"
-  "${SRC_DIR}/Framework/Window/Mac/MacWindow.mm"
-  "${SRC_DIR}/Framework/Window/CommonWindow.cpp"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacGraphicsDevice.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacWindowSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacTextureSurface.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacTexture.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacRenderPass.mm"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacFontAtlas.cpp"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacBitmap.cpp"
-  "${SRC_DIR}/Framework/Graphics/Mac/MacFont.cpp"
-  "${SRC_DIR}/Framework/Graphics/CommonGraphics.cpp"
-  "${SRC_DIR}/Framework/CharConverter/CharConverter.cpp"
-  "${SRC_DIR}/Terminal/main.cpp"
-  "${SRC_DIR}/Terminal/PTY/PTY.cpp"
-  "${SHADER_HEADER}"
-)
+add_subdirectory(src/Framework)
 
-set(INCLUDE_DIR "${SRC_DIR}/Framework/include")
-
-target_include_directories(terminal PRIVATE
-  "${INCLUDE_DIR}"
-  "${GEN_DIR}"
-)
-
-target_link_libraries(terminal PRIVATE
-  pthread
-  "-framework Cocoa"
-  "-framework Metal"
-  "-framework QuartzCore"
-)
+add_subdirectory(src/Terminal)
