@@ -23,6 +23,8 @@ FontCellSize Font::getCellSize() const {
 }
 
 Font::Font(float half_width, float height)
-    : half_width(half_width), height(height) {}
+    : half_width(half_width), height(height) {
+  this->addRef();
+}
 
 Font::~Font() {}

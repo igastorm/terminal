@@ -19,7 +19,9 @@ int Bitmap::release() {
 }
 
 Bitmap::Bitmap(std::size_t width, std::size_t height, void *bitmap_data)
-    : width(width), height(height), bitmap_data(bitmap_data) {}
+    : width(width), height(height), bitmap_data(bitmap_data) {
+  this->addRef();
+}
 
 Bitmap::~Bitmap() {
   if (this->bitmap_data != nullptr) {
