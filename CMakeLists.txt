@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(terminal LANGUAGES CXX OBJCXX)
+project(terminal LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,12 +16,10 @@ if(ENABLE_ASAN)
 endif()
 
 include(CheckCXXCompilerFlag)
-include(CheckOBJCXXCompilerFlag)
 
 check_cxx_compiler_flag("-fno-exceptions" COMPILER_SUPPORTS_FNO_EXCEPTIONS)
 check_cxx_compiler_flag("-Wall" COMPILER_SUPPORTS_WALL)
 check_cxx_compiler_flag("-fno-rtti" COMPILER_SUPPORTS_FNO_RTTI)
-check_objcxx_compiler_flag("-fno-objc-arc" COMPILER_SUPPORTS_FNO_OBJC_ARC)
 
 if(COMPILER_SUPPORTS_FNO_EXCEPTIONS)
   add_compile_options(-fno-exceptions)
@@ -31,9 +29,6 @@ if(COMPILER_SUPPORTS_WALL)
 endif()
 if(COMPILER_SUPPORTS_FNO_RTTI)
   add_compile_options(-fno-rtti)
-endif()
-if(COMPILER_SUPPORTS_FNO_OBJC_ARC)
-  add_compile_options("-fno-objc-arc")
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY

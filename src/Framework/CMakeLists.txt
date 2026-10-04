@@ -26,6 +26,15 @@ add_custom_command(
   VERBATIM
 )
 
+enable_language(OBJCXX)
+include(CheckOBJCXXCompilerFlag)
+
+check_objcxx_compiler_flag("-fno-objc-arc" COMPILER_SUPPORTS_FNO_OBJC_ARC)
+
+if(COMPILER_SUPPORTS_FNO_OBJC_ARC)
+  add_compile_options("-fno-objc-arc")
+endif()
+
 add_library(framework STATIC
   "Application/CommonApplication.cpp"
   "Application/Mac/MacApplication.mm"
