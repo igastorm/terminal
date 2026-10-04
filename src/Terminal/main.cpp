@@ -1,4 +1,6 @@
 #include "IApplication.hpp"
+#include "IBitmap.hpp"
+#include "IFont.hpp"
 #include "include/IPTY.hpp"
 #include <cstring>
 #include <iostream>
@@ -13,6 +15,8 @@ private:
   ISurface *texture_surface = nullptr;
   ITexture *font_texture = nullptr;
   IFontAtlas *font_atlas = nullptr;
+  IFont *font = nullptr;
+  IBitmap *bitmap = nullptr;
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
@@ -47,7 +51,16 @@ private:
       }
     }
     if (device != nullptr && font_texture == nullptr) {
-      font_texture = device->createFontTexture("𩿗", 128);
+      font_texture = device->createTexture(
+          512, 512, {TextureDrawable::Disable, TextureFormat::Mono});
+      font = IFont::createFont(u8"BIZ UDGothic", 32);
+      bitmap = IBitmap::createBitmap(512, 512);
+      font->drawGlyph(bitmap, U'𩿗', 0, 0);
+      //std::uint8_t pixels[512 * 512];
+      //for (int i = 0; i < 512 * 512; ++i) {
+      //  pixels[i] = 0xFF;
+      //}
+      font_texture->upload(bitmap->getBitmapData(), 512 * 512, 512, {0, 0, 32, 32});
     }
     if (device != nullptr && font_atlas == nullptr) {
       font_atlas = device->createFontAtlas("BIZ UDGothic", 32);
@@ -88,6 +101,10 @@ private:
     if (this->font_texture != nullptr) {
       this->font_texture->release();
       this->font_texture = nullptr;
+      this->font->release();
+      this->font = nullptr;
+      bitmap->release();
+      bitmap = nullptr;
     }
 
     if (this->font_atlas != nullptr) {
@@ -181,21 +198,8 @@ public:
                     {{x + w, y + h}, 0xAA000000},
                 };
                 pass->drawVertices(quad3, 6);
-
-                float u = static_cast<ITexture *>(arg)->getWidth();
-                float v = static_cast<ITexture *>(arg)->getHeight();
-                VertexTex quad4[6] = {
-                    {{x, y}, {0.0f, 0.0f}, 0xFF00FF00},
-                    {{x + w, y}, {u, 0.0f}, 0xFF00FF00},
-                    {{x, y + h}, {0.0f, v}, 0xFF00FF00},
-
-                    {{x, y + h}, {0.0f, v}, 0xFF00FF00},
-                    {{x + w, y}, {u, 0.0f}, 0xFF00FF00},
-                    {{x + w, y + h}, {u, v}, 0xFF00FF00},
-                };
-                pass->drawVerticesTex(static_cast<ITexture *>(arg), quad4, 6);
               },
-              font_texture, {false, 0xFF1F1F1F, FrameDropping::Disable});
+              nullptr, {false, 0xFF1F1F1F, FrameDropping::Disable});
         }
         if (window_surface != nullptr) {
           window_surface->render(
@@ -209,12 +213,12 @@ public:
                 float w = 400.0f, h = 300.0f;
 
                 VertexTex quad[6] = {
-                    {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},     // 左上
+                    {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},       // 左上
                     {{x + w, y}, {800.0f, 0.0f}, 0xFFFFFFFF}, // 右上
                     {{x, y + h}, {0.0f, 600.0f}, 0xFFFFFFFF}, // 左下
 
-                    {{x, y + h}, {0.0f, 600.0f}, 0xFFFFFFFF},     // 左下
-                    {{x + w, y}, {800.0f, 0.0f}, 0xFFFFFFFF},     // 右上
+                    {{x, y + h}, {0.0f, 600.0f}, 0xFFFFFFFF},       // 左下
+                    {{x + w, y}, {800.0f, 0.0f}, 0xFFFFFFFF},       // 右上
                     {{x + w, y + h}, {800.0f, 600.0f}, 0xFFFFFFFF}, // 右下
                 };
                 pass->drawVerticesTex(tex, quad, 6);
@@ -223,6 +227,21 @@ public:
                       pass, "ｱいうえおABC常用でない漢字もいける𩿗このように",
                       20, 500, 0xFFFFFFFF);
                 }
+
+                x = 200.0f, y = 50.0f;
+                w = 512.0f, h = 512.0f;
+                float u = app->font_texture->getWidth();
+                float v = app->font_texture->getHeight();
+                VertexTex quad4[6] = {
+                    {{x, y}, {0.0f, 0.0f}, 0xFFFFFFFF},
+                    {{x + w, y}, {u, 0.0f}, 0xFFFFFFFF},
+                    {{x, y + h}, {0.0f, v}, 0xFFFFFFFF},
+
+                    {{x, y + h}, {0.0f, v}, 0xFFFFFFFF},
+                    {{x + w, y}, {u, 0.0f}, 0xFFFFFFFF},
+                    {{x + w, y + h}, {u, v}, 0xFFFFFFFF},
+                };
+                pass->drawVerticesTex(app->font_texture, quad4, 6);
               },
               this);
         }

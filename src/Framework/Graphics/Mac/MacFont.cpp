@@ -34,7 +34,7 @@ MacFont::~MacFont() {
   }
 }
 
-MacFont *MacFont::createFont(const char8_t *font_name, float size) {
+MacFont *MacFont::createMacFont(const char8_t *font_name, float size) {
   if (font_name == nullptr || size == 0.0f) {
     return nullptr;
   }
@@ -116,8 +116,7 @@ bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
   std::size_t width = bitmap->getWidth();
   std::size_t height = bitmap->getHeight();
   FontCellSize cell_size = this->getCellSize();
-  if (width < cell_size.width + x ||
-      height < cell_size.height + y) {
+  if (width < cell_size.width + x || height < cell_size.height + y) {
     return false;
   }
 
@@ -142,4 +141,8 @@ bool MacFont::drawGlyph(IBitmap *ibitmap, const char32_t code_point, int x,
   CTFontDrawGlyphs(this->data.ct_font, &glyph, &pos, 1, cg_context);
 
   return true;
+}
+
+IFont *IFont::createFont(const char8_t *font_name, float size) {
+  return MacFont::createMacFont(font_name, size);
 }

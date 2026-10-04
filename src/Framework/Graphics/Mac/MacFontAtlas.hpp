@@ -3,18 +3,6 @@
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 
-class MacFont {
-private:
-  std::uint8_t *bitmap_data = nullptr;
-  CGContextRef ctx = nullptr;
-  CTFontRef font = nullptr;
-
-public:
-  ITexture *createFontTextureBase(IGraphicsDevice *, const char *, int);
-  MacFont() = default;
-  ~MacFont();
-};
-
 //  ========================================================
 //
 //  FontAtlas

@@ -275,12 +275,6 @@ ITexture *MacGraphicsDevice::createTexture(int width, int height,
   return MacTexture::createMacTexture(this, width, height, texture_desc);
 }
 
-ITexture *MacGraphicsDevice::createFontTexture(const char *character,
-                                               int size) {
-  MacFont factory;
-  return factory.createFontTextureBase(this, character, size);
-}
-
 ISurface *MacGraphicsDevice::createSurfaceFromWindow(IWindow *window) {
   return MacWindowSurface::createMacSurfaceFromWindow(this, window);
 }

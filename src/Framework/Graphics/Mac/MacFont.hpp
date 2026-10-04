@@ -23,5 +23,5 @@ public:
   [[nodiscard]] MacFontData getData() const;
   MacFont() = delete;
   ~MacFont();
-  static MacFont *createFont(const char8_t *, float);
+  static MacFont *createMacFont(const char8_t *, float);
 };

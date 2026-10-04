@@ -31,7 +31,6 @@ private:
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, const TextureDesc) override;
-  ITexture *createFontTexture(const char *, int) override;
   IFontAtlas *createFontAtlas(const char *, float, int, int) override;
 
 public:

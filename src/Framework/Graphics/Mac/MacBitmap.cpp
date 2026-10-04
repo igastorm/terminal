@@ -16,13 +16,8 @@ MacBitmap::~MacBitmap() {
   }
 }
 
-MacBitmap *MacBitmap::createMacBitmap(std::size_t bytes, std::size_t width,
-                                      std::size_t height) {
+MacBitmap *MacBitmap::createMacBitmap(std::size_t width, std::size_t height) {
   if (width == 0 || height == 0) {
-    return nullptr;
-  }
-
-  if (bytes < width * height * sizeof(std::uint8_t)) {
     return nullptr;
   }
 
@@ -78,6 +73,6 @@ MacBitmap *MacBitmap::createMacBitmap(std::size_t bytes, std::size_t width,
 
 CGContextRef MacBitmap::getCGContext() const { return this->data.cg_context; }
 
-IBitmap *IBitmap::createBitmap(std::size_t, std::size_t, std::size_t) {
-  return nullptr;
+IBitmap *IBitmap::createBitmap(std::size_t width, std::size_t height) {
+  return MacBitmap::createMacBitmap(width, height);
 }

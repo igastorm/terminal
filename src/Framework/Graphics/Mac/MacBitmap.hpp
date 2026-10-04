@@ -14,7 +14,7 @@ private:
 
 public:
   CGContextRef getCGContext() const;
-  static MacBitmap *createMacBitmap(std::size_t, std::size_t, std::size_t);
+  static MacBitmap *createMacBitmap(std::size_t, std::size_t);
   MacBitmap() = delete;
   ~MacBitmap();
 };
