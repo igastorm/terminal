@@ -1,5 +1,5 @@
 #pragma once
-#include "../CommonGraphics.hpp"
+#include "../Surface.hpp"
 #import <Metal/Metal.h>
 #import <QuartzCore/QuartzCore.h>
 
@@ -9,12 +9,12 @@
 //
 //  ========================================================
 
-class MacSurface : public CommonSurface {
+class MacSurface : public Surface {
 protected:
   dispatch_semaphore_t in_flight_semaphore = nil;
 
   MacSurface(IGraphicsDevice *device, IObject *window_or_texture)
-      : CommonSurface(device, window_or_texture) {}
+      : Surface(device, window_or_texture) {}
 
 public:
   MacSurface() = delete;

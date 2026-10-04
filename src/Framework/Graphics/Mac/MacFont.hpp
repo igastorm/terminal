@@ -1,6 +1,5 @@
 #pragma once
-#include "../CommonGraphics.hpp"
-#include "IFont.hpp"
+#include "../Font.hpp"
 #include <CoreText/CTFont.h>
 
 struct MacFontData {
@@ -8,7 +7,7 @@ struct MacFontData {
   float size = 0.0f;
 };
 
-class MacFont : public CommonFont {
+class MacFont : public Font {
 private:
   MacFontData data = {};
   MacFont(CTFontRef, float);

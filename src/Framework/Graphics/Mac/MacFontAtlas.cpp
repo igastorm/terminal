@@ -165,7 +165,7 @@ bool MacFontAtlasHelper::drawBitmap(CGContextRef ctx, CTFontRef font,
 //
 //  ========================================================
 
-MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : CommonFontAtlas(device) {}
+MacFontAtlas::MacFontAtlas(IGraphicsDevice *device) : FontAtlas(device) {}
 
 MacFontAtlas::~MacFontAtlas() {
   // device と texture は親のデストラクタで参照カウントを減らしている

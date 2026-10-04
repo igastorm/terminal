@@ -16,7 +16,7 @@
 //  ========================================================
 
 MacGraphicsDevice::MacGraphicsDevice(IApplication *appInstance)
-    : CommonGraphicsDevice(appInstance) {}
+    : GraphicsDevice(appInstance) {}
 
 MacGraphicsDevice *
 MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {

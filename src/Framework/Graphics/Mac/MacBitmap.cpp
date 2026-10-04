@@ -1,11 +1,12 @@
 #include "MacBitmap.hpp"
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <new> // IWYU pragma: keep
 
 MacBitmap::MacBitmap(CGContextRef cg_context, void *bitmap_data,
                      std::size_t width, std::size_t height)
-    : CommonBitmap(width, height, bitmap_data) {
+    : Bitmap(width, height, bitmap_data) {
   this->data.cg_context = cg_context;
 }
 

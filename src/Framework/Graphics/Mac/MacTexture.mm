@@ -12,7 +12,7 @@
 
 MacTexture::MacTexture(IGraphicsDevice *device, int w, int h,
                        TextureFormat format)
-    : CommonTexture(device, w, h, format) {}
+    : Texture(device, w, h, format) {}
 
 MacTexture *MacTexture::createMacTexture(IGraphicsDevice *device, int width,
                                          int height, const TextureDesc desc) {

@@ -1,5 +1,5 @@
 #pragma once
-#include "../CommonGraphics.hpp"
+#include "../FontAtlas.hpp"
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreText/CoreText.h>
 
@@ -26,7 +26,7 @@ struct FontAtlasData {
   int cols_per_row = 0;
 };
 
-class MacFontAtlas : public CommonFontAtlas {
+class MacFontAtlas : public FontAtlas {
 private:
   FontAtlasData data = {};
   bool drawText(IRenderPass *, const char *, float, float,

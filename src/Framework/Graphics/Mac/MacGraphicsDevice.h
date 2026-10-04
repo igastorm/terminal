@@ -1,6 +1,6 @@
 #pragma once
 #include "../Application/Mac/MacApplication.h"
-#include "../CommonGraphics.hpp"
+#include "../GraphicsDevice.hpp"
 #import <Metal/Metal.h>
 
 //  ========================================================
@@ -22,7 +22,7 @@ struct GraphicsDeviceData {
   // dispatch_semaphore_t in_flight_semaphore = nil;
 };
 
-class MacGraphicsDevice : public CommonGraphicsDevice {
+class MacGraphicsDevice : public GraphicsDevice {
 private:
   GraphicsDeviceData data;
 
