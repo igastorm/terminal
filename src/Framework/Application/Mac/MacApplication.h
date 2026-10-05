@@ -13,7 +13,6 @@ struct ApplicationData {
 class MacApplication : public Application {
 private:
   ApplicationData data = {};
-  IWindow *createWindow(int, int, const char *) override;
   bool run(const char *, IAppHandler *) override;
   void postEvent() override;
 

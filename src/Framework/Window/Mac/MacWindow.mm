@@ -130,9 +130,10 @@ MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
 }
 //} // namespace
 
-IWindow *MacApplication::createWindow(int width, int height,
-                                      const char *title) {
-  IWindow *window = MacWindow::createWindow(this, width, height, title);
+IWindow *IWindow::createWindow(IApplication *appInstance, int width, int height,
+                               const char *title) {
+  IWindow *window = MacWindow::createWindow(
+      static_cast<MacApplication *>(appInstance), width, height, title);
   return window;
 }
 

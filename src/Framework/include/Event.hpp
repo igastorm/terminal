@@ -1,6 +1,7 @@
 #pragma once
-#include "IWindow.hpp"
 #include <cstddef>
+
+class IWindow;
 
 enum class EventType {
   None,
