@@ -1,4 +1,5 @@
 #include "MacWindow.h"
+#include "../Application/Mac/MacApplication.h"
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -19,8 +20,6 @@ MacWindow::~MacWindow() {
       this->data.window = nil;
     }
     if (this->data.view != nil) {
-      this->data.view.appInstance->release();
-      this->data.view.appInstance = nullptr;
       [this->data.view removeFromSuperview];
       [this->data.view release];
       this->data.view = nil;
@@ -63,12 +62,11 @@ bool MacWindow::hide() {
   }
 }
 
-MacWindow::MacWindow(IApplication *appInstance) : Window(appInstance) {}
+MacWindow::MacWindow() {}
 
 void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
 
-MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
-                                   int height, const char *title) {
+MacWindow *MacWindow::createWindow(int width, int height, const char *title) {
   @autoreleasepool {
     MacWindow *window =
         static_cast<MacWindow *>(std::malloc(sizeof(MacWindow)));
@@ -77,7 +75,7 @@ MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
       return nullptr;
     }
 
-    window = new (window) MacWindow(appInstance);
+    window = new (window) MacWindow;
     // コンストラクタに任せる
     // window->addRef();
 
@@ -106,17 +104,13 @@ MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
     // ウィンドウデリゲート
     window->data.delegate = [[WindowDelegate alloc] init];
     window->data.delegate.iwindow = window;
-    window->data.delegate.appInstance =
-        static_cast<MacApplication *>(appInstance);
     [window->data.window setDelegate:window->data.delegate];
 
     // ビュー
     window->data.view = [[WindowView alloc] initWithFrame:frame];
     window->data.view.iwindow = window;
-    window->data.view.appInstance = static_cast<MacApplication *>(appInstance);
     // appInstance を参照
     [window->data.window setContentView:window->data.view];
-    window->data.view.appInstance->addRef();
 
     // あった方がいいらしい
     // 確実に view にフォーカスを当てるためらしい
@@ -130,10 +124,8 @@ MacWindow *MacWindow::createWindow(MacApplication *appInstance, int width,
 }
 //} // namespace
 
-IWindow *IWindow::createWindow(IApplication *appInstance, int width, int height,
-                               const char *title) {
-  IWindow *window = MacWindow::createWindow(
-      static_cast<MacApplication *>(appInstance), width, height, title);
+IWindow *IWindow::createWindow(int width, int height, const char *title) {
+  IWindow *window = MacWindow::createWindow(width, height, title);
   return window;
 }
 
@@ -158,7 +150,7 @@ IWindow *IWindow::createWindow(IApplication *appInstance, int width, int height,
   event.window = self.iwindow;
   event.text.utf8 = utf8;
   event.text.len = std::strlen(utf8);
-  self.appInstance->dispatchEvent(event);
+  MacApplication::dispatchEvent(event);
 }
 
 // この View はキーボードフォーカスを受け取れるかという問い合わせに対して YES
@@ -203,7 +195,7 @@ IWindow *IWindow::createWindow(IApplication *appInstance, int width, int height,
   Event event;
   event.type = EventType::WindowExpose;
   event.window = self.iwindow;
-  self.appInstance->dispatchEvent(event);
+  MacApplication::dispatchEvent(event);
 }
 
 // ----------------------------
@@ -416,7 +408,7 @@ IWindow *IWindow::createWindow(IApplication *appInstance, int width, int height,
   Event event;
   event.type = EventType::WindowCloseRequest;
   event.window = self.iwindow;
-  self.appInstance->dispatchEvent(event);
+  MacApplication::dispatchEvent(event);
   return NO;
 }
 

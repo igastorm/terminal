@@ -1,5 +1,4 @@
 #pragma once
-#include "IApplication.hpp"
 #include "IWindow.hpp"
 
 class Window : public IWindow {
@@ -9,10 +8,8 @@ private:
 protected:
   int addRef() override;
   int release() override;
-  
-  IApplication *appInstance = nullptr;
 
-  Window(IApplication*);
+  Window();
 
 public:
   inline static const char *fkeys[] = {

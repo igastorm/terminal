@@ -17,9 +17,11 @@ private:
   void postEvent() override;
 
 public:
+  MacApplication();
+  ~MacApplication();
   bool initPlatform();
 
   void terminate() override;
 
-  void dispatchEvent(const Event &);
+  static void dispatchEvent(const Event &);
 };

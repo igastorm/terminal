@@ -21,7 +21,7 @@ private:
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
-      this->window = IWindow::createWindow(appInstance, 800, 600, "Terminal");
+      this->window = IWindow::createWindow(800, 600, "Terminal");
     }
 
     if (this->pty == nullptr && this->window != nullptr) {

@@ -1,8 +1,6 @@
 #pragma once
 #include "IObject.hpp"
 
-class IApplication;
-
 class IWindow : public IObject {
 public:
   virtual bool setTitle(const char *) = 0;
@@ -13,6 +11,5 @@ public:
 
   virtual ~IWindow() = default;
 
-  [[nodiscard]] static IWindow *createWindow(IApplication *, int, int,
-                                             const char *);
+  [[nodiscard]] static IWindow *createWindow(int, int, const char *);
 };

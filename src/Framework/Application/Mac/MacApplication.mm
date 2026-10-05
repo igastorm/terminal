@@ -9,6 +9,15 @@
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
+namespace {
+  // シングルトンアクセス用
+MacApplication *s_instance = nullptr;
+}
+
+MacApplication::MacApplication() { ::s_instance = this; }
+
+MacApplication::~MacApplication() { ::s_instance = nullptr; }
+
 bool MacApplication::initPlatform() {
   @autoreleasepool {
     // NSApplication の初期化（決まり文句らしい？）
@@ -78,12 +87,15 @@ void MacApplication::terminate() {
 }
 
 void MacApplication::dispatchEvent(const Event &event) {
-  if (this->handler != nullptr) {
-    if (this->handler->onEvent(this, event) == AppResult::Continue) {
+  if (::s_instance == nullptr) {
+    return;
+  }
+  if (::s_instance->handler != nullptr) {
+    if (::s_instance->handler->onEvent(::s_instance, event) == AppResult::Continue) {
       return;
     }
   }
-  this->terminate();
+  ::s_instance->terminate();
 }
 
 bool MacApplication::run(const char *appName, IAppHandler *handler) {
