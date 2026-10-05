@@ -15,14 +15,8 @@
 //
 //  ========================================================
 
-MacGraphicsDevice::MacGraphicsDevice(IApplication *appInstance)
-    : GraphicsDevice(appInstance) {}
-
 MacGraphicsDevice *
-MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
-  if (appInstance == nullptr) {
-    return nullptr;
-  }
+MacGraphicsDevice::createMacGraphicsDevice() {
   @autoreleasepool {
     MacGraphicsDevice *device = static_cast<MacGraphicsDevice *>(
         std::malloc(sizeof(MacGraphicsDevice)));
@@ -31,7 +25,7 @@ MacGraphicsDevice::createMacGraphicsDevice(IApplication *appInstance) {
       return nullptr;
     }
 
-    device = new (device) MacGraphicsDevice(appInstance);
+    device = new (device) MacGraphicsDevice;
     // コンストラクタに任せる
     // device->addRef();
 
@@ -291,7 +285,11 @@ IFontAtlas *MacGraphicsDevice::createFontAtlas(const char *font_name,
                                           atlash_width, atlash_height);
 }
 
-IGraphicsDevice *MacApplication::createGraphicsDevice() {
-  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice(this);
+GraphicsDeviceData MacGraphicsDevice::getPlatformData() const {
+  return this->data;
+}
+
+IGraphicsDevice *IGraphicsDevice::createGraphicsDevice() {
+  IGraphicsDevice *device = MacGraphicsDevice::createMacGraphicsDevice();
   return device;
 }

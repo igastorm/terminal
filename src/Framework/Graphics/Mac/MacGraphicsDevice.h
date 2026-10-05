@@ -26,7 +26,7 @@ class MacGraphicsDevice : public GraphicsDevice {
 private:
   GraphicsDeviceData data;
 
-  MacGraphicsDevice(IApplication *);
+    MacGraphicsDevice() = default;
 
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
@@ -34,12 +34,9 @@ private:
   IFontAtlas *createFontAtlas(const char *, float, int, int) override;
 
 public:
-  static MacGraphicsDevice *createMacGraphicsDevice(IApplication *);
+  static MacGraphicsDevice *createMacGraphicsDevice();
   
-  [[nodiscard]] GraphicsDeviceData getPlatformData() const {
-    return this->data;
-  }
+  [[nodiscard]] GraphicsDeviceData getPlatformData() const;
   
-  MacGraphicsDevice() = delete;
   ~MacGraphicsDevice();
 };

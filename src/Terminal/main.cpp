@@ -1,6 +1,7 @@
 #include "IApplication.hpp"
 #include "IBitmap.hpp"
 #include "IFont.hpp"
+#include "IGraphicsDevice.hpp"
 #include "include/IPTY.hpp"
 #include <cstring>
 #include <iostream>
@@ -31,7 +32,7 @@ private:
     }
 
     if (device == nullptr) {
-      device = appInstance->createGraphicsDevice();
+      device = IGraphicsDevice::createGraphicsDevice();
     }
     if (device != nullptr && window_surface == nullptr && window != nullptr) {
       window_surface = device->createSurfaceFromWindow(window);
@@ -56,11 +57,12 @@ private:
       font = IFont::createFont(u8"BIZ UDGothic", 32);
       bitmap = IBitmap::createBitmap(512, 512);
       font->drawGlyph(bitmap, U'𩿗', 0, 0);
-      //std::uint8_t pixels[512 * 512];
-      //for (int i = 0; i < 512 * 512; ++i) {
-      //  pixels[i] = 0xFF;
-      //}
-      font_texture->upload(bitmap->getBitmapData(), 512 * 512, 512, {0, 0, 32, 32});
+      // std::uint8_t pixels[512 * 512];
+      // for (int i = 0; i < 512 * 512; ++i) {
+      //   pixels[i] = 0xFF;
+      // }
+      font_texture->upload(bitmap->getBitmapData(), 512 * 512, 512,
+                           {0, 0, 32, 32});
     }
     if (device != nullptr && font_atlas == nullptr) {
       font_atlas = device->createFontAtlas("BIZ UDGothic", 32);

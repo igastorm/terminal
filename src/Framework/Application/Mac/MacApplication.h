@@ -14,7 +14,6 @@ class MacApplication : public Application {
 private:
   ApplicationData data = {};
   IWindow *createWindow(int, int, const char *) override;
-  IGraphicsDevice *createGraphicsDevice() override;
   bool run(const char *, IAppHandler *) override;
   void postEvent() override;
 

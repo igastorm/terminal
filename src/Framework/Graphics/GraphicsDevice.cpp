@@ -1,5 +1,4 @@
 #include "GraphicsDevice.hpp"
-#include "../Application/Application.hpp"
 #include <cstdlib>
 
 //  ========================================================
@@ -19,16 +18,6 @@ int GraphicsDevice::release() {
   return this->ref_count;
 }
 
-GraphicsDevice::GraphicsDevice(IApplication *appInstance) {
-  this->addRef();
-  if (appInstance != nullptr) {
-    this->appInstance = appInstance;
-    static_cast<Application *>(this->appInstance)->addRef();
-  }
-}
+GraphicsDevice::GraphicsDevice() { this->addRef(); }
 
-GraphicsDevice::~GraphicsDevice() {
-  if (this->appInstance != nullptr) {
-    static_cast<Application *>(this->appInstance)->release();
-  }
-}
+GraphicsDevice::~GraphicsDevice() {}

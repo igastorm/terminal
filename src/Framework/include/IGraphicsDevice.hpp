@@ -18,4 +18,6 @@ public:
 
   [[nodiscard]] virtual IFontAtlas *createFontAtlas(const char *, float,
                                                     int = 512, int = 512) = 0;
+
+  [[nodiscard]] static IGraphicsDevice *createGraphicsDevice();
 };
