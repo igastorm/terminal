@@ -15,13 +15,18 @@ private:
   ApplicationData data = {};
   bool run(const char *, IAppHandler *) override;
   void postEvent() override;
-
-public:
+  
   MacApplication();
   ~MacApplication();
+  
+ 	MacApplication(const MacApplication&) = delete;
+	MacApplication& operator=(const MacApplication&) = delete;
+
+public:
   bool initPlatform();
 
   void terminate() override;
 
-  static void dispatchEvent(const Event &);
+  void dispatchEvent(const Event &);
+  static MacApplication* getAppInstance();
 };

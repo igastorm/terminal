@@ -5,18 +5,17 @@
 #include <new>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
-@property(nonatomic, assign) MacApplication *appInstance;
 @property(nonatomic, assign) IAppHandler *handler;
 @end
 
-namespace {
-  // シングルトンアクセス用
-MacApplication *s_instance = nullptr;
+MacApplication *MacApplication::getAppInstance() {
+  static MacApplication instance;
+  return &instance;
 }
 
-MacApplication::MacApplication() { ::s_instance = this; }
+MacApplication::MacApplication() {}
 
-MacApplication::~MacApplication() { ::s_instance = nullptr; }
+MacApplication::~MacApplication() {}
 
 bool MacApplication::initPlatform() {
   @autoreleasepool {
@@ -28,7 +27,6 @@ bool MacApplication::initPlatform() {
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
     this->data.appDelegate = [[AppDelegate alloc] init];
-    this->data.appDelegate.appInstance = this;
     [NSApp setDelegate:this->data.appDelegate];
 
     // メニューバーの登録 (強参照だから所有権が引き継がれる)
@@ -87,15 +85,12 @@ void MacApplication::terminate() {
 }
 
 void MacApplication::dispatchEvent(const Event &event) {
-  if (::s_instance == nullptr) {
-    return;
-  }
-  if (::s_instance->handler != nullptr) {
-    if (::s_instance->handler->onEvent(::s_instance, event) == AppResult::Continue) {
+  if (this->handler != nullptr) {
+    if (this->handler->onEvent(this, event) == AppResult::Continue) {
       return;
     }
   }
-  ::s_instance->terminate();
+  this->terminate();
 }
 
 bool MacApplication::run(const char *appName, IAppHandler *handler) {
@@ -168,14 +163,8 @@ void MacApplication::postEvent() {
 
 //  だがここで実装しないと Cocoa の初期化が呼べない気がする
 // あと startApp から呼ぶため
-Application *createPlatformApplication() {
-  MacApplication *app =
-      static_cast<MacApplication *>(std::malloc(sizeof(MacApplication)));
-  if (app == nullptr) {
-    std::perror("malloc failed (Application)");
-    return nullptr;
-  }
-  app = new (app) MacApplication;
+Application *initPlatform() {
+  MacApplication *app = MacApplication::getAppInstance();
 
   // コンストラクタに任せる
   // app->addRef();
@@ -183,16 +172,32 @@ Application *createPlatformApplication() {
   // プラットフォーム依存部分の初期化
   if (!app->initPlatform()) {
     std::perror("initPlatform Failed");
-    app->release();
     return nullptr;
   }
   return app;
 }
 
+int main(int argc, char **argv) {
+  if (std::setlocale(LC_ALL, "") == nullptr) {
+    return 1;
+  }
+
+  MacApplication *app = MacApplication::getAppInstance();
+  if (app == nullptr) {
+    return 1;
+  }
+
+  if (!app->initPlatform()) {
+    return 1;
+  }
+
+  return appMain(argc, argv, app);
+}
+
 @implementation AppDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
   // onInit 呼び出し
-  if (!self.handler->onInit(self.appInstance)) {
+  if (!self.handler->onInit(MacApplication::getAppInstance())) {
     // onInit が失敗したらアプリを終了させる
     [NSApp terminate:nil];
   }
@@ -202,7 +207,7 @@ Application *createPlatformApplication() {
 - (NSApplicationTerminateReply)applicationShouldTerminate:
     (NSApplication *)sender {
   // 自動で終了せずに自前の処理を経由させる
-  self.appInstance->terminate();
+  MacApplication::getAppInstance()->terminate();
   // Cocoa による終了処理をキャンセル
   return NSTerminateCancel;
 }
@@ -216,7 +221,7 @@ Application *createPlatformApplication() {
 
   Event event;
   event.type = EventType::AppReopen;
-  self.appInstance->dispatchEvent(event);
+  MacApplication::getAppInstance()->dispatchEvent(event);
   return NO;
 }
 @end

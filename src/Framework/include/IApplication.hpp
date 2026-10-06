@@ -1,9 +1,7 @@
 #pragma once
 #include "IAppHandler.hpp"
-#include "IObject.hpp"
 
-// 利用側で release とかするとまずいので IObject は private
-class IApplication : private IObject {
+class IApplication{
 public:
   virtual bool run(const char *, IAppHandler *) = 0;
   virtual void terminate() = 0;

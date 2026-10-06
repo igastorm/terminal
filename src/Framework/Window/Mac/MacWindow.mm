@@ -150,7 +150,7 @@ IWindow *IWindow::createWindow(int width, int height, const char *title) {
   event.window = self.iwindow;
   event.text.utf8 = utf8;
   event.text.len = std::strlen(utf8);
-  MacApplication::dispatchEvent(event);
+  MacApplication::getAppInstance()->dispatchEvent(event);
 }
 
 // この View はキーボードフォーカスを受け取れるかという問い合わせに対して YES
@@ -195,7 +195,7 @@ IWindow *IWindow::createWindow(int width, int height, const char *title) {
   Event event;
   event.type = EventType::WindowExpose;
   event.window = self.iwindow;
-  MacApplication::dispatchEvent(event);
+  MacApplication::getAppInstance()->dispatchEvent(event);
 }
 
 // ----------------------------
@@ -408,7 +408,7 @@ IWindow *IWindow::createWindow(int width, int height, const char *title) {
   Event event;
   event.type = EventType::WindowCloseRequest;
   event.window = self.iwindow;
-  MacApplication::dispatchEvent(event);
+  MacApplication::getAppInstance()->dispatchEvent(event);
   return NO;
 }
 

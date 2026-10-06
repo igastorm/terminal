@@ -1,5 +1,4 @@
 #pragma once
-#include "../Application/Mac/MacApplication.h"
 #include "../GraphicsDevice.hpp"
 #import <Metal/Metal.h>
 
