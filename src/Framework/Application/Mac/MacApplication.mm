@@ -152,29 +152,13 @@ void MacApplication::postEvent() {
 
             MacApplication *app = static_cast<MacApplication *>(context);
 
-            // ★ メインスレッドで UserEvent を 1 回だけ発火
+            // メインスレッドで UserEvent を 1 回だけ発火
             Event event;
             event.type = EventType::UserEvent;
             app->dispatchEvent(event);
           }
         });
   }
-}
-
-//  だがここで実装しないと Cocoa の初期化が呼べない気がする
-// あと startApp から呼ぶため
-Application *initPlatform() {
-  MacApplication *app = MacApplication::getAppInstance();
-
-  // コンストラクタに任せる
-  // app->addRef();
-
-  // プラットフォーム依存部分の初期化
-  if (!app->initPlatform()) {
-    std::perror("initPlatform Failed");
-    return nullptr;
-  }
-  return app;
 }
 
 int main(int argc, char **argv) {
