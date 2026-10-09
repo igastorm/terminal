@@ -1,21 +1,17 @@
 #include "Texture.hpp"
-#include <cstdlib>
-
 //  ========================================================
 //
 //  Texture
 //
 //  ========================================================
 
-int Texture::addRef() { return ++this->ref_count; }
-
 int Texture::release() {
-  if (--this->ref_count == 0) {
+  int ref_count = this->Object<ITexture>::release();
+  if (ref_count == 0) {
     this->~Texture();
-    free(this);
     return 0;
   }
-  return this->ref_count;
+  return ref_count;
 }
 
 TextureFormat Texture::getFormat() { return this->format; }

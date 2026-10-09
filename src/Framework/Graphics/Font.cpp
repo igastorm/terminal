@@ -1,5 +1,4 @@
 #include "Font.hpp"
-#include <cstdlib>
 
 //  ========================================================
 //
@@ -7,15 +6,13 @@
 //
 //  ========================================================
 
-int Font::addRef() { return ++this->ref_count; }
-
 int Font::release() {
-  if (--this->ref_count == 0) {
+  int ref_count = this->Object<IFont>::release();
+  if (ref_count == 0) {
     this->~Font();
-    free(this);
     return 0;
   }
-  return this->ref_count;
+  return ref_count;
 }
 
 FontCellSize Font::getCellSize() const {

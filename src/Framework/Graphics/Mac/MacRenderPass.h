@@ -10,7 +10,6 @@
 //  ========================================================
 
 struct RenderPassData {
-  IGraphicsDevice *device = nullptr;
   id<MTLRenderCommandEncoder> encoder = nil;
   // id<MTLRenderPipelineState> pipeline_state = nil;
   // id<MTLRenderPipelineState> pipeline_state_tex = nil;

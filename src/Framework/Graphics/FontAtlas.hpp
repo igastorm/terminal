@@ -1,4 +1,5 @@
 #pragma once
+#include "../Object/Object.hpp"
 #include "IFontAtlas.hpp"
 #include "IGraphicsDevice.hpp"
 
@@ -14,10 +15,7 @@ struct HashEntry {
   GlyphUV glyph_table = {};
 };
 
-class FontAtlas : public IFontAtlas {
-private:
-  int ref_count = 0;
-
+class FontAtlas : public Object<IFontAtlas> {
 protected:
   std::uint8_t *on_demand_bitmap_data = nullptr;
   GlyphUV glyph_table[95] = {};
@@ -43,7 +41,6 @@ protected:
 
 public:
   ITexture *getTexture() override;
-  int addRef() override;
   int release() override;
   ~FontAtlas();
 };

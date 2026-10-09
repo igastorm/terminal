@@ -1,5 +1,4 @@
 #include "Bitmap.hpp"
-#include <cstdlib>
 
 //  ========================================================
 //
@@ -7,15 +6,13 @@
 //
 //  ========================================================
 
-int Bitmap::addRef() { return ++this->ref_count; }
-
 int Bitmap::release() {
-  if (--this->ref_count == 0) {
+  int ref_count = this->Object<IBitmap>::release();
+  if (ref_count == 0) {
     this->~Bitmap();
-    free(this);
     return 0;
   }
-  return this->ref_count;
+  return ref_count;
 }
 
 Bitmap::Bitmap(std::size_t width, std::size_t height, void *bitmap_data)

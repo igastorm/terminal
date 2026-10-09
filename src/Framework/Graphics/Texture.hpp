@@ -1,4 +1,5 @@
 #pragma once
+#include "../Object/Object.hpp"
 #include "IGraphicsDevice.hpp"
 #include "ITexture.hpp"
 
@@ -8,10 +9,7 @@
 //
 //  ========================================================
 
-class Texture : public ITexture {
-private:
-  int ref_count = 0;
-
+class Texture : public Object<ITexture> {
 protected:
   IGraphicsDevice *device = nullptr;
   TextureFormat format = TextureFormat::Color;
@@ -21,7 +19,6 @@ protected:
   Texture(IGraphicsDevice *, int, int, TextureFormat);
 
 public:
-  int addRef() override;
   int release() override;
 
   TextureFormat getFormat() override;

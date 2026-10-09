@@ -1,5 +1,4 @@
 #include "RenderPass.hpp"
-#include <cstdlib>
 
 //  ========================================================
 //
@@ -7,13 +6,15 @@
 //
 //  ========================================================
 
-int RenderPass::addRef() { return ++this->ref_count; }
-
-int RenderPass::release() {
-  if (--this->ref_count == 0) {
-    this->~RenderPass();
-    free(this);
-    return 0;
+RenderPass::RenderPass(IGraphicsDevice *device) : device(device) {
+  if (this->device != nullptr) {
+    this->device->addRef();
   }
-  return this->ref_count;
+}
+
+RenderPass::~RenderPass() {
+  if (device != nullptr) {
+    this->device->release();
+    this->device = nullptr;
+  }
 }

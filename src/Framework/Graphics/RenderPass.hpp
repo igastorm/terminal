@@ -1,4 +1,5 @@
 #pragma once
+#include "IGraphicsDevice.hpp"
 #include "IRenderPass.hpp"
 
 //  ========================================================
@@ -8,17 +9,10 @@
 //  ========================================================
 
 class RenderPass : public IRenderPass {
-private:
-  int ref_count = 0;
+protected:
+  IGraphicsDevice *device = nullptr;
 
 public:
-  [[deprecated(
-      "Should be used as a temporary object on the stack within `render()`")]]
-  int addRef() override;
-
-  [[deprecated(
-      "Should be used as a temporary object on the stack within `render()`")]]
-  int release() override;
-
-  ~RenderPass() = default;
+  RenderPass(IGraphicsDevice *);
+  ~RenderPass();
 };

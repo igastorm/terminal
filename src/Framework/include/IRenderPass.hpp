@@ -1,5 +1,4 @@
 #pragma once
-#include "IObject.hpp"
 #include "ITexture.hpp"
 #include <cstdint>
 
@@ -22,7 +21,7 @@ struct VertexTex {
   std::uint32_t color;
 };
 
-class IRenderPass : private IObject {
+class IRenderPass {
 public:
   virtual ~IRenderPass() = default;
   virtual bool drawVertices(const Vertex *, int) = 0;

@@ -1,5 +1,4 @@
 #include "Surface.hpp"
-#include <cstdlib>
 
 //  ========================================================
 //
@@ -7,15 +6,13 @@
 //
 //  ========================================================
 
-int Surface::addRef() { return ++this->ref_count; }
-
 int Surface::release() {
-  if (--this->ref_count == 0) {
+  int ref_count = this->Object<ISurface>::release();
+  if (ref_count == 0) {
     this->~Surface();
-    free(this);
     return 0;
   }
-  return this->ref_count;
+  return ref_count;
 }
 
 Surface::Surface(IGraphicsDevice *device,

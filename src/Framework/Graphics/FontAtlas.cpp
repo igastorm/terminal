@@ -9,15 +9,13 @@
 
 ITexture *FontAtlas::getTexture() { return this->texture; }
 
-int FontAtlas::addRef() { return ++this->ref_count; }
-
 int FontAtlas::release() {
-  if (--this->ref_count == 0) {
+  int ref_count = this->Object<IFontAtlas>::release();
+  if (ref_count == 0) {
     this->~FontAtlas();
-    free(this);
     return 0;
   }
-  return this->ref_count;
+  return ref_count;
 }
 
 // コードポイントをハッシュ化

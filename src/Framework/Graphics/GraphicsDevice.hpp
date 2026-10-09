@@ -1,4 +1,5 @@
 #pragma once
+#include "../Object/Object.hpp"
 #include "IGraphicsDevice.hpp"
 
 //  ========================================================
@@ -7,12 +8,8 @@
 //
 //  ========================================================
 
-class GraphicsDevice : public IGraphicsDevice {
-private:
-  int ref_count = 0;
-
+class GraphicsDevice : public Object<IGraphicsDevice> {
 public:
-  int addRef() override;
   int release() override;
   GraphicsDevice();
   ~GraphicsDevice();

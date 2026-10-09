@@ -1,12 +1,10 @@
 #pragma once
+#include "../Object/Object.hpp"
 #include "IWindow.hpp"
 
-class Window : public IWindow {
-private:
-  int ref_count = 0;
 
+class Window : public Object<IWindow> {
 protected:
-  int addRef() override;
   int release() override;
 
   Window();

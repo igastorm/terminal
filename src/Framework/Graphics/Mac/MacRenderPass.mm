@@ -14,14 +14,12 @@
 bool MacRenderPass::isReady() const { return this->data.is_ready; }
 
 MacRenderPass::MacRenderPass(IGraphicsDevice *device,
-                             id<MTLRenderCommandEncoder> encoder) {
+                             id<MTLRenderCommandEncoder> encoder)
+    : RenderPass(device) {
   if (encoder == nil || device == nullptr) {
     this->data.is_ready = false;
     return;
   }
-
-  this->data.device = device;
-  this->data.device->addRef();
 
   MacGraphicsDevice *mac_device = static_cast<MacGraphicsDevice *>(device);
 
@@ -47,10 +45,6 @@ MacRenderPass::MacRenderPass(IGraphicsDevice *device,
 }
 
 MacRenderPass::~MacRenderPass() {
-  if (this->data.device != nullptr) {
-    this->data.device->release();
-    this->data.device = nullptr;
-  }
   if (this->data.encoder != nil) {
     [this->data.encoder release];
   }
@@ -65,7 +59,7 @@ bool MacRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   }
 
   MacGraphicsDevice *mac_device =
-      static_cast<MacGraphicsDevice *>(this->data.device);
+      static_cast<MacGraphicsDevice *>(device);
 
   [this->data.encoder
       setRenderPipelineState:mac_device->getPlatformData().pipeline_state];
@@ -91,8 +85,9 @@ bool MacRenderPass::drawVertices(const Vertex *vertices, int vertex_count) {
   return true;
 }
 
-bool MacRenderPass::drawVerticesTex(ITexture *itexture, const VertexTex *vertices,
-                                 int vertex_count) {
+bool MacRenderPass::drawVerticesTex(ITexture *itexture,
+                                    const VertexTex *vertices,
+                                    int vertex_count) {
   // render() 内でしか呼ばれない, 呼び出し元で既に @autoreleasepool してる
   // そもそもここで使ってるメソッドはリソース生成しないらしい
   if (this->data.is_ready == false || vertices == nil || vertex_count <= 0 ||
@@ -109,7 +104,7 @@ bool MacRenderPass::drawVerticesTex(ITexture *itexture, const VertexTex *vertice
   }
 
   MacGraphicsDevice *mac_device =
-      static_cast<MacGraphicsDevice *>(this->data.device);
+      static_cast<MacGraphicsDevice *>(this->device);
 
   // テクスチャのフォーマットにより適切なパイプラインを自動選択
   [this->data.encoder

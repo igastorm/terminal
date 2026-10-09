@@ -1,6 +1,7 @@
 #pragma once
-#include "ISurface.hpp"
+#include "../Object/Object.hpp"
 #include "IGraphicsDevice.hpp"
+#include "ISurface.hpp"
 
 //  ========================================================
 //
@@ -8,10 +9,7 @@
 //
 //  ========================================================
 
-class Surface : public ISurface {
-private:
-  int ref_count = 0;
-
+class Surface : public Object<ISurface> {
 protected:
   IGraphicsDevice *device = nullptr;
   union {
@@ -24,7 +22,6 @@ protected:
   Surface(IGraphicsDevice *, IObject *);
 
 public:
-  int addRef() override;
   int release() override;
   ~Surface();
 };
