@@ -4,11 +4,8 @@
 // https://ja.wikipedia.org/wiki/UTF-8
 // https://ja.wikipedia.org/wiki/UTF-16
 // https://ja.wikipedia.org/wiki/Unicode#サロゲートペア
-// dst_cap は文字数単位
 // サイズは要素単位
 // 一文字分専用
-// 別に文字列全体にも対応しているが code_point の容量チェックがめんどくさいので
-// つまり最終引数は最後の文字のコードポイントを返す
 
 CharConverter::Result
 CharConverter::cvtUTF8ToUTF32(const uint8_t *src, std::size_t src_len,
