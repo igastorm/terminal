@@ -26,7 +26,6 @@ Texture::Texture(IGraphicsDevice *device, int w, int h,
   this->height = h;
   this->format = format;
 
-  this->addRef();
   if (device != nullptr) {
     this->device = device;
     this->device->addRef();

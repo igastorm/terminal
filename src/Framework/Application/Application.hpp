@@ -7,5 +7,5 @@ protected:
 
   Application() = default;
 
-  virtual ~Application() = default;
+  ~Application() = default;
 };

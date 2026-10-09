@@ -8,7 +8,3 @@ int Window::release() {
   }
   return ref_count;
 }
-
-Window::Window() { this->addRef(); }
-
-Window::~Window() {}

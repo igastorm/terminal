@@ -17,7 +17,6 @@ int Surface::release() {
 
 Surface::Surface(IGraphicsDevice *device,
                              IObject *window_or_texture) {
-  this->addRef();
   if (device != nullptr) {
     this->device = device;
     this->device->addRef();

@@ -9,8 +9,10 @@
 //  ========================================================
 
 class GraphicsDevice : public Object<IGraphicsDevice> {
+protected:
+  GraphicsDevice() = default;
+  ~GraphicsDevice() = default;
+
 public:
   int release() override;
-  GraphicsDevice();
-  ~GraphicsDevice();
 };

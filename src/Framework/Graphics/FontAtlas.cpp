@@ -61,7 +61,6 @@ const HashEntry *FontAtlas::findEntry(uint32_t code_point) const {
 }
 
 FontAtlas::FontAtlas(IGraphicsDevice *device) {
-  this->addRef();
   if (device != nullptr) {
     this->device = device;
     this->device->addRef();

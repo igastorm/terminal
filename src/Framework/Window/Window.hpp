@@ -2,12 +2,12 @@
 #include "../Object/Object.hpp"
 #include "IWindow.hpp"
 
-
 class Window : public Object<IWindow> {
 protected:
   int release() override;
 
-  Window();
+  Window() = default;
+  ~Window() = default;
 
 public:
   inline static const char *fkeys[] = {
@@ -24,5 +24,4 @@ public:
       "\033[23~", // F11
       "\033[24~", // F12
   };
-  virtual ~Window();
 };

@@ -17,6 +17,7 @@ protected:
   int height = 0;
 
   Texture(IGraphicsDevice *, int, int, TextureFormat);
+  ~Texture();
 
 public:
   int release() override;
@@ -25,6 +26,4 @@ public:
 
   int getWidth() override;
   int getHeight() override;
-
-  ~Texture();
 };

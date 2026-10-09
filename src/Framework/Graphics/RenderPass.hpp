@@ -12,7 +12,8 @@ class RenderPass : public IRenderPass {
 protected:
   IGraphicsDevice *device = nullptr;
 
-public:
   RenderPass(IGraphicsDevice *);
   ~RenderPass();
+
+public:
 };

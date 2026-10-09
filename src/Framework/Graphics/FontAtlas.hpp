@@ -38,9 +38,9 @@ protected:
   const HashEntry *findEntry(uint32_t code_point) const;
 
   FontAtlas(IGraphicsDevice *);
+  ~FontAtlas();
 
 public:
   ITexture *getTexture() override;
   int release() override;
-  ~FontAtlas();
 };

@@ -7,6 +7,7 @@ private:
 protected:
   virtual int addRef() override;
   virtual int release() override;
+  Object();
   virtual ~Object();
 };
 

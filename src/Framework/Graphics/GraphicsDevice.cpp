@@ -14,7 +14,3 @@ int GraphicsDevice::release() {
   }
   return ref_count;
 }
-
-GraphicsDevice::GraphicsDevice() { this->addRef(); }
-
-GraphicsDevice::~GraphicsDevice() {}

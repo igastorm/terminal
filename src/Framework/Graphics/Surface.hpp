@@ -20,8 +20,8 @@ protected:
   };
 
   Surface(IGraphicsDevice *, IObject *);
+  ~Surface();
 
 public:
   int release() override;
-  ~Surface();
 };
