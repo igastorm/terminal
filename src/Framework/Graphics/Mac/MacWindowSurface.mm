@@ -17,7 +17,7 @@ MacWindowSurface::MacWindowSurface(IGraphicsDevice *device, IWindow *window)
 MacWindowSurface::~MacWindowSurface() {
   @autoreleasepool {
     if (this->data.metal_layer != nil) {
-      [this->data.metal_layer removeFromSuperlayer];
+      // [this->data.metal_layer removeFromSuperlayer];
       [this->data.metal_layer release];
       this->data.metal_layer = nil;
     }
@@ -82,9 +82,8 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
                        ->getPlatformData()
                        .mtl_device;
     layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-    // NO にすると CPU で読み取りができるってことか
+    // NO にすると CPU で読み取りができる (スクショとかができるかも)
     // しかし重たくなると思われる
-    // Unified メモリアーキテクチャだとそうでもない気がするが
     layer.framebufferOnly = YES;
     // ウィンドウ全体に貼り付ける
     layer.frame = view.bounds;
@@ -94,7 +93,7 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
     // 親レイヤーのサイズ変更を追従する
     // これがなくても手動で横方向は OK だが縦方向が遅延する
     // どうやら原点が左下らしいからそれが原因
-    layer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
+    // layer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
     // なんか OS 側のアニメーションのタイミングを調整するらしい
     // いまいちよくわからんがこれで解決した
     layer.presentsWithTransaction = YES;
@@ -116,9 +115,9 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
                                     view.bounds.size.height * scale);
 
     // Metal レイヤーを貼り付ける
-    // view.layer = layer;
+    view.layer = layer;
     view.wantsLayer = YES;
-    [view.layer addSublayer:layer];
+    // [view.layer addSublayer:layer];
 
     surface->data.metal_layer = layer;
 
