@@ -96,7 +96,8 @@ MacWindowSurface::createMacSurfaceFromWindow(IGraphicsDevice *device,
     // どうやら原点が左下らしいからそれが原因
     layer.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
     // なんか OS 側のアニメーションのタイミングを調整するらしい
-    // layer.presentsWithTransaction = YES;
+    // いまいちよくわからんがこれで解決した
+    layer.presentsWithTransaction = YES;
     if (view.window == nil) {
       // 一応ガード用 if があるがこれが nil ということは createWindow
       // がおかしい
@@ -238,7 +239,7 @@ bool MacWindowSurface::render(RenderCallBack callback, void *data,
     // GPU が描画を始めようとするまで待つので描画されない部分を減らせる
     // 全てのデリゲート・イベントはメインスレッド
     if (window->getPlatformData().resizing) {
-      [cmd_buffer waitUntilScheduled];
+      [cmd_buffer waitUntilCompleted];
     }
 
     return result;

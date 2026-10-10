@@ -75,7 +75,7 @@ bool MacWindow::setMinSize(int w, int h) {
 
 MacWindow::MacWindow() {}
 
-void MacWindow::notifyResizing(bool flag) { this->data.resizing = !flag; }
+void MacWindow::notifyResizing(bool flag) { this->data.resizing = flag; }
 
 MacWindow *MacWindow::createWindow(int width, int height, const char *title) {
   @autoreleasepool {
