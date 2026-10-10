@@ -12,5 +12,5 @@ public:
   virtual bool drawGlyph(IBitmap *, const char32_t, int, int) = 0;
   virtual FontCellSize getCellSize() const = 0;
   static IFont *createFont(const char8_t *, float);
-  virtual ~IFont() = default;
+  ~IFont() = default;
 };

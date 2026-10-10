@@ -22,6 +22,8 @@ private:
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
       this->window = IWindow::createWindow(800, 600, "Terminal");
+      //this->window->setResizeIncrements(32, 32);
+     // this->window->setMinSize(64, 64);
     }
 
     if (this->pty == nullptr && this->window != nullptr) {

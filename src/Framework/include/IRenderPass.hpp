@@ -23,7 +23,7 @@ struct VertexTex {
 
 class IRenderPass {
 public:
-  virtual ~IRenderPass() = default;
+  ~IRenderPass() = default;
   virtual bool drawVertices(const Vertex *, int) = 0;
   virtual bool drawVerticesTex(ITexture *, const VertexTex *, int) = 0;
 

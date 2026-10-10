@@ -7,7 +7,7 @@
 
 class IGraphicsDevice : public IObject {
 public:
-  virtual ~IGraphicsDevice() = default;
+  ~IGraphicsDevice() = default;
 
   [[nodiscard]] virtual ISurface *createSurfaceFromWindow(IWindow *) = 0;
   [[nodiscard]] virtual ISurface *createSurfaceFromTexture(ITexture *) = 0;

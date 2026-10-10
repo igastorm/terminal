@@ -34,6 +34,8 @@ private:
   bool setTitle(const char *) override;
   bool show() override;
   bool hide() override;
+  bool setResizeIncrements(int, int) override;
+  bool setMinSize(int, int) override;
 
 public:
   [[nodiscard]] WindowData getPlatformData() const;

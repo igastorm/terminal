@@ -18,5 +18,5 @@ public:
   // レンダリングパイプラインの begin-end 内で呼ばない方がいい
   virtual bool updateGlyphCache(const char32_t) = 0;
   // virtual bool drawText(IRenderPass *, float, float, std::uint32_t) = 0;
-  virtual ~IFontAtlas() = default;
+  ~IFontAtlas() = default;
 };

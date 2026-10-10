@@ -6,5 +6,5 @@ public:
 
   virtual int addRef() = 0;
 
-  virtual ~IObject() = default;
+  ~IObject() = default;
 };

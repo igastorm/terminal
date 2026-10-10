@@ -29,7 +29,7 @@ struct TextureDataRegion {
 
 class ITexture : public IObject {
 public:
-  virtual ~ITexture() = default;
+  ~ITexture() = default;
 
   virtual bool upload(const void *, size_t, size_t,
                       const TextureDataRegion) = 0;

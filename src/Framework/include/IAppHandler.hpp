@@ -5,7 +5,7 @@ class IApplication;
 
 class IAppHandler {
 public:
-  virtual ~IAppHandler() = default;
+  ~IAppHandler() = default;
 
   // 起動時
   virtual bool onInit(IApplication *app) = 0;

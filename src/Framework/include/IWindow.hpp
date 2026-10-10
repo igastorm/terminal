@@ -9,7 +9,11 @@ public:
 
   virtual bool hide() = 0;
 
-  virtual ~IWindow() = default;
+  virtual bool setResizeIncrements(int, int) = 0;
+
+  virtual bool setMinSize(int, int) = 0;
+
+  ~IWindow() = default;
 
   [[nodiscard]] static IWindow *createWindow(int, int, const char *);
 };

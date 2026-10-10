@@ -1,5 +1,6 @@
 #include "MacWindow.h"
 #include "../Application/Mac/MacApplication.h"
+#import <Foundation/Foundation.h>
 #include <cstdlib>
 #include <iostream>
 #include <new>
@@ -60,6 +61,16 @@ bool MacWindow::hide() {
     [this->data.window orderOut:nil];
     return true;
   }
+}
+
+bool MacWindow::setResizeIncrements(int w, int h) {
+  this->data.window.contentResizeIncrements = NSMakeSize(w, h);
+  return true;
+}
+
+bool MacWindow::setMinSize(int w, int h) {
+  this->data.window.contentMinSize = NSMakeSize(w, h);
+  return true;
 }
 
 MacWindow::MacWindow() {}

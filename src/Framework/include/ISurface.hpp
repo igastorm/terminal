@@ -4,7 +4,7 @@
 
 class ISurface : public IObject {
 public:
-  virtual ~ISurface() = default;
+  ~ISurface() = default;
   virtual bool render(RenderCallBack, void *,
                       const RenderPassDesc = IRenderPass::DEFAULT_DESC) = 0;
 };

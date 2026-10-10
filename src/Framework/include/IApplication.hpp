@@ -8,7 +8,7 @@ public:
 
   virtual void postEvent() = 0;
 
-  virtual ~IApplication() = default;
+  ~IApplication() = default;
 };
 
 extern int appMain(int, char **, IApplication *);
