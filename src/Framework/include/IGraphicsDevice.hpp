@@ -1,5 +1,4 @@
 #pragma once
-#include "IFontAtlas.hpp"
 #include "IObject.hpp"
 #include "ISurface.hpp"
 #include "ITexture.hpp"
@@ -16,8 +15,8 @@ public:
   [[nodiscard]] virtual ITexture *
   createTexture(int, int, const TextureDesc = ITexture::DEFAULT_DESC) = 0;
 
-  [[nodiscard]] virtual IFontAtlas *createFontAtlas(const char *, float,
-                                                    int = 512, int = 512) = 0;
+  // [[nodiscard]] virtual IFontAtlas *createFontAtlas(const char *, float,
+  //                                                  int = 512, int = 512) = 0;
 
   [[nodiscard]] static IGraphicsDevice *createGraphicsDevice();
 };

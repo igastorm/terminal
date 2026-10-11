@@ -30,7 +30,7 @@ private:
   ISurface *createSurfaceFromWindow(IWindow *) override;
   ISurface *createSurfaceFromTexture(ITexture *) override;
   ITexture *createTexture(int, int, const TextureDesc) override;
-  IFontAtlas *createFontAtlas(const char *, float, int, int) override;
+  // IFontAtlas *createFontAtlas(const char *, float, int, int) override;
 
 public:
   static MacGraphicsDevice *createMacGraphicsDevice();

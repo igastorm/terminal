@@ -277,13 +277,13 @@ ISurface *MacGraphicsDevice::createSurfaceFromTexture(ITexture *texture) {
   return MacTextureSurface::createMacSurfaceFromTexture(this, texture);
 }
 
-IFontAtlas *MacGraphicsDevice::createFontAtlas(const char *font_name,
-                                               float font_size,
-                                               int atlash_width,
-                                               int atlash_height) {
-  return MacFontAtlas::createMacFontAtlas(this, font_name, font_size,
-                                          atlash_width, atlash_height);
-}
+// IFontAtlas *MacGraphicsDevice::createFontAtlas(const char *font_name,
+//                                                float font_size,
+//                                                int atlash_width,
+//                                                int atlash_height) {
+//   return MacFontAtlas::createMacFontAtlas(this, font_name, font_size,
+//                                           atlash_width, atlash_height);
+// }
 
 GraphicsDeviceData MacGraphicsDevice::getPlatformData() const {
   return this->data;

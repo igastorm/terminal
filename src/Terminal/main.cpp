@@ -3,6 +3,7 @@
 #include "IFont.hpp"
 #include "IGraphicsDevice.hpp"
 #include "include/IPTY.hpp"
+#include "include/ITerminal.hpp"
 #include <cstring>
 #include <iostream>
 
@@ -15,7 +16,7 @@ private:
   ITexture *texture = nullptr;
   ISurface *texture_surface = nullptr;
   ITexture *font_texture = nullptr;
-  IFontAtlas *font_atlas = nullptr;
+  // IFontAtlas *font_atlas = nullptr;
   IFont *font = nullptr;
   IBitmap *bitmap = nullptr;
 
@@ -66,9 +67,9 @@ private:
       font_texture->upload(bitmap->getBitmapData(), 512 * 512, 512,
                            {0, 0, 32, 32});
     }
-    if (device != nullptr && font_atlas == nullptr) {
-      font_atlas = device->createFontAtlas("BIZ UDGothic", 32);
-    }
+    // if (device != nullptr && font_atlas == nullptr) {
+    // font_atlas = device->createFontAtlas("BIZ UDGothic", 32);
+    //}
   }
 
   void destroyTerminalWindow() {
@@ -111,10 +112,10 @@ private:
       bitmap = nullptr;
     }
 
-    if (this->font_atlas != nullptr) {
-      this->font_atlas->release();
-      this->font_atlas = nullptr;
-    }
+    // if (this->font_atlas != nullptr) {
+    //   this->font_atlas->release();
+    //   this->font_atlas = nullptr;
+    // }
   }
 
   void processPTYInput(const Event &event) {
@@ -226,11 +227,11 @@ public:
                     {{x + w, y + h}, {800.0f, 600.0f}, 0xFFFFFFFF}, // 右下
                 };
                 pass->drawVerticesTex(tex, quad, 6);
-                if (app->font_atlas != nullptr) {
-                  app->font_atlas->drawText(
-                      pass, "ｱいうえおABC常用でない漢字もいける𩿗このように",
-                      20, 500, 0xFFFFFFFF);
-                }
+                // if (app->font_atlas != nullptr) {
+                //   app->font_atlas->drawText(
+                //       pass, "ｱいうえおABC常用でない漢字もいける𩿗このように",
+                //       20, 500, 0xFFFFFFFF);
+                // }
 
                 x = 200.0f, y = 50.0f;
                 w = 512.0f, h = 512.0f;
@@ -261,7 +262,9 @@ public:
 };
 
 int appMain(int argc, char **argv, IApplication *appInstance) {
-  TerminalApp app;
-  appInstance->run("Terminal", &app);
+  // TerminalApp app;
+  // appInstance->run("Terminal", &app);
+  ITerminal *terminal = ITerminal::getInstance();
+  appInstance->run("Terminal", terminal);
   return 0;
 }
