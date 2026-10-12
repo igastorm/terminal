@@ -40,9 +40,10 @@ MacWindow::~MacWindow() {
 
 WindowData MacWindow::getPlatformData() const { return this->data; }
 
-bool MacWindow::setTitle(const char *title) {
+bool MacWindow::setTitle(const char8_t *title) {
   @autoreleasepool {
-    NSString *ns_title = [NSString stringWithUTF8String:title];
+    NSString *ns_title =
+        [NSString stringWithUTF8String:reinterpret_cast<const char *>(title)];
     [this->data.window setTitle:ns_title];
     return true;
   }
@@ -77,7 +78,8 @@ MacWindow::MacWindow() {}
 
 void MacWindow::notifyResizing(bool flag) { this->data.resizing = flag; }
 
-MacWindow *MacWindow::createWindow(int width, int height, const char *title) {
+MacWindow *MacWindow::createWindow(int width, int height,
+                                   const char8_t *title) {
   @autoreleasepool {
     MacWindow *window =
         static_cast<MacWindow *>(std::malloc(sizeof(MacWindow)));
@@ -135,7 +137,7 @@ MacWindow *MacWindow::createWindow(int width, int height, const char *title) {
 }
 //} // namespace
 
-IWindow *IWindow::createWindow(int width, int height, const char *title) {
+IWindow *IWindow::createWindow(int width, int height, const char8_t *title) {
   IWindow *window = MacWindow::createWindow(width, height, title);
   return window;
 }

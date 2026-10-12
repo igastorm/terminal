@@ -93,11 +93,12 @@ void MacApplication::dispatchEvent(const Event &event) {
   this->terminate();
 }
 
-bool MacApplication::run(const char *appName, IAppHandler *handler) {
+bool MacApplication::run(const char8_t *appName, IAppHandler *handler) {
   this->handler = handler;
   this->data.appDelegate.handler = handler;
   @autoreleasepool {
-    NSString *ns_appNAME = [[NSString alloc] initWithUTF8String:appName];
+    NSString *ns_appNAME = [[NSString alloc]
+        initWithUTF8String:reinterpret_cast<const char *>(appName)];
 
     if (this->data.quit_item == nil || ns_appNAME == nil) {
       return false;

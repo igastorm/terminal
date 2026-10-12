@@ -5,7 +5,7 @@
 
 class IPTY : public IObject {
 public:
-  virtual void startShell(const char *) = 0;
+  virtual void startShell(const char8_t *) = 0;
   virtual void writeInput(const void *, size_t) = 0;
 
   virtual ~IPTY() = default;

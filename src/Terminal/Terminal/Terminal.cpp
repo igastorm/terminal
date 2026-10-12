@@ -35,7 +35,7 @@ bool Terminal::createTerminalWindow() {
   }
 
   cout << "createWindow\n";
-  this->window = IWindow::createWindow(800, 600, "Terminal");
+  this->window = IWindow::createWindow(800, 600, u8"Terminal");
 
   if (this->window == nullptr) {
     cout << "Error: createWindow\n";

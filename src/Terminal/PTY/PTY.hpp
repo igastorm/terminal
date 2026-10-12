@@ -24,7 +24,7 @@ private:
 
   pid_t shell_pid = 0;
 
-  void startShell(const char *) override;
+  void startShell(const char8_t *) override;
   void writeInput(const void *, size_t) override;
   int release() override;
   int addRef() override;

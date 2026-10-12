@@ -22,7 +22,7 @@ private:
 
   void createTerminalWindow(IApplication *appInstance) {
     if (this->window == nullptr) {
-      this->window = IWindow::createWindow(800, 600, "Terminal");
+      this->window = IWindow::createWindow(800, 600, u8"Terminal");
       this->window->setResizeIncrements(32, 32);
       this->window->setMinSize(64, 64);
     }
@@ -30,7 +30,7 @@ private:
     if (this->pty == nullptr && this->window != nullptr) {
       this->pty = IPTY::createPTY(appInstance);
       if (this->pty != nullptr) {
-        pty->startShell("/bin/zsh");
+        pty->startShell(u8"/bin/zsh");
       }
     }
 
@@ -265,6 +265,6 @@ int appMain(int argc, char **argv, IApplication *appInstance) {
   // TerminalApp app;
   // appInstance->run("Terminal", &app);
   ITerminal *terminal = ITerminal::getInstance();
-  appInstance->run("Terminal", terminal);
+  appInstance->run(u8"Terminal", terminal);
   return 0;
 }

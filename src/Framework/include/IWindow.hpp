@@ -3,7 +3,7 @@
 
 class IWindow : public IObject {
 public:
-  virtual bool setTitle(const char *) = 0;
+  virtual bool setTitle(const char8_t *) = 0;
 
   virtual bool show() = 0;
 
@@ -15,5 +15,5 @@ public:
 
   ~IWindow() = default;
 
-  [[nodiscard]] static IWindow *createWindow(int, int, const char *);
+  [[nodiscard]] static IWindow *createWindow(int, int, const char8_t *);
 };

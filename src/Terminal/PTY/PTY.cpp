@@ -182,7 +182,7 @@ void PTY::readLoop() {
   }
 }
 
-void PTY::startShell(const char *shell) {
+void PTY::startShell(const char8_t *shell) {
   // シェルを起動 (fork する)
   // fork すると同じ内容のサブプロセスが作られる (実行位置は fork() の直後)
   // つまりメモリ空間がクローンされる
@@ -269,7 +269,8 @@ void PTY::startShell(const char *shell) {
     }
 
     // シェルを実行
-    char *args[] = {const_cast<char *>(shell), nullptr};
+    char *args[] = {const_cast<char *>(reinterpret_cast<const char *>(shell)),
+                    nullptr};
     execvp(args[0], args);
 
     // execvp が失敗した場合のみここに来る

@@ -31,7 +31,7 @@ class MacWindow : public Window {
 private:
   WindowData data = {};
 
-  bool setTitle(const char *) override;
+  bool setTitle(const char8_t *) override;
   bool show() override;
   bool hide() override;
   bool setResizeIncrements(int, int) override;
@@ -42,5 +42,5 @@ public:
   MacWindow();
   ~MacWindow();
   void notifyResizing(bool);
-  [[nodiscard]] static MacWindow *createWindow(int, int, const char *);
+  [[nodiscard]] static MacWindow *createWindow(int, int, const char8_t *);
 };

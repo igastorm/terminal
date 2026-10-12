@@ -13,7 +13,7 @@ struct ApplicationData {
 class MacApplication : public Application {
 private:
   ApplicationData data = {};
-  bool run(const char *, IAppHandler *) override;
+  bool run(const char8_t *, IAppHandler *) override;
   void postEvent() override;
   
   MacApplication();
