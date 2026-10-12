@@ -13,6 +13,10 @@ public:
 
   virtual bool setMinSize(int, int) = 0;
 
+  virtual void setUserData(void *) = 0;
+
+  virtual void *getUserData() const = 0;
+
   ~IWindow() = default;
 
   [[nodiscard]] static IWindow *createWindow(int, int, const char8_t *);

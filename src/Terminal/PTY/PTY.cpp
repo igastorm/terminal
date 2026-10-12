@@ -174,7 +174,7 @@ void PTY::readLoop() {
       }
 
       // main 側へ通知
-      this->appInstance->postEvent();
+      this->appInstance->postEvent(this);
 
       // ここで ANSI パーサを呼んで TextGrid を生成するかも
       write(STDOUT_FILENO, buffer, bytes_read);

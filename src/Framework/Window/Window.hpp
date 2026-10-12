@@ -3,6 +3,12 @@
 #include "IWindow.hpp"
 
 class Window : public Object<IWindow> {
+private:
+  void *user_data = nullptr;
+
+  void setUserData(void *) override;
+  void *getUserData() const override;
+
 protected:
   int release() override;
 

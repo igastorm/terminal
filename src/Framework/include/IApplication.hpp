@@ -6,7 +6,7 @@ public:
   virtual bool run(const char8_t *, IAppHandler *) = 0;
   virtual void terminate() = 0;
 
-  virtual void postEvent() = 0;
+  virtual void postEvent(void*) = 0;
 
   ~IApplication() = default;
 };

@@ -49,5 +49,6 @@ struct Event {
       float deltaX;
       float deltaY;
     } scroll;
+    void* user_data;
   };
 };

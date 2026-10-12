@@ -138,7 +138,7 @@ bool MacApplication::run(const char8_t *appName, IAppHandler *handler) {
   return true;
 }
 
-void MacApplication::postEvent() {
+void MacApplication::postEvent(void *user_data) {
   // もし, dispatch_async_f
   // が処理中に再度同じイベントをぶち込むと重複してイベントが発行されることになるのでフラグで判定が必要
   // (よっぽど重い時以外には問題にならないかもしれないが)
@@ -146,19 +146,18 @@ void MacApplication::postEvent() {
 
   // 前の値を読み取って新しい値と交換
   if (!post_event_pending.exchange(true)) {
-    dispatch_async_f(
-        dispatch_get_main_queue(), this, [](void *context) -> void {
-          @autoreleasepool {
-            post_event_pending.store(false);
+    dispatch_async_f(dispatch_get_main_queue(), user_data,
+                     [](void *context) -> void {
+                       @autoreleasepool {
+                         post_event_pending.store(false);
 
-            MacApplication *app = static_cast<MacApplication *>(context);
-
-            // メインスレッドで UserEvent を 1 回だけ発火
-            Event event;
-            event.type = EventType::UserEvent;
-            app->dispatchEvent(event);
-          }
-        });
+                         // メインスレッドで UserEvent を 1 回だけ発火
+                         Event event;
+                         event.type = EventType::UserEvent;
+                         event.user_data = context;
+                         MacApplication::getAppInstance()->dispatchEvent(event);
+                       }
+                     });
   }
 }
 

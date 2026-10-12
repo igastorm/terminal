@@ -8,3 +8,7 @@ int Window::release() {
   }
   return ref_count;
 }
+
+void Window::setUserData(void *user_data) { this->user_data = user_data; }
+
+void *Window::getUserData() const { return this->user_data; }
